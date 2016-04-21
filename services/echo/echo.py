@@ -29,6 +29,13 @@ class Application:
         self.sel           = selectors.DefaultSelector()
         self.setup_network_logger()
         self.gather_parameter()
+        self.register_signal_handler()
+
+    def register_signal_handler(self):
+        def signal_int_handler(signal, frame):
+            interrupt_msg = '{} {} terminated by keyboard interrupt'.format(self.name, self.version)
+            print(interrupt_msg)
+            exit(0)
         signal.signal(signal.SIGINT, Application.signal_int_handler)
         
     def get_logger(self):
@@ -80,12 +87,6 @@ class Application:
         print(self.usage_string)
         exit(-1)
 
-    @staticmethod
-    def signal_int_handler(signal, frame):
-        interrupt_msg = 'Script terminated by keyboard interrupt'
-        print(interrupt_msg)
-        exit(0)
-
     def setup_network_logger(self):
         rootLogger = logging.getLogger('')
         rootLogger.setLevel(logging.DEBUG)
@@ -93,30 +94,29 @@ class Application:
                                                        self.loghost_port)
         rootLogger.addHandler(socketHandler)
 
-    def accept(self, sock, mask):
-        conn, addr = sock.accept()  # Should be ready
-        self.log.info('New connection from ' + str(addr))
-        conn.setblocking(False)
-        read_wrapper = lambda x, y: self.accept(x, y)
-        self.sel.register(conn, selectors.EVENT_READ, read_wrapper)
-
-    def read(self, conn, mask):
-        data = conn.recv(1000)  # Should be ready
-        if data:
-            log.info('echoing %d bytes to %s' % (sys.getsizeof(data), conn.getpeername()))
-            conn.send(data)  # Hope it won't block
-        else:
-            log.info('closing connection to ' + str(conn.getpeername()))
-            self.sel.unregister(conn)
-            conn.close()
-
     def run(self):
         sock = socket.socket()
         sock.setblocking(False)
         sock.bind((self.server_name, self.server_port))
         sock.listen(10)
-        accept_wrapper = lambda x, y: self.accept(x, y)
-        self.sel.register(sock, selectors.EVENT_READ, accept_wrapper)
+
+        def read(conn, mask):
+            data = conn.recv(1000)  # Should be ready
+            if data:
+                self.log.info('echoing %d bytes to %s' % (sys.getsizeof(data), conn.getpeername()))
+                conn.send(data)  # Hope it won't block
+            else:
+                self.log.info('closing connection to ' + str(conn.getpeername()))
+                self.sel.unregister(conn)
+                conn.close()
+
+        def accept(sock, mask):
+            conn, addr = sock.accept()  # Should be ready
+            self.log.info('New connection from ' + str(addr))
+            conn.setblocking(False)
+            self.sel.register(conn, selectors.EVENT_READ, read)
+
+        self.sel.register(sock, selectors.EVENT_READ, accept)
 
         self.log.info('echo server up on %s:%d' % (self.server_name, self.server_port))
 
@@ -128,21 +128,20 @@ class Application:
 
 #
 # End of application class
-##
+# # #
 
 app = None
 
 if __name__ == '__main__':
-    #
-    # This is where all the magic happens...
-    #
+
     app = Application()
     app.log.info('Script is starting')
+
     app.run()
     app.log.info('Script is done')
 
 #
-# Done
+#     Done
 #
 # # # end of script
 
