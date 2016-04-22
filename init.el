@@ -825,6 +825,7 @@ and display corresponding buffer in new frame."
 
 (defun mp/maven-integration ()
   (interactive)
+  (add-to-list 'auto-insert-alist '("pom.xml$" . [ "pom.xml" ]))
   (when (string= "pom.xml" (buffer-name))
     (progn
       (setq compile-command "mvn clean install")
