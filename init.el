@@ -109,8 +109,9 @@
 (setq scroll-step 1
       scroll-conservatively 10000
       auto-window-vscroll nil
-      delete-exited-processes t
-      gc-cons-threshold 50000000)
+      delete-exited-processes t)
+
+;; (setq gc-cons-threshold 5000000) ;; 
 
 ;; Kill buffers when done (M-x #)
 (add-hook 'server-done-hook (lambda nil (kill-buffer nil)))
@@ -986,6 +987,7 @@ and display corresponding buffer in new frame."
             (indent-for-tab-command)
             (forward-line 1) ) ) ) ) )
   (indent-for-tab-command) )
+
 ;; ]
 
 ;; [ restclient mode
