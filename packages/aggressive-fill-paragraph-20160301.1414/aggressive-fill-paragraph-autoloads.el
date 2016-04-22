@@ -4,7 +4,7 @@
 (add-to-list 'load-path (directory-file-name (or (file-name-directory #$) (car load-path))))
 
 ;;;### (autoloads nil "aggressive-fill-paragraph" "aggressive-fill-paragraph.el"
-;;;;;;  (22286 38685 0 0))
+;;;;;;  (22298 10126 0 0))
 ;;; Generated autoloads from aggressive-fill-paragraph.el
 
 (autoload 'aggressive-fill-paragraph-mode "aggressive-fill-paragraph" "\

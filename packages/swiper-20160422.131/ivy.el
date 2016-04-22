@@ -893,12 +893,13 @@ Example use:
     (let ((action (ivy--get-action ivy-last)))
       (when action
         (let* ((collection (ivy-state-collection ivy-last))
-               (x (if (and (consp collection)
-                           (consp (car collection)))
-                      (cdr (assoc ivy--current collection))
-                    (if (equal ivy--current "")
-                        ivy-text
-                      ivy--current))))
+               (x (cond ((and (consp collection)
+                              (consp (car collection))
+                              (cdr (assoc ivy--current collection))))
+                        ((equal ivy--current "")
+                         ivy-text)
+                        (t
+                         ivy--current))))
           (prog1 (funcall action x)
             (unless (or (eq ivy-exit 'done)
                         (equal (selected-window)
@@ -1963,7 +1964,10 @@ depending on the number of candidates."
                   (= ivy--length 1)
                   (not (string= ivy-text "/")))
               (let ((default-directory ivy--directory))
-                (file-directory-p ivy--current)))
+                (and
+                 (not (equal ivy--current ""))
+                 (file-directory-p ivy--current)
+                 (file-exists-p ivy--current))))
          (ivy--cd (expand-file-name ivy--current ivy--directory)))))
 
 (defun ivy--exhibit ()
@@ -2435,7 +2439,11 @@ SEPARATOR is used to join the candidates."
      start end 'face face str)))
 
 (defun ivy--format-minibuffer-line (str)
-  (let ((start 0)
+  (let ((start
+         (if (and (memq (ivy-state-caller ivy-last) '(counsel-git-grep))
+                  (string-match "^[^:]+:[^:]+:" str))
+             (match-end 0)
+           0))
         (str (copy-sequence str)))
     (cond ((eq ivy--regex-function 'ivy--regex-ignore-order)
            (when (consp ivy--old-re)
