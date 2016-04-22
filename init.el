@@ -141,13 +141,13 @@
 
 ;; [ isearch
 
-;; ‘C-w’     - Select the (rest of the) word the TextCursor is on as
-;; the search string; 
-;; ‘M-s C-e’ - Select the text up to the end of the line as the search
-;; string (this was bound to ‘C-y’ up until Emacs 24.1). 
-;; ‘M-s h r’ - Highlight regular expression (‘highlight-regexp’)
-;; ‘M-s h u’ - Unhighlight regular expression
-;; ‘M-s o’   - call ‘occur’ with the current search term
+;; 'C-w'     - Select the (rest of the) word the TextCursor is on as
+;;             the search string; 
+;; 'M-s C-e' - Select the text up to the end of the line as the search
+;;             string (this was bound to ‘C-y’ up until Emacs 24.1). 
+;; 'M-s h r' - Highlight regular expression (‘highlight-regexp’)
+;; 'M-s h u' - Unhighlight regular expression
+;; 'M-s o'   - call ‘occur’ with the current search term
 
 (global-set-key (kbd "C-s") 'isearch-forward-regexp)
 
@@ -207,7 +207,8 @@ This way region can be inserted into isearch easily with yank command."
       imenu-sort-function 'imenu--sort-by-name) ;; sort only mouse menu
 
 (defadvice imenu-recenter-advice (after mp/imenu-center activate)
-  (recenter))
+  (recenter-top-bottom 2))
+
 
 ;; ]
 
@@ -305,7 +306,6 @@ This way region can be inserted into isearch easily with yank command."
 ;; ]
 
 ;; [ save history
-
 
 (savehist-mode 1)
 (setq savehist-file "~/.emacs.d/various/savehist"
