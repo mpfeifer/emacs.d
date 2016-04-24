@@ -33,18 +33,23 @@
 
 (let* ((emacs-dir (concat (getenv "HOME") "/.emacs.d/"))
        (various-dir (concat emacs-dir "various/"))
-       (autosave-dir (concat emacs-dir "auto-save/")))
-  (dolist (dir (list various-dir autosave-dir))
-    (when (not (file-exists-p dir))
-      (progn
-        (message (concat "[emacs boot] Creating directory " dir))
-        (make-directory dir)))))
-
+       (autosave-dir (concat emacs-dir "auto-save/"))
+       (boot nil))
+  (progn 
+    (dolist (dir (list various-dir autosave-dir))
+      (when (not (file-exists-p dir))
+	(progn
+	  (setq boot t)
+	  (message (concat "[emacs boot] Creating directory " dir))
+	  (make-directory dir))))
+    (when boot
+      (let ((package-archives '(("melpa" . "http://melpa.org/packages/")))
+	    (package-enable-at-startup nil)
+	    (package-user-dir "~/.emacs.d/packages/"))
+	(package-refresh-contents) ) ) ) )
+    
 ;; ]
 
-;; [ recentf
-
-(recentf-mode 1)
 
 ;; ]
 
@@ -103,6 +108,8 @@
 (defalias 'yes-or-no-p 'y-or-n-p)
 (defalias 'symbol-to-string 'symbol-name)
 (defalias 'string-to-symbol 'intern)
+
+(recentf-mode 1)
 
 (add-to-list 'load-path "~/.emacs.d/lib/")
 
@@ -175,7 +182,8 @@ This way region can be inserted into isearch easily with yank command."
 ;; [ appearence
 
 (when window-system
-  (horizontal-scroll-bar-mode -1)
+  (when (eq system-type 'windows-nt)
+    (horizontal-scroll-bar-mode -1))
   (tool-bar-mode -1)
   (menu-bar-mode 1)
   (tooltip-mode -1)
@@ -187,7 +195,9 @@ This way region can be inserted into isearch easily with yank command."
 ;; (require 'hl-line)
 ;; (global-hl-line-mode nil)
 
-(load-theme 'material)
+(use-package material-theme
+  :config
+  (load-theme 'material) )
 
 ;; [ backups
 
@@ -1032,6 +1042,14 @@ and display corresponding buffer in new frame."
   (linum-mode))
 
 (add-hook 'html-mode-hook 'mp/html-mode-setup)
+
+;; ]
+
+;; [ php mode
+
+(use-package php-mode
+  :config
+  )
 
 ;; ]
 
