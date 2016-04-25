@@ -1,0 +1,11 @@
+#
+auto-save/
+backups/
+python-environments/
+semanticdb/
+various/
+ido.last
+*.elc
+\.*
+*~
+packages/
