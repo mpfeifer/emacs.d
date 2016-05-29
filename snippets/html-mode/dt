@@ -1,5 +1,6 @@
-#contributor : Rodrigo Setti <rodrigosetti@gmail.com>
+#contributor : Matthias
 #name : <dt> ... </dt>
 #group : list
+#key: dt
 # --
 <dt>$1</dt>

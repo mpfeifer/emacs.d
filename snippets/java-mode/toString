@@ -1,7 +1,10 @@
 # -*- mode: snippet -*-
+# author: Matthias
 # name: toString
-# key: toStr
+# key: toString
 # --
 public String toString() {
+       String result = new StringBuffer();
        $0
+       return result.toString();
 }
