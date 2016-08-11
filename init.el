@@ -3,7 +3,7 @@
 ;;
 ;;; Commentary:
 ;;  This is the Emacs initialization file.  Emacs reads it when
-;;  starting up.  It takes care for loading the users preferences.
+;;  starting up.  It takes care for loading the users' preferences.
 ;;
 ;; [ header
 
@@ -28,30 +28,27 @@
 
 (load custom-file)
 
-;; check if "various" and "auto-save" directories are available
-;; if not just create them
+;; do some initialization stuff when init.el was moved onto a new host
 
-(let* ((emacs-dir (concat (getenv "HOME") "/.emacs.d/"))
+(let* ((emacs-dir (expand-file-name "~/.emacs.d/"))
        (various-dir (concat emacs-dir "various/"))
        (autosave-dir (concat emacs-dir "auto-save/"))
        (boot nil))
-  (progn 
+  (progn
     (dolist (dir (list various-dir autosave-dir))
       (when (not (file-exists-p dir))
-	(progn
-	  (setq boot t)
-	  (message (concat "[emacs boot] Creating directory " dir))
-	  (make-directory dir))))
+        (progn
+          (setq boot t)
+          (message (concat "[emacs boot] Creating directory " dir))
+          (make-directory dir))))
     (when boot
       (let ((package-archives '(("melpa" . "http://melpa.org/packages/")))
-	    (package-enable-at-startup nil)
-	    (package-user-dir "~/.emacs.d/packages/"))
-	(package-refresh-contents) ) ) ) )
-    
-;; ]
-
+            (package-enable-at-startup nil)
+            (package-user-dir "~/.emacs.d/packages/"))
+        (package-refresh-contents) ) ) ) )
 
 ;; ]
+
 
 ;; [ packaging
 
@@ -71,7 +68,9 @@
 
 (setq use-package-verbose t
       use-package-always-ensure t
-      load-prefer-newer t)
+      load-prefer-newer t) 
+
+(global-set-key (kbd "C-c 5") #'package-list-packages)
 
 ;; ]
 
@@ -80,6 +79,7 @@
 
 (add-hook 'compilation-mode-hook '(lambda ()
                                     (interactive)
+                                    (next-error-follow-minor-mode)
                                     (local-set-key (kbd "q") 'quit-window)))
 
 (use-package auto-compile
@@ -90,6 +90,10 @@
 ;; ]
 
 ;; [ General Emacs Behaviour
+
+(defun indent-buffer ()
+  (interactive)
+  (indent-region (point-min) (point-max)) )
 
 (setq-default indent-tabs-mode nil)
 
@@ -126,7 +130,7 @@
 (autoload 'zap-up-to-char "misc"
   "Kill up to, but not including ARGth occurrence of CHAR.")
 
-(global-set-key (kbd "M-Z") 'zap-up-to-char)
+(global-set-key (kbd "M-Z") #'zap-up-to-char)
 
 (add-to-list 'auto-mode-alist '("\.dll\\'" . hexl-mode))
 (add-to-list 'auto-mode-alist '("\.exe\\'" . hexl-mode))
@@ -155,8 +159,7 @@
 ;; 'M-s h r' - Highlight regular expression (‘highlight-regexp’)
 ;; 'M-s h u' - Unhighlight regular expression
 ;; 'M-s o'   - call ‘occur’ with the current search term
-
-(global-set-key (kbd "C-s") 'isearch-forward-regexp)
+;; 'C-M-s'   - isearch-forward-regexp
 
 (defadvice isearch-forward-regexp (before kill-ring-save-before-search activate)
   "Save region (if active) to \"kill-ring\" before starting isearch.
@@ -174,12 +177,12 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; [ encoding systems
 
-;;(modify-coding-system-alist 'file ".*cygwin.*\.sh" 'utf-8-unix)
-;;(modify-coding-system-alist 'file ".*cygwin.*\.py[23]?" 'utf-8-unix)
+;; (modify-coding-system-alist 'file ".*cygwin.*\.sh" 'utf-8-unix)
+;; (modify-coding-system-alist 'file ".*cygwin.*\.py[23]?" 'utf-8-unix)
 
 ;; ]
 
-;; [ appearence
+;; [ global appearence
 
 (when window-system
   (when (eq system-type 'windows-nt)
@@ -197,13 +200,25 @@ This way region can be inserted into isearch easily with yank command."
 
 (use-package material-theme
   :config
-  (load-theme 'material) )
+  (load-theme 'material)
+  (set-face-foreground 'hl-line "grey")
+  (set-face-background 'hl-line "brown")
+  )
+
+(use-package volatile-highlights)
+
+(show-paren-mode 1)
 
 ;; [ backups
 
 (setq backup-directory-alist '(("." . "~/.emacs.d/backups"))
       delete-old-versions t
       version-control t
+      vc-make-backup-files t
+      auto-save-interval 50
+      backup-by-copying t
+      kept-new-versions 10
+      delete-old-versions t
       vc-make-backup-files t
       auto-save-file-name-transforms '((".*" "~/.emacs.d/auto-save/" t)))
 
@@ -239,11 +254,11 @@ This way region can be inserted into isearch easily with yank command."
           (- (count-lines (point-min) (point-max)) 1))
       (goto-line 3)))
 
+(use-package ibuffer-git)
+
 (use-package ibuffer
   :bind ("C-x C-b" . ibuffer)
   :config
-  (require 'ibuffer-git)
-
   (setq ibuffer-show-empty-filter-groups nil
         ibuffer-formats '((mark modified read-only " "
                                 (name 18 18 :left :elide)
@@ -256,12 +271,45 @@ This way region can be inserted into isearch easily with yank command."
                                 (name 16 -1)
                                 " " filename)))
 
+  (setq ibuffer-saved-filter-groups
+        (quote (("modes+projects"
+                 ("Arithmetik Chef" (filename . "^/home/matthias/public_html/Arithmetik-Chef/.*"))
+                 ("Dired" (mode . dired-mode))
+                 ("Emacs" (or
+                           (name . "^\\*scratch\\*$")
+                           (name . "^\\*Messages\\*$")
+                           (filename . "^.*/.emacs.d/.*$")))
+                 ("Emacs Lisp" (mode . emacs-lisp-mode))
+                 ("Gnus" (or
+                          (mode . message-mode)
+                          (mode . bbdb-mode)
+                          (mode . mail-mode)
+                          (mode . gnus-group-mode)
+                          (mode . gnus-summary-mode)
+                          (mode . gnus-article-mode)
+                          (name . "^\\.bbdb$")
+                          (name . "^\\.newsrc-dribble")))
+                 ("Graph Designer.js" (filename . "^/home/matthias/public_html/graphjs/.*"))
+                 ("JDEE" (or
+                          (name . "^\\*JDEE.*")
+                          (name . "^\\*check style\\*")))
+                 ("Customization" (name . "^\\*Customize.*"))
+                 ("Nevelex Demo" (filename . "^/home/matthias/java/projects/nevelex/.*"))
+                 ("Organizer" (mode . org-mode))
+                 ("OpenGL-Lab" (filename . "^/home/matthias/opengl/lab/.*"))
+                 ("OpenGL-Maze" (filename . "^/home/matthias/opengl/openmaze/.*"))
+                 ("Perl" (mode . cperl-mode))
+                 ("Python" (mode . python-mode))
+                 ("Pocketmine" (filename . "^.*Minecraft/Pocketmine/git/.*"))
+                 ("Snake.js" (filename . "^/home/matthias/public_html/snake/.*"))
+                 ("Timelapse" (filename . "^/home/matthias/timelapse/.*"))))))
+
   (add-hook 'ibuffer-mode-hook
             '(lambda ()
                (ibuffer-auto-mode 1)
                (define-key ibuffer-mode-map (kbd "C-p") 'ibuffer-previous-line)
                (define-key ibuffer-mode-map (kbd "C-n") 'ibuffer-next-line)
-               (ibuffer-switch-to-saved-filter-groups "groupmode"))))
+               (ibuffer-switch-to-saved-filter-groups "modes+projects"))))
 ;; ]
 
 ;; [ emacs lisp mode
@@ -289,6 +337,7 @@ This way region can be inserted into isearch easily with yank command."
   (setq paragraph-separate "^;; ]$")
   (setq-local imenu-create-index-function 'imenu-default-create-index-function)
   (setq imenu-generic-expression '((nil "^;; \\[ \\(.*\\)" 1)))
+  (volatile-highlights-mode)
   (ac-emacs-lisp-mode-setup))
 
 
@@ -395,12 +444,20 @@ This way region can be inserted into isearch easily with yank command."
   (setq-local comment-auto-fill-only-comments t)
   (auto-fill-mode 1)
   (setq-local comment-multi-line t)
-  (local-set-key (kbd "RET") 'c-indent-new-comment-line))
+  (volatile-highlights-mode)
+  (local-set-key (kbd "RET") 'c-indent-new-comment-line) )
+
+(define-auto-insert '("\\.js\\'" . "Javscript Skeleton")
+  [ '(nil
+    "/*\n * "
+    (file-name-nondirectory (buffer-file-name)) "\n"
+    " * Started on " (format-time-string "%A, %e %B %Y.") \n
+    " */" \n \n \n ) indent-buffer ] )
 
 (use-package js2-mode
   :mode "\\.js\\'"
   :config
-  (add-hook 'js2-mode-hook 'mp/j2-mode-hook))
+  (add-hook 'js2-mode-hook 'mp/js2-mode-hook))
 
 ;; ]
 
@@ -424,7 +481,7 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; [ calendar
 
-(global-set-key (kbd "<f4>") '(lambda () (interactive)
+(global-set-key (kbd "<f4>") #'(lambda () (interactive)
                                 "Toggle calendar visibility"
                                 (let ((calendar-window
                                        (get-buffer-window "*Calendar*")))
@@ -481,45 +538,69 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; [ org mode
 
-(use-package aggressive-fill-paragraph
-  :config
-  (add-hook 'org-mode-hook aggressive-fill-paragraph-mode) )
+(global-set-key (kbd "C-c c") #'org-capture)
 
-(use-package org-bullets
-  :config
-  (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1) ) ) )
+(use-package aggressive-fill-paragraph)
 
-(require 'ob-plantuml)
+;; (use-package org-bullets)
 
-(setq dot.exe "C:/graphviz/bin/dot.exe"
-      org-plantuml-jar-path "~/plantuml/plantuml.jar")
-
-(setq org-ellipsis "…")
-
-(setenv "GRAPHVIZ_DOT" dot.exe)
-
-(add-to-list 'org-babel-load-languages '(plantuml . t))
-
-(require 'ob-python)
-
-(add-to-list 'org-babel-load-languages '(python . t))
-
-(org-babel-do-load-languages 'dont 'care)
-
-(setq org-confirm-babel-evaluate nil)
-
-(defun mp/org-mode-hook-extension ()
+(defun mp/org-mode-hook ()
   "org mode hook extender [mp]"
-  (auto-fill-mode)
-  (local-set-key (kbd "<return>") 'org-return-indent))
 
-(add-hook 'org-mode-hook 'mp/org-mode-hook-extension)
+  (require 'ob-plantuml)
+  (require 'ob-python)
+
+  (auto-fill-mode)
+  (volatile-highlights-mode)  
+
+  (local-set-key (kbd "<return>") 'org-return-indent)
+
+  (cond
+   ((eq system-type 'gnu/linux)
+    (setq dot.exe "/usr/bin/dot"))
+   ((eq system-type 'windows-nt)
+    (setq dot.exe "C:/graphviz/bin/dot.exe")))
+
+  (setq org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
+        org-ellipsis "…"
+        org-directory "~/org"
+        org-default-notes-file "~/org/gtd.org"
+        org-confirm-babel-evaluate nil)
+
+  (setq org-capture-templates
+        (quote (("t" "todo" entry (file "~/org/gtd.org")
+                 "** TODO %?\n%U\n%a\n" :clock-in t :clock-resume t)
+                ("r" "respond" entry (file "~/org/gtd.org")
+                 "** NEXT Respond to %:from on %:subject\nSCHEDULED: %t\n%U\n%a\n" :clock-in t :clock-resume t :immediate-finish t)
+                ("n" "note" entry (file "~/org/gtd.org")
+                 "** %? :NOTE:\n%U\n%a\n" :clock-in t :clock-resume t)
+                ("j" "Journal" entry (file+datetree "~/org/diary.org")
+                 "** %?\n%U\n" :clock-in t :clock-resume t)
+                ("w" "org-protocol" entry (file "~/org/gtd.org")
+                 "** TODO Review %c\n%U\n" :immediate-finish t)
+                ("m" "Meeting" entry (file "~/org/gtd.org")
+                 "** MEETING with %? :MEETING:\n%U" :clock-in t :clock-resume t)
+                ("p" "Phone call" entry (file "~/org/gtd.org")
+                 "** PHONE %? :PHONE:\n%U" :clock-in t :clock-resume t)
+                ("h" "Habit" entry (file "~/org/gtd.org")
+                 "** NEXT %?\n%U\n%a\nSCHEDULED: %(format-time-string \"%<<%Y-%m-%d %a .+1d/3d>>\")\n:PROPERTIES:\n:STYLE: habit\n:REPEAT_TO_STATE: NEXT\n:END:\n"))))
+
+  (setenv "GRAPHVIZ_DOT" dot.exe)
+
+  (add-to-list 'org-babel-load-languages '(plantuml . t))
+  (add-to-list 'org-babel-load-languages '(python . t))
+
+  (org-babel-do-load-languages 'dont 'care)
+
+  (add-hook 'org-mode-hook 'aggressive-fill-paragraph-mode) )
+
+(add-hook 'org-mode-hook 'mp/org-mode-hook)
 
 ;; ]
 
 ;; [ prodigy service manager
 
-;; TODO Want python script as services: echo, time, quotd
+;; Warning: prodigy does not seem to allow stopping services on Windows
 
 (defsubst mp/toggle-prodigy-buffer ()
   (interactive)
@@ -535,10 +616,10 @@ This way region can be inserted into isearch easily with yank command."
     "Root directory for various services bundled with init.el." )
 
   (defvar mp:prodigy-python-interpreter
-    "C:/mp/Python/Python35-32/python.exe"
+    "/usr/bin/python3"
     "Location of python interpreter used by prodigy.  Default just grabs one from PATH.")
 
-  (global-set-key (kbd "<f5>") 'mp/toggle-prodigy-buffer)
+  (global-set-key (kbd "<f5>") #'mp/toggle-prodigy-buffer)
 
   (prodigy-define-service
     :name "Date Server (python)"
@@ -573,7 +654,6 @@ This way region can be inserted into isearch easily with yank command."
 
 (setq tags-revert-without-query t)
 
-
 (defadvice xref-find-definitions (before push-mark-before-find activate)
   (push-mark))
 
@@ -586,6 +666,7 @@ This way region can be inserted into isearch easily with yank command."
 (add-hook 'cperl-mode-hook '(lambda ()
                               (interactive)
                               (linum-mode)
+                              (volatile-highlights-mode)                              
                               (local-set-key (kbd "C-h f") 'cperl-perldoc-at-point)))
 
 ;; ]
@@ -635,7 +716,7 @@ This way region can be inserted into isearch easily with yank command."
           (select-frame (make-frame))
           (eshell))))))
 
-(global-set-key (kbd "<f7>") 'mp/eshell)
+(global-set-key (kbd "<f7>") #'mp/eshell)
 
 (defun eshell-emergency-exit ()
   "When eshell refuses to close with \"Text is read-only.\" message exit eshell with this function instead."
@@ -649,6 +730,7 @@ This way region can be inserted into isearch easily with yank command."
 (defun mp/c-mode-hook ()
   "Personal c mode hook extender."
   (local-set-key (kbd "C-c C-c") 'compile)
+  (volatile-highlights-mode)  
   (linum-mode))
 
 (add-hook 'c-mode-hook 'mp/c-mode-hook)
@@ -663,7 +745,7 @@ This way region can be inserted into isearch easily with yank command."
 
 (defgroup web nil "All things related to web development" :group 'development)
 
-(defcustom web-project-root "~/www/" "New web projects are stored in this directory." :group 'web)
+(defcustom web-project-root "~/public_html/" "New web projects are stored in this directory." :group 'web)
 
 (defun mp/start-web-project (name)
   "Create a new web project with NAME.  Create initial html, js, css file."
@@ -680,9 +762,12 @@ This way region can be inserted into isearch easily with yank command."
     (find-file (concat projectroot "/" name ".css"))
     (other-window -1)))
 
+(global-set-key (kbd "C-c 4") #'mp/start-web-project)
+
 (defun mp/css-mode-hook ()
   "Personal css mode hook extender."
   (setq ac-sources '(ac-source-css-property))
+  (volatile-highlights-mode)  
   (linum-mode))
 
 (add-hook 'css-mode-hook' mp/css-mode-hook)
@@ -694,6 +779,7 @@ This way region can be inserted into isearch easily with yank command."
                              ;; 'ac-source-html-tag
                              ;; 'ac-source-html-attribute))
                              (linum-mode)
+                             (volatile-highlights-mode)                             
                              (auto-complete-mode)))
 
 ;; ]
@@ -724,11 +810,11 @@ and display corresponding buffer in new frame."
   (split-window-right)
   (other-window 1) )
 
-(global-set-key (kbd "<f1>") 'mp/detach-window)
-(global-set-key (kbd "<f2>") 'make-frame)
-(global-set-key (kbd "<f3>") 'delete-frame)
-(global-set-key (kbd "C-x 2") 'split-window-below-select)
-(global-set-key (kbd "C-x 3") 'split-window-right-select)
+(global-set-key (kbd "<f1>") #'mp/detach-window)
+(global-set-key (kbd "<f2>") #'make-frame)
+(global-set-key (kbd "<f3>") #'delete-frame)
+(global-set-key (kbd "C-x 2") #'split-window-below-select)
+(global-set-key (kbd "C-x 3") #'split-window-right-select)
 
 ;; ]
 
@@ -740,7 +826,7 @@ and display corresponding buffer in new frame."
 
 ;; [ whitespace mode
 
-(global-set-key (kbd "C-c 2") 'whitespace-mode)
+(global-set-key (kbd "C-c 2") #'whitespace-mode)
 
 ;; ]
 
@@ -764,6 +850,11 @@ and display corresponding buffer in new frame."
 
 ;; [ java mode
 
+
+(use-package jdee
+  :config
+  (setq jdee-server-dir "~/.emacs.d/jdee-server") )
+
 (defun mp:predict-package-name-for-current-buffer ()
   "Simply take two parent directories and concat with . inbetween."
   (let* ((components (remq ""
@@ -785,11 +876,14 @@ and display corresponding buffer in new frame."
 (defun mp:java-mode-hook()
   (setq-local comment-auto-fill-only-comments t)
   (auto-fill-mode 1)
+  (volatile-highlights-mode)
+  (linum-mode)
+  (auto-complete-mode)
   (setq-local comment-multi-line t) )
 
 (add-hook 'java-mode-hook 'mp:java-mode-hook)
 
-(add-to-list 'auto-insert-alist '(".*\\.java$" . [ "template.java" mp:java-preprocessor] ))
+(add-to-list 'auto-insert-alist '(".*\\.java$" . [ "template.java" mp:java-preprocessor] ) ) 
 
 ;; ]
 
@@ -826,6 +920,7 @@ and display corresponding buffer in new frame."
 (define-key nxml-mode-map (kbd "C--") 'hs-toggle-hiding)
 
 (defun mp/nxml-mode-setup ()
+  (volatile-highlights-mode)  
   (linum-mode))
 
 (add-hook 'nxml-mode-hook 'mp/nxml-mode-setup)
@@ -836,7 +931,8 @@ and display corresponding buffer in new frame."
 
 (defun mp/maven-integration ()
   (interactive)
-  (add-to-list 'auto-insert-alist '("pom.xml$" . [ "pom.xml" ]))
+  (eval-after-load 'autoinsert  
+    (add-to-list 'auto-insert-alist '("pom.xml$" . [ "pom.xml" ])))
   (when (string= "pom.xml" (buffer-name))
     (progn
       (setq compile-command "mvn clean install")
@@ -858,7 +954,7 @@ and display corresponding buffer in new frame."
   ;; https://github.com/nonsequitur/smex
   :config
   (smex-initialize)
-  (global-set-key (kbd "M-x") 'smex))
+  (global-set-key (kbd "M-x") #'smex))
 
 (use-package ido-vertical-mode
   :config
@@ -867,9 +963,10 @@ and display corresponding buffer in new frame."
 (use-package ido-ubiquitous
   :config
   (ido-ubiquitous-mode)
-  (setq ido-cr+-max-items 50000)
-  (define-key ido-common-completion-map (kbd "C-n") 'ido-next-match)
-  (define-key ido-common-completion-map (kbd "C-p") 'ido-prev-match) )
+  (setq ido-cr+-max-items 50000) )
+
+(defadvice ido-switch-buffer (before show-ibuffer-before-ido activate)
+  (ibuffer))
 
 ;; [ tags
 
@@ -878,19 +975,19 @@ and display corresponding buffer in new frame."
 
 ;; ]
 
-;; [ Where was I [editing text]?
+;; ;; [ Where was I [editing text]?
 
-(defun mp/store-lot-position ()
-  (when (not (string-prefix-p "*" (buffer-name)))
-    (point-to-register ?z)))
+;; (defun mp/store-lot-position ()
+;;   (when (not (string-prefix-p "*" (buffer-name)))
+;;     (point-to-register ?z)))
 
-(defun mp/goto-lot-position ()
-  (interactive)
-  (jump-to-register ?z))
+;; (defun mp/goto-lot-position ()
+;;   (interactive)
+;;   (jump-to-register ?z))
 
-(add-hook 'post-self-insert-hook 'mp/store-lot-position)
+;; (add-hook 'post-self-insert-hook 'mp/store-lot-position)
 
-(global-set-key (kbd "C-c 1") 'mp/goto-lot-position)
+;; (global-set-key (kbd "C-c 1") 'mp/goto-lot-position)
 
 ;; ]
 
@@ -926,18 +1023,18 @@ and display corresponding buffer in new frame."
 
 (defun mp/occur-quit-window ()
   (interactive)
-  (quit-window)
   (unhighlight-regexp mp/occur-last-regexp)
   (setq mp/occur-marked-regexp nil
         mp/occur-last-regexp nil
-        mp/occur-origin-buffer nil))
+        mp/occur-origin-buffer nil)
+  (quit-window) )
 
 (defun mp/occur-goto-occurence ()
   (interactive)
   (occur-mode-goto-occurrence)
   (unhighlight-regexp mp/occur-last-regexp))
 
-(global-set-key (kbd "C-o") 'occur)
+(global-set-key (kbd "C-o") #'occur)
 
 (defvar mp/occur-marked-regexp nil)
 (defvar mp/occur-last-regexp nil)
@@ -965,17 +1062,33 @@ and display corresponding buffer in new frame."
 
 ;; [ python
 
-(setq jedi:complete-on-dot t)
+
+;; this needs some preperation
+;;   - pip install jedi
+;;   - python-virtualenv
+;;   - (jedi:install-server)
+;;
+;; Also run (jedi:install-server) after updating jedi
+
+(use-package jedi
+  :config
+  (setq jedi:complete-on-dot t) )
 
 (defun mp/python-mode-hook ()
   "Personal python mode hook extension."
+
+  (auto-fill-mode 1)
+  
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
-  (auto-fill-mode 1)
+
   (local-set-key (kbd "C-/") 'comment-dwim)
+
   (jedi:setup)
-  (setq jedi:complete-on-dot t)
-  (linum-mode))
+  
+  (volatile-highlights-mode)
+  
+  (linum-mode) )
 
 (add-hook 'python-mode-hook 'mp/python-mode-hook)
 
@@ -983,20 +1096,7 @@ and display corresponding buffer in new frame."
 (add-to-list 'auto-mode-alist '("\\.py2\\'" . python-mode))
 (add-to-list 'auto-mode-alist '("\\.py3\\'" . python-mode))
 
-(add-to-list 'auto-insert-alist '(".*\\.py[23]?$" . [ "template.py"]))
-
-(defun py-indent-with-region()
-  (interactive "")
-  (when (use-region-p)
-    (let ((beginning (min (region-beginning) (region-end)))
-          (end (max (region-beginning )(region-end))))
-      (progn
-        (goto-char beginning)
-        (while (< (point) end)
-          (progn
-            (indent-for-tab-command)
-            (forward-line 1) ) ) ) ) )
-  (indent-for-tab-command) )
+(add-to-list 'auto-insert-alist '(".*\\.py[23]?$" . [ "template.py" ] ) )
 
 ;; ]
 
@@ -1019,7 +1119,7 @@ and display corresponding buffer in new frame."
 
 ;; ]
 
-;; [ html
+;; [ html editing
 
 (require 'hideshow)
 (require 'sgml-mode)
@@ -1039,7 +1139,25 @@ and display corresponding buffer in new frame."
 (define-key html-mode-map (kbd "C--") 'hs-toggle-hiding)
 
 (defun mp/html-mode-setup ()
+  (interactive)
+  (volatile-highlights-mode)  
   (linum-mode))
+
+(define-auto-insert '("\\.html\\'" . "HTML5 Skeleton")
+  [ '(nil
+    "<!DOCTYPE html>\n"
+    "<html>\n"
+    "<head>\n"
+    "<meta charset=\"UTF-8\">\n"
+    "<title></title>\n"
+    "<script src=\"jquery-3.0.0.min.js\"></script>\n"
+    "<script src=\"raphael.min.js\"></script>\n"
+    "<script src=\"subrx.js\"></script>\n"
+    "</head>\n"
+    "<body>\n"
+    "</body>\n"
+    "</html>\n"
+    ) indent-buffer ] )
 
 (add-hook 'html-mode-hook 'mp/html-mode-setup)
 
@@ -1049,6 +1167,7 @@ and display corresponding buffer in new frame."
 
 (use-package php-mode
   :config
+  (add-hook 'php-mode-hook 'volatile-highlights-mode)
   )
 
 ;; ]
@@ -1063,6 +1182,62 @@ and display corresponding buffer in new frame."
       (when (re-search-forward "_" nil t)
         (replace-match "") ) ) ) )
 
-(add-to-list 'auto-insert-alist '(".*\\.sh$" . [ "template.sh" mp:elisp-post-processor] ))
+(add-to-list 'auto-insert-alist '(".*\\.sh$" . [ "template.sh" mp:elisp-post-processor] ) )
+
+(add-hook 'shell-mode-hook 'volatile-highlights-mode)
+
+;; ]
+
+;; [ gnus
+
+(use-package gnus
+  :config
+
+  (setq gnus-select-method '(nntp "news.gmane.org"))
+
+  ;; (setq gnus-select-method
+  ;;       '(nnimap "gmail"
+  ;;                (nnimap-address "imap.gmail.com")
+  ;;                (nnimap-server-port "imaps")
+  ;;                (nnimap-stream ssl)
+  ;;                (nnimap-authinfo-file "~/.authinfo")))
+
+  (global-set-key (kbd "C-c 3") #'gnus) 
+
+  (setq gnus-summary-same-subject ""
+        gnus-sum-thread-tree-root ""
+        gnus-sum-thread-tree-single-indent ""
+        gnus-sum-thread-tree-leaf-with-other "+-> "
+        gnus-sum-thread-tree-vertical "|"
+        gnus-sum-thread-tree-single-leaf "`-> "
+        message-kill-buffer-on-exit t)
+  
+  (setq gnus-directory "~/.emacs.d/gnus"
+        message-directory "~/.emacs.d/gnus/mail"
+        nnml-directory "~/.emacs.d/gnus/nnml-mail"
+        gnus-article-save-directory "~/.emacs.d/gnus/saved"
+        gnus-kill-files-directory "~/.emacs.d/gnus/scores"
+        gnus-cache-directory "~/.emacs.d/gnus/cache")
+  
+  (setq gnus-visible-headers
+        "^From:\\|^Newsgroups:\\|^Subject:\\|^Date:\\|^Followup-To:\\|^Reply-To:\\|^Summary:\\|^Keywords:\\|^To:\\|^[BGF]?Cc:\\|^Posted-To:\\|^Mail-Copies-To:\\|^Mail-Followup-To:\\|^Apparently-To:\\|^Gnus-Warning:\\|^Resent-From:\\|^X-Sent:\\|^User-Agent:\\|^X-Mailer:\\|^X-Newsreader:")
+
+  (setq gnus-sorted-header-list
+        '("^From:" "^Subject:" "^Summary:" "^Keywords:" "^Newsgroups:" "^Followup-To:" "^To:" "^Cc:" "^Date:" "^User-Agent:" "^X-Mailer:" "^X-Newsreader:"))
+
+  (add-hook 'gnus-group-mode-hook 'gnus-topic-mode)
+
+  (add-hook 'message-mode-hook 'turn-on-auto-fill)
+
+
+  ;; (add-to-list 'gnus-secondary-select-methods
+  ;;       '(nnimap "vodafone"
+  ;;          (nnimap-address "imap.vodafone.de")
+  ;;          (nnimap-server-port 993)
+  ;;          (nnimap-stream ssl)
+  ;;          (nnimap-authinfo-file "~/.authinfo") ) ) )
+  
+  (setq smtpmail-smtp-service 587
+        gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]") )
 
 ;; ]
