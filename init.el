@@ -481,16 +481,24 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; [ calendar
 
+;; TODO: Want diary view entries be called after moving date marker in calendar
+;; TODO: Want tab to jump from one entry to the next (shift-tab to jump back)
+
 (global-set-key (kbd "<f4>") #'(lambda () (interactive)
                                 "Toggle calendar visibility"
                                 (let ((calendar-window
                                        (get-buffer-window "*Calendar*")))
                                   (if calendar-window
                                       (delete-window calendar-window)
-                                    (calendar)))))
+                                    (calendar) ) ) ) )
+
+(defun mp/calendar-mode-hook ()
+  (interactive)
+  (local-set-key (kbd "<RET>") #'diary-view-entries) )
 
 (add-hook 'diary-display-hook 'fancy-diary-display)
 (add-hook 'today-visible-calendar-hook 'calendar-mark-today)
+(add-hook 'calendar-mode-hook 'mp/calendar-mode-hook)
 
 (setq calendar-longitude 6.116951
       calendar-latitude 50.840401
@@ -1239,5 +1247,19 @@ and display corresponding buffer in new frame."
   
   (setq smtpmail-smtp-service 587
         gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]") )
+
+;; ]
+
+;; [ openssl
+
+(defun mp/show-pem-csr ()
+  (interactive)
+  (call-process "openssl" nil "openssl.tmp" t "req" "-text" "-noout" "-in" (buffer-file-name)))
+
+(defun mp/show-pem-cert ()
+  (interactive)
+  (split-window-below)
+  (call-process "openssl" nil "openssl.tmp" t "x509" "-text" "-noout" "-in" (buffer-file-name))
+  (find-file-other-window "openssl.tmp"))
 
 ;; ]
