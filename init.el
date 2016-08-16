@@ -860,6 +860,7 @@ and display corresponding buffer in new frame."
 
 
 (use-package jdee
+  :disabled
   :config
   (setq jdee-server-dir "~/.emacs.d/jdee-server") )
 
@@ -1078,9 +1079,10 @@ and display corresponding buffer in new frame."
 ;;
 ;; Also run (jedi:install-server) after updating jedi
 
-(use-package jedi
-  :config
-  (setq jedi:complete-on-dot t) )
+;; (use-package jedi
+;;   :config
+;;   (setq jedi:complete-on-dot t) 
+;;  (jedi:setup))
 
 (defun mp/python-mode-hook ()
   "Personal python mode hook extension."
@@ -1090,9 +1092,7 @@ and display corresponding buffer in new frame."
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
 
-  (local-set-key (kbd "C-/") 'comment-dwim)
-
-  (jedi:setup)
+  (local-set-key (kbd "M-;") 'comment-dwim)
   
   (volatile-highlights-mode)
   
