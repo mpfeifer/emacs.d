@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 """
 LoggingWebMonitor - a central logging server and monitor.
 

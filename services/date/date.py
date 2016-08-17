@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import logging
 import logging.handlers
 import signal
@@ -92,13 +94,13 @@ def initialize():
         if option == "-h":
             usage();
         elif option == "-p":
-            loghost_port=int(argument)
+            loghost_port=int(arg)
         elif option == "-l":
             loghost_name=argument
         elif option == "-P":
-            dateserver_port=int(argument)
+            dateserver_port=int(arg)
         elif option == "-H":
-            dateserver_host=(argument)            
+            dateserver_host=arg       
 
     signal.signal(signal.SIGINT, signal_int_handler)
     setup_network_logger()

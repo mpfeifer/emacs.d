@@ -11,7 +11,7 @@ from LogServer import LogRecordStreamHandler
 from LogServer import LogRecordSocketReceiver
 
 # Author     : Matthias
-# Description: Python script template
+# Description: Python Remote Log Receiver
 
 class Application:
 
@@ -105,9 +105,3 @@ if __name__ == '__main__':
 # Done
 #
 # # # end of script
-
-
-
-
-if __name__ == '__main__':
-    main()
