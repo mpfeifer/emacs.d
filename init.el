@@ -1270,4 +1270,5 @@ and display corresponding buffer in new frame."
 ;; Make sure that ssh access is granted via public key (not password)
 
 (setq tramp-default-method "ssh")
+
 ;; ]
