@@ -1263,3 +1263,11 @@ and display corresponding buffer in new frame."
   (find-file-other-window "openssl.tmp"))
 
 ;; ]
+
+;; [ tramp
+
+;; Note: use /ssh:hostname.domain:/path/to/file to access remote files.
+;; Make sure that ssh access is granted via public key (not password)
+
+(setq tramp-default-method "ssh")
+;; ]
