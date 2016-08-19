@@ -338,8 +338,7 @@ This way region can be inserted into isearch easily with yank command."
   (setq-local imenu-create-index-function 'imenu-default-create-index-function)
   (setq imenu-generic-expression '((nil "^;; \\[ \\(.*\\)" 1)))
   (volatile-highlights-mode)
-  (ac-emacs-lisp-mode-setup))
-
+  (auto-complete-mode t))
 
 (defun byte-compile-current-buffer ()
   (interactive)
@@ -354,7 +353,6 @@ This way region can be inserted into isearch easily with yank command."
   (electric-pair-mode)
   (setq fill-column 120)
   (linum-mode))
-
 
 (add-hook 'emacs-lisp-mode-hook 'mp/emacs-lisp-mode-hook)
 
@@ -408,23 +406,29 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; [ auto complete
 ;;
-;; TODO - Don't want to trigger auto-complete by key, but don't want
-;;        auto-complete to appear in case of possibel snippet expansion
 ;; TODO - want keybindings in auto-complete for search and scroll
 ;; TODO - want to understand how documentation in auto-complete works
-;; TODO - want to evaluate how well auto-complete is pushed forward or
-;;        if its better to switch to "alternative package"
 ;; TODO - want per mode and per file dictionary files
+;; TODO - want to understand auto-complete-config and how to extend/customize it
+
 (use-package auto-complete
   :config
-  (require 'auto-complete-config)
-  (setq-default ac-sources '(ac-source-abbrev))
-  (add-hook 'emacs-lisp-mode-hook 'ac-emacs-lisp-mode-setup)
-  (setq ac-sources '(ac-source-features
-                     ;; collects 'require-able features from the file sytem
-                     ac-source-functions
-                     ac-source-variables
-                     ac-source-symbols)))
+  ;; this gives default configuration for a couple of modes
+  ;; see end of file auto-complete-config.el
+  ;; for more custom configuration see http://auto-complete.org/doc/manual.html
+  (require 'auto-complete-config) 
+  (define-key ac-mode-map (kbd "C-c C-<SPC>") 'auto-complete) 
+  (setq ac-use-menu-map t)
+  ;; Default settings
+  (define-key ac-menu-map "\C-n" 'ac-next)
+  (define-key ac-menu-map "\C-p" 'ac-previous)
+  (define-key ac-menu-map "\C-s" 'ac-isearch)
+  (add-to-list 'ac-modes 'php-mode) 
+  (add-to-list 'ac-modes 'web-mode) )
+
+;; see https://github.com/xcwen/ac-php
+(use-package ac-php)
+
 ;; ]
 
 ;; [ avy-mode
@@ -449,10 +453,10 @@ This way region can be inserted into isearch easily with yank command."
 
 (define-auto-insert '("\\.js\\'" . "Javscript Skeleton")
   [ '(nil
-    "/*\n * "
-    (file-name-nondirectory (buffer-file-name)) "\n"
-    " * Started on " (format-time-string "%A, %e %B %Y.") \n
-    " */" \n \n \n ) indent-buffer ] )
+      "/*\n * "
+      (file-name-nondirectory (buffer-file-name)) "\n"
+      " * Started on " (format-time-string "%A, %e %B %Y.") \n
+      " */" \n \n \n ) indent-buffer ] )
 
 (use-package js2-mode
   :mode "\\.js\\'"
@@ -485,12 +489,12 @@ This way region can be inserted into isearch easily with yank command."
 ;; TODO: Want tab to jump from one entry to the next (shift-tab to jump back)
 
 (global-set-key (kbd "<f4>") #'(lambda () (interactive)
-                                "Toggle calendar visibility"
-                                (let ((calendar-window
-                                       (get-buffer-window "*Calendar*")))
-                                  (if calendar-window
-                                      (delete-window calendar-window)
-                                    (calendar) ) ) ) )
+                                 "Toggle calendar visibility"
+                                 (let ((calendar-window
+                                        (get-buffer-window "*Calendar*")))
+                                   (if calendar-window
+                                       (delete-window calendar-window)
+                                     (calendar) ) ) ) )
 
 (defun mp/calendar-mode-hook ()
   (interactive)
@@ -742,6 +746,29 @@ This way region can be inserted into isearch easily with yank command."
   (linum-mode))
 
 (add-hook 'c-mode-hook 'mp/c-mode-hook)
+
+;; ]
+
+;; [ web mode
+
+(defun mp/web-mode-extension ()
+  (setq indent-tabs-mode nil)
+  (setq web-mode-markup-indent-offset 4) 
+  (volatile-highlights-mode)  
+  (linum-mode) )
+
+(defun toggle-php-flavor-mode ()
+  (interactive)
+  "Toggle mode between PHP & Web-Mode Helper modes"
+  (cond ((string= mode-name "PHP/l")
+         (web-mode))
+        ((string= mode-name "Web")
+         (php-mode))))
+
+(use-package web-mode
+  :bind ("C-c 6" . toggle-php-flavor-mode)
+  :config
+  (add-hook 'web-mode-hook 'mp/web-mode-extension)  )
 
 ;; ]
 
@@ -1153,19 +1180,19 @@ and display corresponding buffer in new frame."
 
 (define-auto-insert '("\\.html\\'" . "HTML5 Skeleton")
   [ '(nil
-    "<!DOCTYPE html>\n"
-    "<html>\n"
-    "<head>\n"
-    "<meta charset=\"UTF-8\">\n"
-    "<title></title>\n"
-    "<script src=\"jquery-3.0.0.min.js\"></script>\n"
-    "<script src=\"raphael.min.js\"></script>\n"
-    "<script src=\"subrx.js\"></script>\n"
-    "</head>\n"
-    "<body>\n"
-    "</body>\n"
-    "</html>\n"
-    ) indent-buffer ] )
+      "<!DOCTYPE html>\n"
+      "<html>\n"
+      "<head>\n"
+      "<meta charset=\"UTF-8\">\n"
+      "<title></title>\n"
+      "<script src=\"jquery-3.0.0.min.js\"></script>\n"
+      "<script src=\"raphael.min.js\"></script>\n"
+      "<script src=\"subrx.js\"></script>\n"
+      "</head>\n"
+      "<body>\n"
+      "</body>\n"
+      "</html>\n"
+      ) indent-buffer ] )
 
 (add-hook 'html-mode-hook 'mp/html-mode-setup)
 
@@ -1173,10 +1200,18 @@ and display corresponding buffer in new frame."
 
 ;; [ php mode
 
+(defun mp/php-mode-extension ()
+  (interactive)
+  (require 'ac-php)
+  (setq indent-tabs-mode nil)
+  (setq c-basic-offset 4)
+  (setq php-template-compatibility nil) 
+  (setq ac-sources '(ac-source-php) ) )
+
 (use-package php-mode
   :config
   (add-hook 'php-mode-hook 'volatile-highlights-mode)
-  )
+  (add-hook 'php-mode-hook 'mp/php-mode-extension) )
 
 ;; ]
 
@@ -1272,3 +1307,6 @@ and display corresponding buffer in new frame."
 (setq tramp-default-method "ssh")
 
 ;; ]
+
+
+
