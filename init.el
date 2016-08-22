@@ -337,8 +337,7 @@ This way region can be inserted into isearch easily with yank command."
   (setq paragraph-separate "^;; ]$")
   (setq-local imenu-create-index-function 'imenu-default-create-index-function)
   (setq imenu-generic-expression '((nil "^;; \\[ \\(.*\\)" 1)))
-  (volatile-highlights-mode)
-  (auto-complete-mode t))
+  (volatile-highlights-mode))
 
 (defun byte-compile-current-buffer ()
   (interactive)
@@ -411,23 +410,25 @@ This way region can be inserted into isearch easily with yank command."
 ;; TODO - want per mode and per file dictionary files
 ;; TODO - want to understand auto-complete-config and how to extend/customize it
 
+;; see https://github.com/xcwen/ac-php
+(use-package ac-php)
+
 (use-package auto-complete
   :config
   ;; this gives default configuration for a couple of modes
   ;; see end of file auto-complete-config.el
   ;; for more custom configuration see http://auto-complete.org/doc/manual.html
   (require 'auto-complete-config) 
+  (ac-config-default)
   (define-key ac-mode-map (kbd "C-c C-<SPC>") 'auto-complete) 
   (setq ac-use-menu-map t)
   ;; Default settings
+  (require 'ac-php)
   (define-key ac-menu-map "\C-n" 'ac-next)
   (define-key ac-menu-map "\C-p" 'ac-previous)
   (define-key ac-menu-map "\C-s" 'ac-isearch)
   (add-to-list 'ac-modes 'php-mode) 
   (add-to-list 'ac-modes 'web-mode) )
-
-;; see https://github.com/xcwen/ac-php
-(use-package ac-php)
 
 ;; ]
 
@@ -699,7 +700,7 @@ This way region can be inserted into isearch easily with yank command."
 (defun mp/eshell-mode-hook ()
   "Personal eshell mode hook."
   (interactive)
-  (auto-complete-mode)
+  (auto-complete-mode t)
   (setq ac-sources '(ac-source-filename ac-source-files-in-current-dir))
   (local-set-key (kbd "C-c C-c") 'mp/eshell)
   )
@@ -808,14 +809,8 @@ This way region can be inserted into isearch easily with yank command."
 (add-hook 'css-mode-hook' mp/css-mode-hook)
 
 (add-hook 'html-mode-hook '(lambda ()
-                             "Enable html auto-complete for html-mode."
-                             ;; (require 'ac-html)
-                             ;; (setq ac-sources '(ac-source-html-attribute-value
-                             ;; 'ac-source-html-tag
-                             ;; 'ac-source-html-attribute))
                              (linum-mode)
-                             (volatile-highlights-mode)                             
-                             (auto-complete-mode)))
+                             (volatile-highlights-mode) ) )
 
 ;; ]
 
@@ -914,7 +909,6 @@ and display corresponding buffer in new frame."
   (auto-fill-mode 1)
   (volatile-highlights-mode)
   (linum-mode)
-  (auto-complete-mode)
   (setq-local comment-multi-line t) )
 
 (add-hook 'java-mode-hook 'mp:java-mode-hook)
@@ -1000,9 +994,6 @@ and display corresponding buffer in new frame."
   :config
   (ido-ubiquitous-mode)
   (setq ido-cr+-max-items 50000) )
-
-(defadvice ido-switch-buffer (before show-ibuffer-before-ido activate)
-  (ibuffer))
 
 ;; [ tags
 
