@@ -942,14 +942,12 @@ and display corresponding buffer in new frame."
 
 (add-hook 'nxml-mode-hook 'mp/nxml-mode-setup)
 
-;; ]
+(add-to-list 'auto-insert-alist '("^pom.xml$" . [ "pom.xml" ]))
 
-;; [ maven integration
+(add-to-list 'auto-mode-alist '(".*\\.xul\\'" . xml-mode))
 
 (defun mp/maven-integration ()
   (interactive)
-  (eval-after-load 'autoinsert  
-    (add-to-list 'auto-insert-alist '("pom.xml$" . [ "pom.xml" ])))
   (when (string= "pom.xml" (buffer-name))
     (progn
       (setq compile-command "mvn clean install")
