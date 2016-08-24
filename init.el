@@ -195,15 +195,9 @@ This way region can be inserted into isearch easily with yank command."
 ;; do not show startup screen
 (setq inhibit-startup-screen t)
 
-;; (require 'hl-line)
-;; (global-hl-line-mode nil)
-
 (use-package material-theme
   :config
-  (load-theme 'material)
-  (set-face-foreground 'hl-line "grey")
-  (set-face-background 'hl-line "brown")
-  )
+  (load-theme 'material) )
 
 (use-package volatile-highlights)
 
@@ -553,26 +547,24 @@ This way region can be inserted into isearch easily with yank command."
 
 (global-set-key (kbd "C-c c") #'org-capture)
 
-(use-package aggressive-fill-paragraph)
-
-;; (use-package org-bullets)
+(use-package aggressive-fill-paragraph
+  :init
+  (add-hook 'org-mode-hook 'aggressive-fill-paragraph-mode) )
 
 (defun mp/org-mode-hook ()
   "org mode hook extender [mp]"
 
   (require 'ob-plantuml)
+  (add-to-list 'org-babel-load-languages '(plantuml . t))
+
+  (add-to-list 'org-babel-load-languages '(python . t))
   (require 'ob-python)
 
   (auto-fill-mode)
+
   (volatile-highlights-mode)  
 
   (local-set-key (kbd "<return>") 'org-return-indent)
-
-  (cond
-   ((eq system-type 'gnu/linux)
-    (setq dot.exe "/usr/bin/dot"))
-   ((eq system-type 'windows-nt)
-    (setq dot.exe "C:/graphviz/bin/dot.exe")))
 
   (setq org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
         org-ellipsis "…"
@@ -598,14 +590,9 @@ This way region can be inserted into isearch easily with yank command."
                 ("h" "Habit" entry (file "~/org/gtd.org")
                  "** NEXT %?\n%U\n%a\nSCHEDULED: %(format-time-string \"%<<%Y-%m-%d %a .+1d/3d>>\")\n:PROPERTIES:\n:STYLE: habit\n:REPEAT_TO_STATE: NEXT\n:END:\n"))))
 
-  (setenv "GRAPHVIZ_DOT" dot.exe)
+  (setenv "GRAPHVIZ_DOT" "dot")
 
-  (add-to-list 'org-babel-load-languages '(plantuml . t))
-  (add-to-list 'org-babel-load-languages '(python . t))
-
-  (org-babel-do-load-languages 'dont 'care)
-
-  (add-hook 'org-mode-hook 'aggressive-fill-paragraph-mode) )
+  (org-babel-do-load-languages 'dont 'care) )
 
 (add-hook 'org-mode-hook 'mp/org-mode-hook)
 
