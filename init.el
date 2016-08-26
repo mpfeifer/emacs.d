@@ -31,21 +31,19 @@
 ;; do some initialization stuff when init.el was moved onto a new host
 
 (let* ((emacs-dir (expand-file-name "~/.emacs.d/"))
-       (various-dir (concat emacs-dir "various/"))
        (autosave-dir (concat emacs-dir "auto-save/"))
        (boot nil))
   (progn
-    (dolist (dir (list various-dir autosave-dir))
-      (when (not (file-exists-p dir))
-        (progn
-          (setq boot t)
-          (message (concat "[emacs boot] Creating directory " dir))
-          (make-directory dir))))
-    (when boot
-      (let ((package-archives '(("melpa" . "http://melpa.org/packages/")))
-            (package-enable-at-startup nil)
-            (package-user-dir "~/.emacs.d/packages/"))
-        (package-refresh-contents) ) ) ) )
+    (when (not (file-exists-p autosave-dir))
+      (progn
+        (setq boot t)
+        (message (concat "[emacs boot] Creating directory " dir))
+        (make-directory dir))))
+  (when boot
+    (let ((package-archives '(("melpa" . "http://melpa.org/packages/")))
+          (package-enable-at-startup nil)
+          (package-user-dir "~/.emacs.d/packages/"))
+      (package-refresh-contents))))
 
 ;; ]
 
@@ -145,6 +143,10 @@
 ;; ]
 
 ;; [ server mode
+
+(setq server-use-tcp nil
+      server-auth-dir "~/.emacs.d/"
+      server-port 39246)
 
 (server-start)
 
@@ -357,14 +359,15 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; [ save history
 
-(savehist-mode 1)
-(setq savehist-file "~/.emacs.d/various/savehist"
+(setq savehist-file "~/.emacs.d/savehist"
       history-length t
       history-delete-duplicates t
       savehist-save-minibuffer-history 1
       savehist-additional-variables '(kill-ring
                                       search-ring
                                       regexp-search-ring))
+
+(savehist-mode 1)
 
 ;; ]
 
@@ -945,6 +948,7 @@ and display corresponding buffer in new frame."
 (add-to-list 'auto-insert-alist '("^pom.xml$" . [ "pom.xml" ]))
 
 (add-to-list 'auto-mode-alist '(".*\\.xul\\'" . xml-mode))
+(add-to-list 'auto-mode-alist '(".*\\.rdf\\'" . xml-mode))
 
 (defun mp/maven-integration ()
   (interactive)
