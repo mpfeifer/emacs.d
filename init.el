@@ -138,7 +138,12 @@
 
 ;; [ the mark
 
+;; use C-u C-SPC to pop mark positions
+
 (setq set-mark-command-repeat-pop t)
+
+;; TODO want some nice stuff here that hooks into
+;; activate-mark-hook and deactivate-mark-hook
 
 ;; ]
 
@@ -168,6 +173,30 @@
 This way region can be inserted into isearch easily with yank command."
   (when (region-active-p)
     (kill-ring-save (region-beginning) (region-end))))
+
+(defadvice isearch-forward (before kill-ring-save-before-search activate)
+  "Save region (if active) to \"kill-ring\" before starting isearch.
+This way region can be inserted into isearch easily with yank command."
+  (when (region-active-p)
+    (kill-ring-save (region-beginning) (region-end))))
+
+;; shamelessly stolen from http://goo.gl/JFRl1k
+(defadvice isearch-update (before my-isearch-update activate)
+  (sit-for 0)
+  (if (and
+       ;; not the scrolling command
+       (not (eq this-command 'isearch-other-control-char))
+       ;; not the empty string
+       (> (length isearch-string) 0)
+       ;; not the first key (to lazy highlight all matches w/o recenter)
+       (> (length isearch-cmds) 2)
+       ;; the point in within the given window boundaries
+       (let ((line (count-screen-lines (point) (window-start))))
+         (or (> line (* (/ (window-height) 4) 3))
+             (< line (* (/ (window-height) 9) 1)))))
+      (let ((recenter-position 0.3))
+        (recenter '(4)))))
+
 
 ;; ]
 
@@ -291,6 +320,7 @@ This way region can be inserted into isearch easily with yank command."
                           (name . "^\\*check style\\*")))
                  ("Customization" (name . "^\\*Customize.*"))
                  ("Nevelex Demo" (filename . "^/home/matthias/java/projects/nevelex/.*"))
+                 ("Mailguard" (filename . ".*nightly_build/.*"))
                  ("Organizer" (mode . org-mode))
                  ("OpenGL-Lab" (filename . "^/home/matthias/opengl/lab/.*"))
                  ("OpenGL-Maze" (filename . "^/home/matthias/opengl/openmaze/.*"))
@@ -558,10 +588,22 @@ This way region can be inserted into isearch easily with yank command."
   "org mode hook extender [mp]"
 
   (require 'ob-plantuml)
-  (add-to-list 'org-babel-load-languages '(plantuml . t))
-
-  (add-to-list 'org-babel-load-languages '(python . t))
   (require 'ob-python)
+
+  ;; babel
+
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((plantuml . t)
+     (python . t)
+     (C . t)
+     (emacs-lisp t)
+     (awk . t)
+     (dot . t)
+     (gnuplot . t)
+     (java . t)
+     (perl . t)
+     (sh . t)))
 
   (auto-fill-mode)
 
@@ -593,9 +635,7 @@ This way region can be inserted into isearch easily with yank command."
                 ("h" "Habit" entry (file "~/org/gtd.org")
                  "** NEXT %?\n%U\n%a\nSCHEDULED: %(format-time-string \"%<<%Y-%m-%d %a .+1d/3d>>\")\n:PROPERTIES:\n:STYLE: habit\n:REPEAT_TO_STATE: NEXT\n:END:\n"))))
 
-  (setenv "GRAPHVIZ_DOT" "dot")
-
-  (org-babel-do-load-languages 'dont 'care) )
+  (setenv "GRAPHVIZ_DOT" "dot") )
 
 (add-hook 'org-mode-hook 'mp/org-mode-hook)
 
@@ -947,8 +987,11 @@ and display corresponding buffer in new frame."
 
 (add-to-list 'auto-insert-alist '("^pom.xml$" . [ "pom.xml" ]))
 
+(setq xml-modes (list ".*\\.xul\\" ".*\\..rdf\\" ".*\\.xsd\\"))
+
 (add-to-list 'auto-mode-alist '(".*\\.xul\\'" . xml-mode))
 (add-to-list 'auto-mode-alist '(".*\\.rdf\\'" . xml-mode))
+(add-to-list 'auto-mode-alist '(".*\\.xsd\\'" . xml-mode))
 
 (defun mp/maven-integration ()
   (interactive)
@@ -1211,60 +1254,6 @@ and display corresponding buffer in new frame."
 
 ;; ]
 
-;; [ gnus
-
-(use-package gnus
-  :config
-
-  (setq gnus-select-method '(nntp "news.gmane.org"))
-
-  ;; (setq gnus-select-method
-  ;;       '(nnimap "gmail"
-  ;;                (nnimap-address "imap.gmail.com")
-  ;;                (nnimap-server-port "imaps")
-  ;;                (nnimap-stream ssl)
-  ;;                (nnimap-authinfo-file "~/.authinfo")))
-
-  (global-set-key (kbd "C-c 3") #'gnus) 
-
-  (setq gnus-summary-same-subject ""
-        gnus-sum-thread-tree-root ""
-        gnus-sum-thread-tree-single-indent ""
-        gnus-sum-thread-tree-leaf-with-other "+-> "
-        gnus-sum-thread-tree-vertical "|"
-        gnus-sum-thread-tree-single-leaf "`-> "
-        message-kill-buffer-on-exit t)
-  
-  (setq gnus-directory "~/.emacs.d/gnus"
-        message-directory "~/.emacs.d/gnus/mail"
-        nnml-directory "~/.emacs.d/gnus/nnml-mail"
-        gnus-article-save-directory "~/.emacs.d/gnus/saved"
-        gnus-kill-files-directory "~/.emacs.d/gnus/scores"
-        gnus-cache-directory "~/.emacs.d/gnus/cache")
-  
-  (setq gnus-visible-headers
-        "^From:\\|^Newsgroups:\\|^Subject:\\|^Date:\\|^Followup-To:\\|^Reply-To:\\|^Summary:\\|^Keywords:\\|^To:\\|^[BGF]?Cc:\\|^Posted-To:\\|^Mail-Copies-To:\\|^Mail-Followup-To:\\|^Apparently-To:\\|^Gnus-Warning:\\|^Resent-From:\\|^X-Sent:\\|^User-Agent:\\|^X-Mailer:\\|^X-Newsreader:")
-
-  (setq gnus-sorted-header-list
-        '("^From:" "^Subject:" "^Summary:" "^Keywords:" "^Newsgroups:" "^Followup-To:" "^To:" "^Cc:" "^Date:" "^User-Agent:" "^X-Mailer:" "^X-Newsreader:"))
-
-  (add-hook 'gnus-group-mode-hook 'gnus-topic-mode)
-
-  (add-hook 'message-mode-hook 'turn-on-auto-fill)
-
-
-  ;; (add-to-list 'gnus-secondary-select-methods
-  ;;       '(nnimap "vodafone"
-  ;;          (nnimap-address "imap.vodafone.de")
-  ;;          (nnimap-server-port 993)
-  ;;          (nnimap-stream ssl)
-  ;;          (nnimap-authinfo-file "~/.authinfo") ) ) )
-  
-  (setq smtpmail-smtp-service 587
-        gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]") )
-
-;; ]
-
 ;; [ openssl
 
 (defun mp/show-pem-csr ()
@@ -1282,11 +1271,15 @@ and display corresponding buffer in new frame."
 ;; [ tramp
 
 ;; Note: use /ssh:hostname.domain:/path/to/file to access remote files.
-;; Make sure that ssh access is granted via public key (not password)
+;; For ease of use: Make sure that ssh access is granted via public key
 
 (setq tramp-default-method "ssh")
 
 ;; ]
 
+;; [ makefiles
 
+(add-to-list 'auto-insert-alist '("Makefile" . [ "Makefile" ] ))
+
+;; ]
 
