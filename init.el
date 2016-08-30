@@ -819,7 +819,7 @@ This way region can be inserted into isearch easily with yank command."
       (replace-match name))
     (goto-char (point-min))
     (when (re-search-forward "%CSSFILE%" nil t)
-      (replace-match (replace-regexp-in-string (regexp-quote ".html") ".css" (buffer-name) 'literal)))))
+      (replace-match (replace-regexp-in-string (regexp-quote ".html") ".css" (buffer-name) 'fixedcase 'literal) 'fixedcase))))
 
 (defun mp/start-web-project (name)
   "Create a new web project with NAME.  Create initial html, js, css file."
@@ -838,6 +838,7 @@ This way region can be inserted into isearch easily with yank command."
     (find-file (concat projectroot "/" name ".css"))
     (save-buffer)
     (other-window -1)
+    (copy-file "~/.emacs.d/templates/jquery-3.0.0.js" (concat projectroot "/"))
     (switch-to-buffer (concat name ".html"))
     (mp/html-project-post-processing name)))
 
@@ -1247,7 +1248,7 @@ and display corresponding buffer in new frame."
       "<head>\n"
       "<meta charset=\"UTF-8\">\n"
       "<title>%TITLE%</title>\n"
-      "<script src=\"jquery-3.0.0.min.js\"></script>\n"
+      "<script src=\"jquery-3.0.0.js\"></script>\n"
       "<script src=\"subrx.js\"></script>\n"
       "<link rel=\"stylesheet\" type=\"text.css\" href=\"%CSSFILE%\">\n"
       "</head>\n"
