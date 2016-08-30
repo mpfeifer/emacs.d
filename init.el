@@ -376,8 +376,7 @@ This way region can be inserted into isearch easily with yank command."
   (local-set-key (kbd "C-/") 'comment-dwim)
   (local-set-key (kbd "C-c C-c") 'byte-compile-current-buffer)
   (electric-pair-mode)
-  (setq fill-column 120)
-  (linum-mode))
+  (setq fill-column 120) )
 
 (add-hook 'emacs-lisp-mode-hook 'mp/emacs-lisp-mode-hook)
 
@@ -708,7 +707,6 @@ This way region can be inserted into isearch easily with yank command."
 
 (add-hook 'cperl-mode-hook '(lambda ()
                               (interactive)
-                              (linum-mode)
                               (volatile-highlights-mode)                              
                               (local-set-key (kbd "C-h f") 'cperl-perldoc-at-point)))
 
@@ -773,8 +771,8 @@ This way region can be inserted into isearch easily with yank command."
 (defun mp/c-mode-hook ()
   "Personal c mode hook extender."
   (local-set-key (kbd "C-c C-c") 'compile)
-  (volatile-highlights-mode)  
-  (linum-mode))
+  (volatile-highlights-mode))
+
 
 (add-hook 'c-mode-hook 'mp/c-mode-hook)
 
@@ -785,8 +783,8 @@ This way region can be inserted into isearch easily with yank command."
 (defun mp/web-mode-extension ()
   (setq indent-tabs-mode nil)
   (setq web-mode-markup-indent-offset 4) 
-  (volatile-highlights-mode)  
-  (linum-mode) )
+  (volatile-highlights-mode) )
+
 
 (defun toggle-php-flavor-mode ()
   (interactive)
@@ -813,6 +811,16 @@ This way region can be inserted into isearch easily with yank command."
 
 (defcustom web-project-root "~/public_html/" "New web projects are stored in this directory." :group 'web)
 
+(defun mp/html-project-post-processing (name)
+  "This method looks for strings %CSSFILE% and %TITLE% and replaces them with some meaningful values ."
+  (save-excursion
+    (goto-char (point-min))
+    (when (re-search-forward "%TITLE%" nil t)
+      (replace-match name))
+    (goto-char (point-min))
+    (when (re-search-forward "%CSSFILE%" nil t)
+      (replace-match (replace-regexp-in-string (regexp-quote ".html") ".css" (buffer-name) 'literal)))))
+
 (defun mp/start-web-project (name)
   "Create a new web project with NAME.  Create initial html, js, css file."
   (interactive "MProjectname? ")
@@ -822,24 +830,28 @@ This way region can be inserted into isearch easily with yank command."
     (select-frame (make-frame))
     (split-window-vertically)
     (find-file (concat projectroot "/" name ".html"))
+    (save-buffer)
     (other-window 1)
     (find-file (concat projectroot "/" name ".js"))
+    (save-buffer)
     (split-window-horizontally)
     (find-file (concat projectroot "/" name ".css"))
-    (other-window -1)))
+    (save-buffer)
+    (other-window -1)
+    (switch-to-buffer (concat name ".html"))
+    (mp/html-project-post-processing name)))
 
 (global-set-key (kbd "C-c 4") #'mp/start-web-project)
 
 (defun mp/css-mode-hook ()
   "Personal css mode hook extender."
   (setq ac-sources '(ac-source-css-property))
-  (volatile-highlights-mode)  
-  (linum-mode))
+  (volatile-highlights-mode) )
+
 
 (add-hook 'css-mode-hook' mp/css-mode-hook)
 
 (add-hook 'html-mode-hook '(lambda ()
-                             (linum-mode)
                              (volatile-highlights-mode) ) )
 
 ;; ]
@@ -969,7 +981,6 @@ and display corresponding buffer in new frame."
   (setq-local comment-auto-fill-only-comments t)
   (auto-fill-mode 1)
   (volatile-highlights-mode)
-  (linum-mode)
   (setq-local comment-multi-line t) )
 
 (add-hook 'java-mode-hook 'mp:java-mode-hook)
@@ -1011,8 +1022,8 @@ and display corresponding buffer in new frame."
 (define-key nxml-mode-map (kbd "C--") 'hs-toggle-hiding)
 
 (defun mp/nxml-mode-setup ()
-  (volatile-highlights-mode)  
-  (linum-mode))
+  (volatile-highlights-mode))
+
 
 (add-hook 'nxml-mode-hook 'mp/nxml-mode-setup)
 
@@ -1175,9 +1186,7 @@ and display corresponding buffer in new frame."
 
   (local-set-key (kbd "M-;") 'comment-dwim)
   
-  (volatile-highlights-mode)
-  
-  (linum-mode) )
+  (volatile-highlights-mode) )
 
 (add-hook 'python-mode-hook 'mp/python-mode-hook)
 
@@ -1229,8 +1238,7 @@ and display corresponding buffer in new frame."
 
 (defun mp/html-mode-setup ()
   (interactive)
-  (volatile-highlights-mode)  
-  (linum-mode))
+  (volatile-highlights-mode) )
 
 (define-auto-insert '("\\.html\\'" . "HTML5 Skeleton")
   [ '(nil
@@ -1238,10 +1246,10 @@ and display corresponding buffer in new frame."
       "<html>\n"
       "<head>\n"
       "<meta charset=\"UTF-8\">\n"
-      "<title></title>\n"
+      "<title>%TITLE%</title>\n"
       "<script src=\"jquery-3.0.0.min.js\"></script>\n"
-      "<script src=\"raphael.min.js\"></script>\n"
       "<script src=\"subrx.js\"></script>\n"
+      "<link rel=\"stylesheet\" type=\"text.css\" href=\"%CSSFILE%\">\n"
       "</head>\n"
       "<body>\n"
       "</body>\n"
