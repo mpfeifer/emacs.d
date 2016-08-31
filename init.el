@@ -671,6 +671,12 @@ This way region can be inserted into isearch easily with yank command."
     :cwd (concat mp:prodigy-service-root "date/"))
 
   (prodigy-define-service
+    :name "Network Log-Receiver"
+    :command "/usr/bin/python2"
+    :args '("logwebmon.py")
+    :cwd (concat mp:prodigy-service-root "loghost/"))
+
+  (prodigy-define-service
     :name "Echo Server (python)"
     :command mp:prodigy-python-interpreter
     :args '("echo.py" "14001")
@@ -1007,7 +1013,6 @@ and display corresponding buffer in new frame."
 
 (require 'hideshow)
 (require 'sgml-mode)
-(require 'nxml-mode)
 
 (add-to-list 'hs-special-modes-alist
              '(nxml-mode
