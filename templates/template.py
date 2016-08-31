@@ -18,13 +18,13 @@ class Application:
     def __init__(self):
         self.loghost_port  = logging.handlers.DEFAULT_TCP_LOGGING_PORT
         self.loghost_name  = 'localhost'
-        self.logdomain     = 'mp.py.template'
+        self.logdomain     = 'template.py'
         self.usage_string  = 'Usage: this-script.py [inifile] -h -p <numeric> -l <hostname> -r\r\n\r\n'
         self.usage_string+=' [inifile]  if inifile is set it is read before commandline switches\r\n'
         self.usage_string+='    -h      print usage string\r\n'
-        self.usage_string+='    -l      set remote logging host\r\n'
+        self.usage_string+='    -l      set remote logging host (this enables network logging)\r\n'
         self.usage_string+='    -p      set remote logging port\r\n'
-        self.usage_string+='    -r      enable remote logging\r\n'
+        self.usage_string+='    -r      enabled remote logging'
         self.usage_string+='\r\nIf remote logging is enabled in inifile it cannot be disabled via commandline.\r\n'
         self.usage_string+='{} version {}'.format(Application.name, Application.version)
         self.inifile       = None
@@ -62,7 +62,7 @@ class Application:
 
         if len(sys.argv)> 1 and not sys.argv[1].startswith('-'):
             self.inifile_name=sys.argv[1]
-            first_parameter_index=2
+            first_getopt_index=2
             self.log.info('will read inifile ' + self.inifile_name)
 
         if os.path.isfile(self.inifile_name):
@@ -83,16 +83,22 @@ class Application:
         output = None
         verbose = False
 
+        enable_network_logging = False
+
         for option, arg in opts:
             if option == '-h':
                 self.usage();
             elif option == '-p':
-                self.loghost_port=int(argument)
+                self.loghost_port=int(arg)
+                enable_network_logging = True
             elif option == '-l':
                 self.loghost_name=argument
+                enable_network_logging = True
             elif option == '-r':
-                if not self.remote_logger_enabled:
-                    self.setup_network_logger()
+                enable_network_logging = True
+
+        if enable_network_logging:
+            self.setup_network_logger()
 
     def usage(self):
         print(self.usage_string)
@@ -113,12 +119,9 @@ class Application:
         self.network_logging_enabled=1
 
     def run(self):
-        time.sleep(10)
+        time.sleep(10) # <-- Application logic goes here
 
 def main():
-    #
-    # This is where all the magic happens...
-    #
     app = Application()
     app.log.info('{} {} will be instantiated'.format(app.name, app.version))
     app.run()
