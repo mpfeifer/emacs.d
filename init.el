@@ -228,9 +228,24 @@ This way region can be inserted into isearch easily with yank command."
 
 (use-package material-theme
   :config
-  (load-theme 'material) )
+  (load-theme 'material-light) )
 
-(use-package volatile-highlights)
+(use-package volatile-highlights 
+  :init
+  (add-hook 'emacs-lisp-mode 'volatile-highlights-mode)
+  (add-hook 'js2-mode-hook 'volatile-highlights-mode)
+  (add-hook 'cperl-mode-hook 'volatile-highlights-mode)
+  (add-hook 'c-mode-hook 'volatile-highlights-mode)
+  (add-hook 'web-mode-hook 'volatile-highlights-mode)
+  (add-hook 'css-mode-hook 'volatile-highlights-mode)
+  (add-hook 'html-mode-hook 'volatile-highlights-mode)
+  (add-hook 'java-mode-hook 'volatile-highlights-mode)
+  (add-hook 'nxml-mode-hook 'volatile-highlights-mode)
+  (add-hook 'python-mode-hook 'volatile-highlights-mode)
+  (add-hook 'php-mode-hook 'volatile-highlights-mode)
+  (add-hook 'shell-mode-hook 'volatile-highlights-mode) 
+  )
+
 
 (show-paren-mode 1)
 
@@ -363,7 +378,7 @@ This way region can be inserted into isearch easily with yank command."
   (setq paragraph-separate "^;; ]$")
   (setq-local imenu-create-index-function 'imenu-default-create-index-function)
   (setq imenu-generic-expression '((nil "^;; \\[ \\(.*\\)" 1)))
-  (volatile-highlights-mode))
+  )
 
 (defun byte-compile-current-buffer ()
   (interactive)
@@ -475,7 +490,6 @@ This way region can be inserted into isearch easily with yank command."
   (setq-local comment-auto-fill-only-comments t)
   (auto-fill-mode 1)
   (setq-local comment-multi-line t)
-  (volatile-highlights-mode)
   (local-set-key (kbd "RET") 'c-indent-new-comment-line) )
 
 (define-auto-insert '("\\.js\\'" . "Javscript Skeleton")
@@ -606,8 +620,6 @@ This way region can be inserted into isearch easily with yank command."
 
   (auto-fill-mode)
 
-  (volatile-highlights-mode)  
-
   (local-set-key (kbd "<return>") 'org-return-indent)
 
   (setq org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
@@ -713,7 +725,6 @@ This way region can be inserted into isearch easily with yank command."
 
 (add-hook 'cperl-mode-hook '(lambda ()
                               (interactive)
-                              (volatile-highlights-mode)                              
                               (local-set-key (kbd "C-h f") 'cperl-perldoc-at-point)))
 
 ;; ]
@@ -776,8 +787,7 @@ This way region can be inserted into isearch easily with yank command."
 
 (defun mp/c-mode-hook ()
   "Personal c mode hook extender."
-  (local-set-key (kbd "C-c C-c") 'compile)
-  (volatile-highlights-mode))
+  (local-set-key (kbd "C-c C-c") 'compile))
 
 
 (add-hook 'c-mode-hook 'mp/c-mode-hook)
@@ -788,8 +798,7 @@ This way region can be inserted into isearch easily with yank command."
 
 (defun mp/web-mode-extension ()
   (setq indent-tabs-mode nil)
-  (setq web-mode-markup-indent-offset 4) 
-  (volatile-highlights-mode) )
+  (setq web-mode-markup-indent-offset 4))
 
 
 (defun toggle-php-flavor-mode ()
@@ -852,14 +861,10 @@ This way region can be inserted into isearch easily with yank command."
 
 (defun mp/css-mode-hook ()
   "Personal css mode hook extender."
-  (setq ac-sources '(ac-source-css-property))
-  (volatile-highlights-mode) )
+  (setq ac-sources '(ac-source-css-property)))
 
 
 (add-hook 'css-mode-hook' mp/css-mode-hook)
-
-(add-hook 'html-mode-hook '(lambda ()
-                             (volatile-highlights-mode) ) )
 
 ;; ]
 
@@ -987,7 +992,6 @@ and display corresponding buffer in new frame."
 (defun mp:java-mode-hook()
   (setq-local comment-auto-fill-only-comments t)
   (auto-fill-mode 1)
-  (volatile-highlights-mode)
   (setq-local comment-multi-line t) )
 
 (add-hook 'java-mode-hook 'mp:java-mode-hook)
@@ -1013,6 +1017,7 @@ and display corresponding buffer in new frame."
 
 (require 'hideshow)
 (require 'sgml-mode)
+(require 'nxml-mode)
 
 (add-to-list 'hs-special-modes-alist
              '(nxml-mode
@@ -1027,8 +1032,7 @@ and display corresponding buffer in new frame."
 ;; optional key bindings, easier than hs defaults
 (define-key nxml-mode-map (kbd "C--") 'hs-toggle-hiding)
 
-(defun mp/nxml-mode-setup ()
-  (volatile-highlights-mode))
+(defun mp/nxml-mode-setup ())
 
 
 (add-hook 'nxml-mode-hook 'mp/nxml-mode-setup)
@@ -1190,9 +1194,7 @@ and display corresponding buffer in new frame."
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
 
-  (local-set-key (kbd "M-;") 'comment-dwim)
-  
-  (volatile-highlights-mode) )
+  (local-set-key (kbd "M-;") 'comment-dwim))
 
 (add-hook 'python-mode-hook 'mp/python-mode-hook)
 
@@ -1243,8 +1245,7 @@ and display corresponding buffer in new frame."
 (define-key html-mode-map (kbd "C--") 'hs-toggle-hiding)
 
 (defun mp/html-mode-setup ()
-  (interactive)
-  (volatile-highlights-mode) )
+  (interactive))
 
 (define-auto-insert '("\\.html\\'" . "HTML5 Skeleton")
   [ '(nil
@@ -1278,7 +1279,6 @@ and display corresponding buffer in new frame."
 
 (use-package php-mode
   :config
-  (add-hook 'php-mode-hook 'volatile-highlights-mode)
   (add-hook 'php-mode-hook 'mp/php-mode-extension) )
 
 ;; ]
@@ -1294,8 +1294,6 @@ and display corresponding buffer in new frame."
         (replace-match "") ) ) ) )
 
 (add-to-list 'auto-insert-alist '(".*\\.sh$" . [ "template.sh" mp:elisp-post-processor] ) )
-
-(add-hook 'shell-mode-hook 'volatile-highlights-mode)
 
 ;; ]
 
