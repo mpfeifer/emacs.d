@@ -134,6 +134,21 @@
 (add-to-list 'auto-mode-alist '("\.exe\\'" . hexl-mode))
 (add-to-list 'auto-mode-alist '("\.so\\'" . hexl-mode))
 
+;; TODO: advicing has changed! This should be around to evaluate mouse-set-point parameter and wether region is set at
+;; all. 
+
+;; (setq mp/unhighlight-regexp nil)
+
+;; (defadvice mouse-set-point (after mouse-highlight-selection activate)
+;;   (progn
+;;     (unhighlight-regexp t)
+;;     (setq mp/unhighlight-regexp t)
+;;     (highlight-regexp 
+;;      (regexp-quote 
+;;       (buffer-substring-no-properties (region-beginning) (region-end))))))
+
+;; (add-hook 'deactivate-mark-hook '(lambda () (when mp/unhighlight-regexp (unhighlight-regexp t))))
+
 ;; ]
 
 ;; [ the mark
@@ -311,10 +326,10 @@ This way region can be inserted into isearch easily with yank command."
                                 (name 16 -1)
                                 " " filename)))
 
+  ;; use M-n, M-p to navigate between groups
   (setq ibuffer-saved-filter-groups
         (quote (("modes+projects"
                  ("Arithmetik Chef" (filename . "^/home/matthias/public_html/Arithmetik-Chef/.*"))
-                 ("Dired" (mode . dired-mode))
                  ("Emacs" (or
                            (name . "^\\*scratch\\*$")
                            (name . "^\\*Messages\\*$")
@@ -335,15 +350,16 @@ This way region can be inserted into isearch easily with yank command."
                           (name . "^\\*check style\\*")))
                  ("Customization" (name . "^\\*Customize.*"))
                  ("Nevelex Demo" (filename . "^/home/matthias/java/projects/nevelex/.*"))
-                 ("Mailguard" (filename . ".*nightly_build/.*"))
+                 ("Mailguard" (filename . "^.*nightly_build/.*"))
                  ("Organizer" (mode . org-mode))
                  ("OpenGL-Lab" (filename . "^/home/matthias/opengl/lab/.*"))
                  ("OpenGL-Maze" (filename . "^/home/matthias/opengl/openmaze/.*"))
-                 ("Perl" (mode . cperl-mode))
-                 ("Python" (mode . python-mode))
                  ("Pocketmine" (filename . "^.*Minecraft/Pocketmine/git/.*"))
                  ("Snake.js" (filename . "^/home/matthias/public_html/snake/.*"))
-                 ("Timelapse" (filename . "^/home/matthias/timelapse/.*"))))))
+                 ("Timelapse" (filename . "^/home/matthias/timelapse/.*"))
+                 ("Dired" (mode . dired-mode)))
+                 ("Perl" (mode . cperl-mode))
+                 ("Python" (mode . python-mode)))))
 
   (add-hook 'ibuffer-mode-hook
             '(lambda ()
@@ -369,25 +385,24 @@ This way region can be inserted into isearch easily with yank command."
   (local-set-key (kbd "C-S-n") 'forward-paragraph)
   (local-set-key (kbd "C-S-p") 'backward-paragraph)
   (local-set-key (kbd "C-#") 'imenu)
-  (make-local-variable 'paragraph-start)
-  (setq paragraph-start "^;; \\[")
-  (make-local-variable 'paragraph-separate)
-  (setq-local comment-auto-fill-only-comments t)
   (auto-fill-mode 1)
+  (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
-  (setq paragraph-separate "^;; ]$")
+  (make-local-variable 'paragraph-start)
+  (make-local-variable 'paragraph-separate)
+  (setq paragraph-start "^;; \\["
+        paragraph-separate "^;; ]$")
   (setq-local imenu-create-index-function 'imenu-default-create-index-function)
-  (setq imenu-generic-expression '((nil "^;; \\[ \\(.*\\)" 1)))
-  )
+  (setq imenu-generic-expression '((nil "^;; \\[ \\(.*\\)" 1))) )
 
 (defun byte-compile-current-buffer ()
   (interactive)
   (byte-compile-file (buffer-file-name)))
 
 (defun mp/emacs-lisp-mode-hook ()
-  (eldoc-mode 1)
   (when (string= (buffer-name) "init.el")
     (mp/dotemacs-mode-hook))
+  (eldoc-mode 1)
   (local-set-key (kbd "C-/") 'comment-dwim)
   (local-set-key (kbd "C-c C-c") 'byte-compile-current-buffer)
   (electric-pair-mode)
@@ -592,10 +607,6 @@ This way region can be inserted into isearch easily with yank command."
 ;; [ org mode
 
 (global-set-key (kbd "C-c c") #'org-capture)
-
-(use-package aggressive-fill-paragraph
-  :init
-  (add-hook 'org-mode-hook 'aggressive-fill-paragraph-mode) )
 
 (defun mp/org-mode-hook ()
   "org mode hook extender [mp]"
@@ -1173,27 +1184,16 @@ and display corresponding buffer in new frame."
 
 ;; [ python
 
-
-;; this needs some preperation
-;;   - pip install jedi
-;;   - python-virtualenv
-;;   - (jedi:install-server)
-;;
-;; Also run (jedi:install-server) after updating jedi
-
-;; (use-package jedi
-;;   :config
-;;   (setq jedi:complete-on-dot t) 
-;;  (jedi:setup))
+(use-package elpy
+  :init
+  (elpy-enable)
+)
 
 (defun mp/python-mode-hook ()
   "Personal python mode hook extension."
-
   (auto-fill-mode 1)
-  
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
-
   (local-set-key (kbd "M-;") 'comment-dwim))
 
 (add-hook 'python-mode-hook 'mp/python-mode-hook)
@@ -1203,6 +1203,9 @@ and display corresponding buffer in new frame."
 (add-to-list 'auto-mode-alist '("\\.py3\\'" . python-mode))
 
 (add-to-list 'auto-insert-alist '(".*\\.py[23]?$" . [ "template.py" ] ) )
+
+
+
 
 ;; ]
 
