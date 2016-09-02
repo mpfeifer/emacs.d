@@ -1,11 +1,11 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import logging
 import logging.handlers
 import signal
 import sys
 import os
-from ConfigParser import SafeConfigParser
+import configparser
 import getopt
 import time
 
@@ -55,33 +55,25 @@ class Application:
         log.propagate=1
         return log
 
-    def get_inifile_option(self, section, option, default):
-        result=default
-        if (self.inifile.has_option(section, option)):
-            result=self.inifile.get(section, option)
-        return result
-    
     def gather_parameter(self):
         '''Collect parameters from inifile (first) and then from commandline.'''
 
         first_getopt_index=1
-        enable_network_logging = False
-        
+
         if len(sys.argv)> 1 and not sys.argv[1].startswith('-'):
-            self.inifile_name = sys.argv[1]
-            first_getopt_index = 2
+            self.inifile_name=sys.argv[1]
+            first_getopt_index=2
             self.log.info('will read inifile ' + self.inifile_name)
 
         if os.path.isfile(self.inifile_name):
-            self.inifile = SafeConfigParser()
-            self.inifile.read(self.inifile_name)
+            self.inifile=configparser.ConfigParser()
 
         if self.inifile:
-            self.log.info('inifile ' + self.inifile_name + " found")
-            self.loghost_name=self.get_inifile_option('logging', 'hostname', "undefined")
-            self.loghost_port=self.get_inifile_option('logging', 'port', 5)
-            if (self.inifile.has_option('logging', 'network_logging')):
-                enable_network_logging = True
+            self.log.info('inifile ' + self.inifile_name + "successfully opened")
+            self.loghost_name=inifile.get('[logging]', 'hostname', fallback=self.loghost_name)
+            self.loghost_port=inifile.get('[logging]', 'port', fallback=self.loghost_port)
+            if (inifile.get('[logging]', 'network_logging', fallback=0)):
+                self.setup_network_logger()
         try:
             opts, args = getopt.getopt(sys.argv[first_getopt_index:], 'hp:l:r', 'help')
         except getop.GetoptError as err:
@@ -91,6 +83,8 @@ class Application:
         output = None
         verbose = False
 
+        enable_network_logging = False
+
         for option, arg in opts:
             if option == '-h':
                 self.usage();
@@ -98,7 +92,7 @@ class Application:
                 self.loghost_port=int(arg)
                 enable_network_logging = True
             elif option == '-l':
-                self.loghost_name=arg
+                self.loghost_name=argument
                 enable_network_logging = True
             elif option == '-r':
                 enable_network_logging = True
