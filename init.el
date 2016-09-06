@@ -906,6 +906,7 @@ and display corresponding buffer in new frame."
   (other-window 1) )
 
 (defun swap-windows ()
+  "Exchange buffer content between two windows. Current frame must host exactly two windows."
   (interactive)
   (if (eq 2 (length (window-list)))
       (let* ((win-1 (nth 0 (window-list)))
@@ -917,6 +918,7 @@ and display corresponding buffer in new frame."
   (message "This function only works when the current frame holds two windows."))
 
 (defun rotate-windows ()
+  "Change between horizontal and vertical layout. Current frame must host exactly two windows."
   (interactive)
   (if (eq 2 (length (window-list)))  
       (let* ((win-1 (nth 0 (window-list)))
@@ -947,6 +949,16 @@ and display corresponding buffer in new frame."
 ;; [ ediff
 
 (add-hook 'ediff-after-quit-hook-internal 'winner-undo)
+
+(defun mp/ediff-this ()
+  "If current frame hosts exactly two windows. ediff these two buffers."
+  (interactive)
+  (if (eq 2 (length (window-list)))
+      (let* ((win-1 (nth 0 (window-list)))
+             (win-2 (nth 1 (window-list)))
+             (buf-1 (window-buffer win-1))
+             (buf-2 (window-buffer win-2)))
+        (ediff-buffers buf-1 buf-2))))
 
 ;; ]
 
@@ -1063,7 +1075,12 @@ and display corresponding buffer in new frame."
       (setq compile-command "mvn clean install")
       (local-set-key (kbd "C-c C-c") 'compile))))
 
+(defun mp/schema-validation-setup ()
+  (add-to-list 'rng-schema-locating-files
+               "~/.emacs.d/schemas/schemas.xml"))
+
 (add-hook 'nxml-mode-hook 'mp/maven-integration)
+(add-hook 'nxml-mode-hook 'mp/schema-validation-setup)
 
 ;; ]
 

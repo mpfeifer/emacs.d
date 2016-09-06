@@ -1,0 +1,1315 @@
+namespace a = "http://relaxng.org/ns/compatibility/annotations/1.0"
+namespace cm = "http://github.com/pabigot/rng4xsd"
+namespace local = ""
+namespace ns1 = "http://www.w3.org/1999/xhtml"
+namespace xs = "http://www.w3.org/2001/XMLSchema"
+
+cm:doc [
+  "\x{a}" ~
+  "  This RELAX NG schema for W3C XML Schema Definition Language is based\x{a}" ~
+  "  on the original "
+  ns1:a [
+    href = "http://www.jenitennison.com/schema/xmlschema.rng"
+    "xmlschema.rng"
+  ]
+  "\x{a}" ~
+  "  by "
+  ns1:a [ href = "http://www.jenitennison.com/" "Jeni Tennison" ]
+  ", and\x{a}" ~
+  "  conforms to "
+  ns1:a [
+    href = "http://www.w3.org/TR/xmlschema11-1/"
+    "W3C XML\x{a}" ~
+    "  Schema Definition Language (XSD) 1.1 Part I: Structures\x{a}" ~
+    "  Recommendation"
+  ]
+  " and "
+  ns1:a [
+    href = "http://www.w3.org/TR/xmlschema11-2/"
+    "W3C XML Schema\x{a}" ~
+    "  Definitional Language (XSD) 1.1 Part 2: Datatypes"
+  ]
+  ".\x{a}" ~
+  "\x{a}" ~
+  "  The project home for this version is the "
+  ns1:a [
+    href = "https://github.com/pabigot/rng4xsd"
+    "rng4xsd project page"
+  ]
+  ".\x{a}" ~
+  "  Obtain updates and report issues on the project page.\x{a}" ~
+  "\x{a}" ~
+  "  Pattern names correspond to definitions in "
+  ns1:a [
+    href = "http://www.w3.org/2001/XMLSchema.xsd"
+    "XMLSchema.xsd"
+  ]
+  " and\x{a}" ~
+  "  should be in the same order.\x{a}" ~
+  "\x{a}" ~
+  "  Where XSD uses a name T for an element, the corresponding pattern\x{a}" ~
+  '  appends ".elt" to the name.  This is done both to make clear that\x{a}' ~
+  "  the pattern provides an element, and to distinguish it from the\x{a}" ~
+  "  pattern corresponding to an XSD type of the same name.\x{a}" ~
+  "\x{a}" ~
+  "  Where RELAX NG introduces a supporting pattern that does not\x{a}" ~
+  "  correspond to an XML component, the pattern name uses a suffix\x{a}" ~
+  '  "_elt" for an element helper, and "_ext" for a pattern that enforces\x{a}' ~
+  "  co-occurrence constraints that are not expressed in the XSD syntax.\x{a}" ~
+  "\x{a}" ~
+  "  Where XSD defines a base type T that is restricted to eliminate\x{a}" ~
+  "  internal content, a pattern T_prolog describes the material before\x{a}" ~
+  "  the variation point and a pattern T_epilog describes the material\x{a}" ~
+  "  after the variation point.  The restrictions then reference these\x{a}" ~
+  "  patterns around the desired selection. See, for example,\x{a}" ~
+  "  the restrictionType pattern.\x{a}" ~
+  "\x{a}" ~
+  "  For the purpose and semantics of each pattern, refer to the XSD\x{a}" ~
+  "  schema and documentation.  Documentation in this schema is limited\x{a}" ~
+  "  to notes specific to the RELAX NG implementation.\x{a}"
+]
+start = schema.elt
+[
+  cm:type = "xs:complexType"
+  cm:restricts = "xs:anyType"
+  cm:refines = "anyType"
+  cm:doc [
+    "\x{a}" ~
+    '    We want to emulate: <xs:anyAttribute namespace="##other" process="lax"/>\x{a}' ~
+    "\x{a}" ~
+    '    The "##other" means we need to exclude the XSD namespace.\x{a}' ~
+    "\x{a}" ~
+    "    The rules in 3.10.4 for wildcard validation say that, in that\x{a}" ~
+    "    case, we also need to exclude absent namespaces.\x{a}" ~
+    "\x{a}" ~
+    "    The tricky bit is xml:lang which should not be excluded, but which\x{a}" ~
+    '    is also explicitly enabled with type="language" in the SfS for\x{a}' ~
+    "    xs:schema and xs:documentation.  Those elements also normally\x{a}" ~
+    "    reference openAttrs, which results in an attribute conflict\x{a}" ~
+    "    because xml:lang is accepted from two paths.  In those cases, do\x{a}" ~
+    "    not reference openAttrs, and instead replicate the wildcard below\x{a}" ~
+    "    also excluding xml:lang.  Such replications add a cm:refines\x{a}" ~
+    "    attribute referencing this pattern.\x{a}" ~
+    "\x{a}" ~
+    "    Note that various XSD components explicitly provide an\x{a}" ~
+    "    anyAttribute wildcard while also supporting an xs:annotation\x{a}" ~
+    "    element.  Since the annotated pattern extends openAttrs the\x{a}" ~
+    "    explicit anyAttribute wildcard is elided from the corresponding\x{a}" ~
+    "    RELAX NG patterns.\x{a}" ~
+    "  "
+  ]
+]
+openAttrs = attribute * - (local:* | xs:*) { text }*
+[ cm:type = "xs:complexType" cm:extends = "xs:openAttrs" ]
+annotated =
+  openAttrs,
+  attribute id { xsd:ID }?,
+  annotation?
+[
+  cm:type = "xs:group"
+  cm:doc [
+    "\x{a}" ~
+    "    xs:include should be part of this group, but it is excluded since\x{a}" ~
+    "    the start pattern handles that component separately to enforce a\x{a}" ~
+    "    validation constraint.\x{a}" ~
+    "  "
+  ]
+]
+composition = include.elt | redefine.elt | override.elt | annotation
+[ cm:type = "xs:group" ]
+schemaTop = redefinable | element.elt | attribute.elt | notation.elt
+[ cm:type = "xs:group" ]
+redefinable =
+  simpleType.elt | complexType.elt | group.elt | attributeGroup.elt
+[ cm:type = "xs:simpleType" ]
+formChoice = xsd:NMTOKEN "qualified" | xsd:NMTOKEN "unqualified"
+[ cm:type = "xs:simpleType" cm:restricts = "xs:derivationControl" ]
+reducedDerivationControl =
+  xsd:NMTOKEN "extension" | xsd:NMTOKEN "restriction"
+[ cm:type = "xs:simpleType" ]
+derivationSet =
+  xsd:token "#all"
+  | list { reducedDerivationControl* }
+[ cm:type = "xs:simpleType" cm:restricts = "xs:derivationControl" ]
+typeDerivationControl =
+  xsd:NMTOKEN "extension"
+  | xsd:NMTOKEN "restriction"
+  | xsd:NMTOKEN "list"
+  | xsd:NMTOKEN "union"
+[ cm:type = "xs:simpleType" ]
+fullDerivationSet =
+  xsd:token "#all"
+  | list { typeDerivationControl* }
+[ cm:type = "xs:element" ]
+schema.elt =
+  [
+    cm:type = "xs:simpleType"
+    cm:extends = "xs:openAttrs"
+    cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-schema"
+    cm:doc [
+      "\x{a}" ~
+      "      The presence of xml:lang as a specified attribute requires a\x{a}" ~
+      "      variant openAttrs be used.\x{a}" ~
+      "\x{a}" ~
+      "      The targetNamespace attribute is delegated to a choice as it\x{a}" ~
+      "      impacts the selection of pattern for the import element.\x{a}" ~
+      "    "
+    ]
+  ]
+  element xs:schema {
+    (attribute version { xsd:token }
+     | attribute finalDefault { fullDerivationSet }
+     | attribute blockDefault { blockSet }
+     | attribute attributeFormDefault { formChoice }
+     | attribute elementFormDefault { formChoice }
+     | attribute defaultAttributes { xsd:QName }
+     | xpathDefaultNamespace_attr
+     | attribute id { xsd:ID }
+     | attribute xml:lang { xsd:language }
+     | [ cm:refines = "openAttrs" ]
+       attribute * - (local:* | xs:* | xml:lang) { text })*,
+    (composition*
+     & [
+         cm:doc [
+           "\x{a}" ~
+           "          Partially enforce Schema Representation Constraint: Import\x{a}" ~
+           "          Constraints and Semantics clauses 1.2 and 3.2 at\x{a}" ~
+           "          http://www.w3.org/TR/xmlschema11-1/#composition-schemaImport\x{a}" ~
+           "\x{a}" ~
+           "          Specifically, import elements may elide the namespace\x{a}" ~
+           "          attribute if and only if the containing schema has a\x{a}" ~
+           "          targetNamespace attribute.  This is represented by the\x{a}" ~
+           '          import_ons_elt (for "optional namespace") pattern.  Without\x{a}' ~
+           '          a targetNamespace the import_rns_elt (for "required\x{a}' ~
+           '          namespace") pattern is used.\x{a}' ~
+           "        "
+         ]
+       ]
+       ((attribute targetNamespace { xsd:anyURI },
+         import_ons_elt*)
+        | import_rns_elt*)),
+    defaultOpenContent.elt?,
+    (schemaTop | annotation)*
+  }
+[ cm:type = "xs:simpleType" ]
+allNNI = xsd:nonNegativeInteger | xsd:NMTOKEN "unbounded"
+[ cm:type = "xs:attributeGroup" ]
+occurs =
+  (attribute minOccurs { xsd:nonNegativeInteger }
+   | attribute maxOccurs { allNNI })*
+[
+  cm:type = "xs:attributeGroup"
+  cm:doc [
+    "\x{a}" ~
+    "    The defRef XSD group serves only as the basis for restrictions\x{a}" ~
+    "    that select name or ref, often combining the restriction with\x{a}" ~
+    "    additional requirements.  Such references have a cm:refines\x{a}" ~
+    "    attribute referencing this pattern.\x{a}" ~
+    "\x{a}" ~
+    "    This pattern exists for documentation purposes and should never be\x{a}" ~
+    "    referenced.\x{a}" ~
+    "  "
+  ]
+]
+defRef =
+  (attribute name { xsd:NCName }
+   | attribute ref { xsd:QName })*
+[ cm:type = "xs:group" ]
+typeDefParticle = groupRef_elt | all.elt | choice.elt | sequence.elt
+[ cm:type = "xs:group" ]
+nestedParticle =
+  localElement_elt | groupRef_elt | choice.elt | sequence.elt | any.elt
+[ cm:type = "xs:group" ]
+particle =
+  localElement_elt
+  | groupRef_elt
+  | all.elt
+  | choice.elt
+  | sequence.elt
+  | any.elt
+[ cm:type = "xs:complexType" cm:extends = "xs:annotated" ]
+\attribute =
+  annotated,
+  (attribute use {
+     xsd:NMTOKEN "prohibited"
+     | xsd:NMTOKEN "optional"
+     | xsd:NMTOKEN "required"
+   }
+   | attribute inheritable { xsd:boolean })*,
+  fixedOrDefault_ext,
+  [ cm:refines = "defRef" ]
+  (attribute ref { xsd:QName }
+   | (attribute name { xsd:NCName },
+      (empty
+       | attribute form { formChoice }
+       | attribute targetNamespace { xsd:anyURI }),
+      attributeType_ext))
+[
+  cm:restricts = "xs:attribute"
+  cm:refines = "attribute"
+  cm:doc [
+    "\x{a}" ~
+    "    This XSD type restricts xs:attribute.  The ref, form, use, and\x{a}" ~
+    "    targetNamespace attributes are prohibited, and name is required.\x{a}" ~
+    "  "
+  ]
+]
+topLevelAttribute =
+  annotated,
+  attribute inheritable { xsd:boolean }?,
+  fixedOrDefault_ext,
+  [ cm:refines = "defRef" ] attribute name { xsd:NCName },
+  attributeType_ext
+[ cm:type = "xs:group" ]
+attrDecls =
+  (attribute_elt
+   | [
+       cm:href =
+         "http://www.w3.org/TR/xmlschema11-1/#element-attributeGroup"
+     ]
+     element xs:attributeGroup { attributeGroupRef })*,
+  anyAttribute.elt?
+[ cm:type = "xs:element" ]
+anyAttribute.elt =
+  [
+    cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-anyAttribute"
+  ]
+  element xs:anyAttribute {
+    attribute notQName { qnameListA }?,
+    wildcard
+  }
+[ cm:type = "xs:group" ] assertions = element xs:assert { assertion }*
+[ cm:type = "xs:complexType" ]
+assertion =
+  annotated,
+  (attribute test { xsd:string }
+   | xpathDefaultNamespace_attr)*
+[ cm:type = "xs:group" ]
+complexTypeModel =
+  simpleContent
+  | complexContent.elt
+  | (openContent.elt?, typeDefParticle?, attrDecls, assertions)
+[
+  cm:type = "xs:complexType"
+  cm:extends = "xs:annotated"
+  cm:doc [
+    "\x{a}" ~
+    "    This is an abstract class in XSD, restricted by\x{a}" ~
+    "    xs:topLevelComplexType and xs:localComplexType.\x{a}" ~
+    "\x{a}" ~
+    "    Attributes name, abstract, final, and block are permitted only for\x{a}" ~
+    "    xs:topLevelComplexType and are added only in that restriction.\x{a}" ~
+    "\x{a}" ~
+    "    Though the SfS documentation says attribute mixed is disallowed on\x{a}" ~
+    "    simpleContent, this is untrue and led to an earlier bug in this\x{a}" ~
+    '    schema: the attribute mixed="false" is permitted on simpleContent.\x{a}' ~
+    "  "
+  ]
+]
+complexType =
+  annotated,
+  complexTypeModel,
+  (attribute mixed { xsd:boolean }
+   | attribute defaultAttributesApply { xsd:boolean })*
+[
+  cm:type = "xs:complexType"
+  cm:restricts = "xs:complexType"
+  cm:doc [
+    "\x{a}" ~
+    '    "Restriction" in this case simply means adding the stuff we left out of the base.\x{a}' ~
+    "  "
+  ]
+]
+topLevelComplexType =
+  complexType,
+  attribute name { xsd:NCName },
+  (attribute abstract { xsd:boolean }
+   | attribute block { derivationSet }
+   | attribute final { derivationSet })*
+[
+  cm:type = "xs:complexType"
+  cm:restricts = "xs:complexType"
+  cm:doc [
+    "\x{a}" ~
+    '    "Restriction" in this case simply means keeping the stuff we put in the base.\x{a}' ~
+    "  "
+  ]
+]
+localComplexType = complexType
+[
+  cm:doc [
+    "\x{a}" ~
+    "    This pattern encapsulates the common prolog for xs:restrictionType\x{a}" ~
+    "    restrictions and xs:extensionType extensions.\x{a}" ~
+    "  "
+  ]
+]
+reducedDerivation_prolog =
+  annotated,
+  openContent.elt?,
+  attribute base { xsd:QName }
+[
+  cm:doc [
+    "\x{a}" ~
+    "    This pattern encapsulates the common prolog for xs:restrictionType\x{a}" ~
+    "    restrictions and xs:extensionType extensions.\x{a}" ~
+    "  "
+  ]
+]
+reducedDerivation_epilog = attrDecls, assertions
+[
+  cm:type = "xs:complexType"
+  cm:doc [
+    "\x{a}" ~
+    "    The restrictionType XSD type serves only as the basis for two\x{a}" ~
+    "    restriction types that select either typeDefParticle or\x{a}" ~
+    "    simpleRestrictionModel.  The RELAX NG base delegates the selection\x{a}" ~
+    "    to the restricting pattern, which replicates this pattern\x{a}" ~
+    "    inserting the desired content prior to the attrDecls pattern.\x{a}" ~
+    "\x{a}" ~
+    "    This pattern exists for documentation purposes and should never be\x{a}" ~
+    "    referenced.\x{a}" ~
+    "  "
+  ]
+]
+restrictionType = reducedDerivation_prolog, reducedDerivation_epilog
+[
+  cm:type = "xs:complexType"
+  cm:restricts = "xs:restrictionType"
+  cm:refines = "restrictionType"
+]
+complexRestrictionType =
+  reducedDerivation_prolog, typeDefParticle?, reducedDerivation_epilog
+[
+  cm:type = "xs:complexType"
+  cm:doc [
+    "\x{a}" ~
+    "    The extensionType XSD type is used unchanged within the\x{a}" ~
+    "    complexContent element's type, and in a restricted form in\x{a}" ~
+    "    xs:simpleExtensionType that refines this by removing the\x{a}" ~
+    "    typeDefParticle.\x{a}" ~
+    "  "
+  ]
+]
+extensionType =
+  reducedDerivation_prolog, typeDefParticle?, reducedDerivation_epilog
+[ cm:type = "xs:element" ]
+complexContent.elt =
+  [
+    cm:href =
+      "http://www.w3.org/TR/xmlschema11-1/#element-complexContent"
+  ]
+  element xs:complexContent {
+    annotated,
+    attribute mixed { xsd:boolean }?,
+    (element xs:restriction { complexRestrictionType }
+     | element xs:extension { extensionType })
+  }
+[ cm:type = "xs:element" ]
+openContent.elt =
+  element xs:openContent {
+    annotated,
+    attribute mode {
+      xsd:NMTOKEN "none"
+      | xsd:NMTOKEN "interleave"
+      | xsd:NMTOKEN "suffix"
+    }?,
+    element xs:any { wildcard }?
+  }
+[ cm:type = "xs:element" ]
+defaultOpenContent.elt =
+  element xs:defaultOpenContent {
+    annotated,
+    (attribute mode { xsd:NMTOKEN "interleave" | xsd:NMTOKEN "suffix" }
+     | attribute appliesToEmpty { xsd:boolean })*,
+    element xs:any { wildcard }
+  }
+[
+  cm:type = "xs:complexType"
+  cm:restricts = "xs:restrictionType"
+  cm:refines = "restrictionType"
+]
+simpleRestrictionType =
+  reducedDerivation_prolog,
+  (localSimpleType_elt?, simpleRestrictionModel)?,
+  reducedDerivation_epilog
+[
+  cm:type = "xs:complexType"
+  cm:extends = "xs:extensionType"
+  cm:refines = "extensionType"
+]
+simpleExtensionType = reducedDerivation_prolog, reducedDerivation_epilog
+[ cm:type = "xs:element" ]
+simpleContent =
+  [
+    cm:href =
+      "http://www.w3.org/TR/xmlschema11-1/#element-simpleContent"
+  ]
+  element xs:simpleContent {
+    annotated,
+    (element xs:restriction { simpleRestrictionType }
+     | element xs:extension { simpleExtensionType })
+  }
+[ cm:type = "xs:element" ]
+complexType.elt =
+  [
+    cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-complexType"
+  ]
+  element xs:complexType { topLevelComplexType }
+[ cm:type = "xs:simpleType" ]
+blockSet =
+  xsd:token "#all"
+  | list {
+      [ cm:refines = "derivationControl" ]
+      (xsd:NMTOKEN "extension"
+       | xsd:NMTOKEN "restriction"
+       | xsd:NMTOKEN "substitution")*
+    }
+[
+  cm:type = "xs:complexType"
+  cm:doc [
+    "\x{a}" ~
+    "    This is an abstract class in XSD, restricted by xs:topLevelElement\x{a}" ~
+    "    and xs:localElement.\x{a}" ~
+    "\x{a}" ~
+    "    Attributes ref, form, targetNamespace, minOccurs, and maxOccurs\x{a}" ~
+    "    are prohibited for topLevelElement.  These are added only in the\x{a}" ~
+    "    localElement pattern.\x{a}" ~
+    "\x{a}" ~
+    "    Attributes substitutionGroup, final, and abstract are prohibited\x{a}" ~
+    "    in localElement.  These are added only in the topLevelElement\x{a}" ~
+    "    pattern.\x{a}" ~
+    "\x{a}" ~
+    "    defRef is restricted in topLevelElement (attribute name is\x{a}" ~
+    "    required there) so is provided separately in each restriction.\x{a}" ~
+    "  "
+  ]
+]
+\element =
+  annotated,
+  fixedOrDefault_ext,
+  (attribute nillable { xsd:boolean }
+   | attribute block { blockSet })*,
+  (empty
+   | attribute type { xsd:QName }
+   | localSimpleType_elt
+   | localComplexType_elt),
+  (identityConstraint | alternative_elt)*
+[ cm:type = "xs:complexType" cm:restricts = "xs:element" ]
+topLevelElement =
+  \element,
+  [ cm:refines = "defRef" ] attribute name { xsd:NCName },
+  (attribute substitutionGroup {
+     list { xsd:QName* }
+   }
+   | attribute abstract { xsd:boolean }
+   | attribute final { derivationSet })*
+[ cm:type = "xs:complexType" cm:restricts = "xs:element" ]
+localElement =
+  \element,
+  occurs,
+  [ cm:refines = "defRef" ]
+  (attribute ref { xsd:QName }
+   | (attribute name { xsd:NCName },
+      (empty
+       | attribute form { formChoice }
+       | attribute targetNamespace { xsd:anyURI })))
+[ cm:type = "xs:element" ]
+element.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-element" ]
+  element xs:element { topLevelElement }
+[ cm:type = "xs:complexType" cm:extends = "xs:annotated" ]
+altType =
+  annotated,
+  (attribute test { xsd:string }
+   | attribute type { xsd:QName }
+   | xpathDefaultNamespace_attr)*,
+  (localSimpleType_elt | localComplexType_elt)?
+[
+  cm:type = "xs:complexType"
+  cm:doc [
+    "\x{a}" ~
+    "    This is an abstract type in XSD, restricted by xs:realGroup and\x{a}" ~
+    "    xs:explicitGroup which vary in the subsets of xs:particle that\x{a}" ~
+    "    they recognize.\x{a}" ~
+    "\x{a}" ~
+    "    xs:realGroup is never used directly, but is restricted by\x{a}" ~
+    "    xs:namedGroup and xs:groupRef, which together partition defRef in\x{a}" ~
+    "    this branch.\x{a}" ~
+    "\x{a}" ~
+    "    xs:explicitGroup is used directly for xs:choice and xs:sequence,\x{a}" ~
+    "    and is also restricted by xs:simpleExplicitGroup and xs:all.\x{a}" ~
+    "    xs:explicitGroup elides defRef.\x{a}" ~
+    "\x{a}" ~
+    "    occurs is prohibited in namedGroup and simpleExplicitGroup so is\x{a}" ~
+    "    added only to restrictions that permit it.\x{a}" ~
+    "  "
+  ]
+]
+group = annotated
+[
+  cm:type = "xs:complexType"
+  cm:restricts = "xs:group"
+  cm:doc [
+    "\x{a}" ~
+    "    xs:realGroup restricts the particles to all, choice, and sequence\x{a}" ~
+    "    but makes them optional.  In xs:namedGroup the choice is required,\x{a}" ~
+    "    but all is restricted; in xs:groupRef the choice is elided.\x{a}" ~
+    "    Consequently we don't include them in this pattern.\x{a}" ~
+    "  "
+  ]
+]
+realGroup = group
+[ cm:type = "xs:complexType" cm:restricts = "xs:realGroup" ]
+namedGroup =
+  realGroup,
+  [ cm:refines = "defRef" ] attribute name { xsd:NCName },
+  ([ cm:refines = "all" ] element xs:all { allModel }
+   | (occurs,
+      (element xs:choice { simpleExplicitGroup }
+       | element xs:sequence { simpleExplicitGroup })))
+[ cm:type = "xs:complexType" cm:restricts = "xs:realGroup" ]
+groupRef =
+  realGroup,
+  occurs,
+  [ cm:refines = "defRef" ] attribute ref { xsd:QName }
+[ cm:type = "xs:complexType" cm:restricts = "xs:group" ]
+explicitGroup =
+  group, occurs, nestedParticle*, [ cm:refines = "defRef" ] empty
+[
+  cm:type = "xs:complexType"
+  cm:restricts = "xs:explicitGroup"
+  cm:refines = "explicitGroup"
+  cm:doc [
+    "\x{a}" ~
+    "    Since RELAX NG cannot remove the occurs instances permitted by\x{a}" ~
+    "    explicitGroup which this restricts, we refine explicitGroup by\x{a}" ~
+    "    replicating its content except for the occurs attributes.\x{a}" ~
+    "  "
+  ]
+]
+simpleExplicitGroup =
+  group, nestedParticle*, [ cm:refines = "defRef" ] empty
+[ cm:type = "xs:group" ]
+allModel =
+  annotation?,
+  (localElement_elt
+   | any.elt
+   | element xs:group {
+       annotated,
+       attribute ref { xsd:QName },
+       (attribute minOccurs { xsd:nonNegativeInteger "1" }
+        | attribute maxOccurs { xsd:nonNegativeInteger "1" })*
+     })*
+[
+  cm:type = "xs:complexType"
+  cm:restricts = "xs:explicitGroup"
+  cm:refines = "explicitGroup"
+  cm:doc [
+    "\x{a}" ~
+    "    Match explicitGroup but refine both the occurs pattern and the\x{a}" ~
+    "    nestedParticle.\x{a}" ~
+    "  "
+  ]
+]
+all =
+  group,
+  [ cm:refines = "occurs" ]
+  ((attribute minOccurs {
+      xsd:nonNegativeInteger "0" | xsd:nonNegativeInteger "1"
+    }
+    | [ cm:refines = "allNNI" ]
+      attribute maxOccurs {
+        xsd:nonNegativeInteger "0" | xsd:nonNegativeInteger "1"
+      })*),
+  allModel,
+  [ cm:refines = "defRef" ] empty
+[ cm:type = "xs:element" ]
+all.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-all" ]
+  element xs:all { all }
+[ cm:type = "xs:element" ]
+choice.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-choice" ]
+  element xs:choice { explicitGroup }
+[ cm:type = "xs:element" ]
+sequence.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-sequence" ]
+  element xs:sequence { explicitGroup }
+[ cm:type = "xs:element" ]
+group.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-group" ]
+  element xs:group { namedGroup }
+[ cm:type = "xs:attributeGroup" ]
+anyAttrGroup =
+  (attribute namespace { namespaceList }
+   | [
+       cm:doc [
+         "\x{a}" ~
+         "          Implement a minLength=1 constraint.\x{a}" ~
+         "        "
+       ]
+     ]
+     attribute notNamespace {
+       [ cm:refines = "basicNamespaceList" ]
+       list { basicNamespaceList_item+ }
+     }
+   | attribute processContents {
+       xsd:NMTOKEN "skip" | xsd:NMTOKEN "lax" | xsd:NMTOKEN "strict"
+     })*
+[ cm:type = "xs:complexType" cm:extends = "xs:annotated" ]
+wildcard = annotated, anyAttrGroup
+[
+  cm:type = "xs:element"
+  cm:doc [
+    "\x{a}" ~
+    "    This is a rare case of an element with complex content using a\x{a}" ~
+    "    local complexType instead of referring to a type with the same\x{a}" ~
+    "    name as the element.  This local type extends the wildcard\x{a}" ~
+    "    pattern.\x{a}" ~
+    "  "
+  ]
+]
+any.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-any" ]
+  element xs:any {
+    wildcard,
+    attribute notQName { qnameList }?,
+    occurs
+  }
+[ cm:type = "xs:simpleType" ]
+namespaceList = specialNamespaceList | basicNamespaceList
+[ cm:type = "xs:simpleType" ]
+basicNamespaceList = list { basicNamespaceList_item* }
+[ cm:type = "xs:simpleType" ]
+specialNamespaceList = xsd:token "##any" | xsd:token "##other"
+[ cm:type = "xs:simpleType" ]
+qnameList =
+  list {
+    (xsd:QName | xsd:token "##defined" | xsd:token "##definedSibling")*
+  }
+[ cm:type = "xs:simpleType" ]
+qnameListA = list { (xsd:QName | xsd:token "##defined")* }
+[ cm:type = "xs:simpleType" ]
+xpathDefaultNamespace =
+  xsd:anyURI
+  | xsd:token "##defaultNamespace"
+  | xsd:token "##targetNamespace"
+  | xsd:token "##local"
+[ cm:type = "xs:element" ]
+attribute.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-attribute" ]
+  element xs:attribute { topLevelAttribute }
+[
+  cm:type = "xs:complexType"
+  cm:extends = "xs:annotated"
+  cm:doc [
+    "\x{a}" ~
+    "    This is an abstract class in XSD, restricted by\x{a}" ~
+    "    xs:namedAttributeGroup and xs:attributeGroupRef.\x{a}" ~
+    "\x{a}" ~
+    "    xs:attrDecls is permitted only in namedAttributeGroup and are\x{a}" ~
+    "    added only in that restriction.\x{a}" ~
+    "\x{a}" ~
+    "    defRef is provided separately in each restriction.\x{a}" ~
+    "  "
+  ]
+]
+attributeGroup = annotated
+[ cm:type = "xs:complexType" cm:restricts = "xs:attributeGroup" ]
+namedAttributeGroup =
+  attributeGroup,
+  [ cm:refines = "defRef" ] attribute name { xsd:NCName },
+  attrDecls
+[ cm:type = "xs:complexType" cm:restricts = "xs:attributeGroup" ]
+attributeGroupRef =
+  attributeGroup,
+  [ cm:refines = "defRef" ] attribute ref { xsd:QName }
+[ cm:type = "xs:element" ]
+attributeGroup.elt =
+  [
+    cm:href =
+      "http://www.w3.org/TR/xmlschema11-1/#element-attributeGroup"
+  ]
+  element xs:attributeGroup { namedAttributeGroup }
+[ cm:type = "xs:element" ]
+include.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-include" ]
+  element xs:include {
+    annotated,
+    attribute schemaLocation { xsd:anyURI }
+  }
+[ cm:type = "xs:element" ]
+redefine.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-redefine" ]
+  element xs:redefine {
+    openAttrs,
+    attribute schemaLocation { xsd:anyURI },
+    attribute id { xsd:ID }?,
+    (annotation | redefinable)*
+  }
+[ cm:type = "xs:element" ]
+override.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#override-schema" ]
+  element xs:override {
+    openAttrs,
+    attribute id { xsd:ID }?,
+    attribute schemaLocation { xsd:anyURI },
+    (annotation | schemaTop)*
+  }
+[
+  cm:doc [
+    "\x{a}" ~
+    "    Common content for the local complexType used in an xs:import\x{a}" ~
+    "    element.  RELAX NG expresses the validation requirement dependency\x{a}" ~
+    "    on the containing schema targetNamespace attribute, which XSD does\x{a}" ~
+    "    not.\x{a}" ~
+    "  "
+  ]
+]
+import_ext =
+  annotated,
+  attribute schemaLocation { xsd:anyURI }?
+[
+  cm:doc [
+    "\x{a}" ~
+    "    Provide an element that extends the import_ext base pattern to\x{a}" ~
+    "    require a namespace attribute.\x{a}" ~
+    "  "
+  ]
+]
+import_rns_elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-import" ]
+  element xs:import {
+    import_ext,
+    attribute namespace { xsd:anyURI }
+  }
+[
+  cm:doc [
+    "\x{a}" ~
+    "    Provide an element that extends the import_ext base pattern to\x{a}" ~
+    "    optionally use a namespace attribute.\x{a}" ~
+    "  "
+  ]
+]
+import_ons_elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-import" ]
+  element xs:import {
+    import_ext,
+    attribute namespace { xsd:anyURI }?
+  }
+[ cm:type = "xs:element" ]
+selector.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-selector" ]
+  element xs:selector {
+    annotated,
+    attribute xpath { xsd:token },
+    xpathDefaultNamespace_attr?
+  }
+[ cm:type = "xs:element" ]
+field.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-field" ]
+  element xs:field {
+    annotated,
+    attribute xpath { xsd:token }
+  }
+[
+  cm:type = "xs:complexType"
+  cm:extends = "xs:annotated"
+  cm:doc [
+    "\x{a}" ~
+    "    The XSD keybase type is used directly and is extended as a local\x{a}" ~
+    "    complexType in the keyRef element.\x{a}" ~
+    "  "
+  ]
+]
+keybase =
+  annotated,
+  (attribute name { xsd:NCName }
+   | attribute ref { xsd:QName }),
+  (selector.elt, field.elt+)?
+[ cm:type = "xs:group" ]
+identityConstraint = unique.elt | key.elt | keyref.elt
+[ cm:type = "xs:element" ]
+unique.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-unique" ]
+  element xs:unique { keybase }
+[ cm:type = "xs:element" ]
+key.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-key" ]
+  element xs:key { keybase }
+[ cm:type = "xs:element" ]
+keyref.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-keyref" ]
+  element xs:keyref {
+    keybase,
+    attribute refer { xsd:QName }?
+  }
+[ cm:type = "xs:element" ]
+notation.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-notation" ]
+  element xs:notation {
+    annotated,
+    attribute name { xsd:NCName },
+    (attribute public { public }
+     | attribute system { xsd:anyURI })*
+  }
+[ cm:type = "xs:simpleType" ] public = xsd:token
+[
+  cm:doc [
+    "\x{a}" ~
+    "    A helper pattern describing the mixed content of annotation\x{a}" ~
+    "    sub-elements.\x{a}" ~
+    "  "
+  ]
+]
+annotation_ext =
+  mixed {
+    [
+      cm:doc [
+        "\x{a}" ~
+        '        Emulate <any processContents="lax">\x{a}' ~
+        "      "
+      ]
+    ]
+    (element * {
+       attribute * { text }*,
+       annotation_ext,
+       empty
+     }*)
+  }
+[ cm:type = "xs:element" ]
+appinfo.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-appinfo" ]
+  element xs:appinfo {
+    openAttrs,
+    attribute source { xsd:anyURI }?,
+    annotation_ext
+  }
+[ cm:type = "xs:element" ]
+documentation.elt =
+  [
+    cm:href =
+      "http://www.w3.org/TR/xmlschema11-1/#element-documentation"
+  ]
+  element xs:documentation {
+    (attribute source { xsd:anyURI }
+     | attribute xml:lang { xsd:language }
+     | [ cm:refines = "openAttrs" ]
+       attribute * - (local:* | xs:* | xml:lang) { text })*,
+    annotation_ext
+  }
+[ cm:type = "xs:element" cm:extends = "xs:openAttrs" ]
+annotation =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-annotation" ]
+  element xs:annotation {
+    openAttrs,
+    attribute id { xsd:ID }?,
+    (documentation.elt | appinfo.elt)*
+  }
+[
+  cm:type = "xs:complexType"
+  cm:doc [
+    "\x{a}" ~
+    "    This approximation matches the intent of the XSD type, but is not\x{a}" ~
+    "    actually referenced except theoretically by openAttrs which throws\x{a}" ~
+    "    out all content and attributes in the XSD or absent namespaces.\x{a}" ~
+    "  "
+  ]
+]
+anyType =
+  (attribute * { text }
+   | text
+   | element * { anyType })*
+[ cm:type = "xs:simpleType" cm:restricts = "xs:NMTOKEN" ]
+derivationControl =
+  xsd:NMTOKEN "substitution"
+  | xsd:NMTOKEN "extension"
+  | xsd:NMTOKEN "restriction"
+  | xsd:NMTOKEN "list"
+  | xsd:NMTOKEN "union"
+[ cm:type = "xs:group" ]
+simpleDerivation = restriction.elt | list.elt | union.elt
+[ cm:type = "simpleType" ]
+simpleDerivationSet =
+  xsd:token "#all"
+  | list {
+      [ cm:restricts = "xs:derivationControl" ]
+      (xsd:NMTOKEN "list"
+       | xsd:NMTOKEN "union"
+       | xsd:NMTOKEN "restriction"
+       | xsd:NMTOKEN "extension")*
+    }
+[
+  cm:type = "xs:complexType"
+  cm:extends = "xs:annotated"
+  cm:doc [
+    "\x{a}" ~
+    "    This is an abstract class in XSD, restricted by\x{a}" ~
+    "    xs:topLevelSimpleType and xs:localSimpleType.\x{a}" ~
+    "\x{a}" ~
+    "    Attributes name and final are permitted only for\x{a}" ~
+    "    xs:topLevelSimpleType and are added only in that restriction.\x{a}" ~
+    "  "
+  ]
+]
+simpleType = annotated, simpleDerivation
+[ cm:type = "xs:complexType" cm:restricts = "xs:simpleType" ]
+topLevelSimpleType =
+  simpleType,
+  attribute name { xsd:NCName },
+  attribute final { simpleDerivationSet }?
+[ cm:type = "xs:complexType" cm:restricts = "xs:simpleType" ]
+localSimpleType = simpleType
+[ cm:type = "xs:element" ]
+simpleType.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-simpleType" ]
+  element xs:simpleType { topLevelSimpleType }
+[
+  cm:type = "xs:element"
+  cm:doc [
+    "\x{a}" ~
+    "    RELAX NG implementation for the xs:facet abstract element.\x{a}" ~
+    "\x{a}" ~
+    "    In XSD 1.1 this element is abstract and serves as the name of a\x{a}" ~
+    "    substitutionGroup.  The set of facets defined for the XSD\x{a}" ~
+    "    namespace are members of that group, and implement (co-)occurrence\x{a}" ~
+    "    constraints internally.\x{a}" ~
+    "\x{a}" ~
+    "    In theory additional elements may be added to this group, in XSD\x{a}" ~
+    '    by declaring them with substitutionGroup="xs:facet", and in RELAX\x{a}' ~
+    '    NG by defining them with combine="interleave".\x{a}' ~
+    "\x{a}" ~
+    "    To support this, the pattern expresses the occurrence cardinality\x{a}" ~
+    "    constraints for each constituent facet element.  Further, the\x{a}" ~
+    "    wildcard adjacent to the use of the substitution group head is\x{a}" ~
+    "    placed in this pattern since RELAX NG does not permit an empty\x{a}" ~
+    "    definition.\x{a}" ~
+    "  "
+  ]
+]
+facet.elt &=
+  [
+    cm:doc [
+      ' Emulate <any processContents="lax"\x{a}' ~
+      '    namespace="##other" >\x{a}' ~
+      "    "
+    ]
+  ]
+  (element * - (local:* | xs:*) {
+     attribute * { text }*,
+     annotation_ext,
+     empty
+   }*)
+[
+  cm:type = "xs:group"
+  cm:doc [
+    "\x{a}" ~
+    "    The XSD group includes an optional localSimpleType_elt pattern,\x{a}" ~
+    "    but that is disallowed for complex restrictions that have a base\x{a}" ~
+    "    attribute.  To enforce this, localSimpleType_elt is added\x{a}" ~
+    "    conditionally against base in restriction.elt, and optionally in\x{a}" ~
+    "    simpleRestrictionType (which requires a base attribute but does\x{a}" ~
+    "    not disallow the co-occurrence).\x{a}" ~
+    "\x{a}" ~
+    "    Note that the wildcard element added in XSD 1.1 is encoded as the\x{a}" ~
+    "    base of the facet.elt pattern.\x{a}" ~
+    "\x{a}" ~
+    "    Also note that occurrence constraints on individual facets are\x{a}" ~
+    "    delegated to the interleaved facet.elt pattern.\x{a}" ~
+    "  "
+  ]
+]
+simpleRestrictionModel = facet.elt
+[ cm:type = "xs:element" cm:extends = "xs:annotated" ]
+restriction.elt =
+  [
+    cm:href = "http://www.w3.org/TR/xmlschema11-2/#element-restriction"
+  ]
+  element xs:restriction {
+    annotated,
+    (attribute base { xsd:QName }
+     | localSimpleType_elt),
+    simpleRestrictionModel
+  }
+[ cm:type = "xs:element" cm:extends = "xs:annotated" ]
+list.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-list" ]
+  element xs:list {
+    annotated,
+    (localSimpleType_elt
+     | attribute itemType { xsd:QName })
+  }
+[ cm:type = "xs:element" cm:extends = "xs:annotated" ]
+union.elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-union" ]
+  element xs:union {
+    annotated,
+    ((attribute memberTypes {
+        list { xsd:QName+ }
+      },
+      localSimpleType_elt*)
+     | (attribute memberTypes { empty }?,
+        localSimpleType_elt+))
+  }
+[
+  cm:type = "xs:complexType"
+  cm:extends = "xs:annotated"
+  cm:doc [
+    "\x{a}" ~
+    "    This is a base type for each facet.\x{a}" ~
+    "\x{a}" ~
+    "    The type is restricted with a value attribute, the type of which\x{a}" ~
+    "    is specific to the facet.\x{a}" ~
+    "\x{a}" ~
+    "    For some facets, the fixed attribute is prohibited.  Those facets\x{a}" ~
+    "    cm:refine this pattern.\x{a}" ~
+    "\x{a}" ~
+    "    Elements corresponding to each facet are combined using interleave\x{a}" ~
+    "    into the facet.elt element, including their occurrence\x{a}" ~
+    "    constraints.\x{a}" ~
+    "  "
+  ]
+]
+facet =
+  annotated,
+  attribute fixed { xsd:boolean }?
+[
+  cm:type = "xs:complexType"
+  cm:restricts = "xs:facet"
+  cm:refines = "facet"
+]
+noFixedFacet = annotated
+[
+  cm:doc [
+    "\x{a}" ~
+    "    Shared requirements for range facets.  The type of the value\x{a}" ~
+    "    attribute must be consistent with the simpleType it constrains.\x{a}" ~
+    "  "
+  ]
+]
+rangeFacet_ext =
+  facet,
+  attribute value {
+    xsd:decimal
+    | xsd:float
+    | xsd:double
+    | xsd:duration
+    | xsd:dateTime
+    | xsd:time
+    | xsd:date
+    | xsd:gYearMonth
+    | xsd:gYear
+    | xsd:gMonthDay
+    | xsd:gMonth
+    | xsd:gDay
+  }
+[ cm:type = "xs:element" ]
+minExclusive =
+  [
+    cm:href = "http://www.w3.org/TR/xmlschema11-2/#element-minExclusive"
+  ]
+  element xs:minExclusive { rangeFacet_ext }
+[ cm:type = "xs:element" ]
+minInclusive =
+  [
+    cm:href = "http://www.w3.org/TR/xmlschema11-2/#element-minInclusive"
+  ]
+  element xs:minInclusive { rangeFacet_ext }
+[ cm:type = "xs:element" ]
+maxExclusive =
+  [
+    cm:href = "http://www.w3.org/TR/xmlschema11-2/#element-maxExclusive"
+  ]
+  element xs:maxExclusive { rangeFacet_ext }
+[ cm:type = "xs:element" ]
+maxInclusive =
+  [
+    cm:href = "http://www.w3.org/TR/xmlschema11-2/#element-maxInclusive"
+  ]
+  element xs:maxInclusive { rangeFacet_ext }
+[
+  cm:type = "xs:element"
+  cm:doc [
+    "\x{a}" ~
+    "    Implement the co-occurrence restrictions for range facets.\x{a}" ~
+    "  "
+  ]
+]
+facet.elt &=
+  (minExclusive | minInclusive)? & (maxExclusive | maxInclusive)?
+[ cm:type = "xs:complexType" ]
+numFacet =
+  facet,
+  attribute value { xsd:nonNegativeInteger }
+[ cm:type = "xs:element" ]
+totalDigits =
+  [
+    cm:href = "http://www.w3.org/TR/xmlschema11-2/#element-totalDigits"
+  ]
+  element xs:totalDigits {
+    facet,
+    attribute value { xsd:positiveInteger }
+  }
+[ cm:type = "xs:element" ]
+fractionDigits =
+  [
+    cm:href =
+      "http://www.w3.org/TR/xmlschema11-2/#element-fractionDigits"
+  ]
+  element xs:fractionDigits { numFacet }
+[
+  cm:type = "xs:element"
+  cm:doc [ "\x{a}" ~ "    Collect digit-related facets.\x{a}" ~ "  " ]
+]
+facet.elt &= totalDigits?, fractionDigits?
+[ cm:type = "xs:element" ]
+length =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-2/#element-length" ]
+  element xs:length { numFacet }
+[ cm:type = "xs:element" ]
+minLength =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-2/#element-minLength" ]
+  element xs:minLength { numFacet }
+[ cm:type = "xs:element" ]
+maxLength =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-2/#element-maxLength" ]
+  element xs:maxLength { numFacet }
+[
+  cm:type = "xs:element"
+  cm:doc [
+    "\x{a}" ~
+    "    Implement the co-occurrence restrictions for length facets.\x{a}" ~
+    "  "
+  ]
+]
+facet.elt &= length | (minLength? & maxLength?)
+[ cm:type = "xs:element" ]
+enumeration =
+  [
+    cm:href = "http://www.w3.org/TR/xmlschema11-2/#element-enumeration"
+  ]
+  element xs:enumeration {
+    noFixedFacet,
+    attribute value { text }
+  }
+[ cm:type = "xs:element" xs:restricts = "xs:facet" ]
+whiteSpace =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-2/#element-whiteSpace" ]
+  element xs:whiteSpace {
+    facet,
+    attribute value {
+      xsd:NMTOKEN "preserve"
+      | xsd:NMTOKEN "replace"
+      | xsd:NMTOKEN "collapse"
+    }
+  }
+[ cm:type = "xs:element" xs:restricts = "xs:noFixedFacet" ]
+pattern =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-2/#element-pattern" ]
+  element xs:pattern {
+    noFixedFacet,
+    attribute value { xsd:string }
+  }
+[
+  cm:type = "xs:element"
+  cm:doc [ "\x{a}" ~ "    The remaining facets.\x{a}" ~ "  " ]
+]
+facet.elt &=
+  enumeration*
+  & [
+      cm:href = "http://www.w3.org/TR/xmlschema11-2/#element-whiteSpace"
+    ]
+    element xs:whiteSpace {
+      facet,
+      attribute value { xsd:NMTOKEN "collapse" }
+    }?
+  & pattern*
+[ cm:type = "xs:element" ]
+assertion_elt = element xs:assertion { assertion }
+[
+  cm:type = "xs:element"
+  cm:doc [
+    "\x{a}" ~
+    "    Assume multiple instances are valid.\x{a}" ~
+    "  "
+  ]
+]
+facet.elt &= assertion_elt*
+[ cm:type = "xs:element" ]
+explicitTimezone_elt =
+  element xs:explicitTimezone {
+    facet,
+    attribute value {
+      xsd:NMTOKEN "optional"
+      | xsd:NMTOKEN "required"
+      | xsd:NMTOKEN "prohibited"
+    }
+  }
+[
+  cm:type = "xs:element"
+  cm:doc [
+    "\x{a}" ~
+    "    Assume multiple instances are not valid.\x{a}" ~
+    "  "
+  ]
+]
+facet.elt &= explicitTimezone_elt?
+[
+  cm:doc [
+    "\x{a}" ~
+    "    A RELAX NG supporting pattern to enforce the requirement that the\x{a}" ~
+    "    fixed and default attributes are never co-present.\x{a}" ~
+    "  "
+  ]
+]
+fixedOrDefault_ext =
+  empty
+  | attribute fixed { text }
+  | attribute default { text }
+[
+  cm:doc [
+    "\x{a}" ~
+    "    A RELAX NG supporting pattern to enforce the requirement that an\x{a}" ~
+    "    attribute be defaulted, have a type attribute, or include a\x{a}" ~
+    "    simpleType definition as a member element.\x{a}" ~
+    "  "
+  ]
+]
+attributeType_ext =
+  empty
+  | attribute type { xsd:QName }
+  | localSimpleType_elt
+groupRef_elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-group" ]
+  element xs:group { groupRef }
+localElement_elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-element" ]
+  element xs:element { localElement }
+[
+  cm:type = "xs:element"
+  cm:doc [
+    "\x{a}" ~
+    "    Do not confuse this with attribute.elt which is the pattern for a\x{a}" ~
+    "    top-level attribute.\x{a}" ~
+    "  "
+  ]
+]
+attribute_elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-attribute" ]
+  element xs:attribute { \attribute }
+xpathDefaultNamespace_attr =
+  attribute xpathDefaultNamespace { xpathDefaultNamespace }
+localComplexType_elt =
+  [
+    cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-complexType"
+  ]
+  element xs:complexType { localComplexType }
+localSimpleType_elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#element-simpleType" ]
+  element xs:simpleType { localSimpleType }
+alternative_elt =
+  [ cm:href = "http://www.w3.org/TR/xmlschema11-1/#tac" ]
+  element xs:alternative { altType }
+basicNamespaceList_item =
+  xsd:anyURI | xsd:token "##targetNamespace" | xsd:token "##local"
