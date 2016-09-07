@@ -474,17 +474,18 @@ This way region can be inserted into isearch easily with yank command."
   ;; this gives default configuration for a couple of modes
   ;; see end of file auto-complete-config.el
   ;; for more custom configuration see http://auto-complete.org/doc/manual.html
-  (require 'auto-complete-config) 
-  (ac-config-default)
-  (define-key ac-mode-map (kbd "C-c C-<SPC>") 'auto-complete) 
-  (setq ac-use-menu-map t)
+;;  (require 'auto-complete-config) 
+;;  (ac-config-default)
+;;  (define-key ac-mode-map (kbd "C-c C-<SPC>") 'auto-complete) 
+;;  (setq ac-use-menu-map t)
   ;; Default settings
-  (require 'ac-php)
-  (define-key ac-menu-map "\C-n" 'ac-next)
-  (define-key ac-menu-map "\C-p" 'ac-previous)
-  (define-key ac-menu-map "\C-s" 'ac-isearch)
-  (add-to-list 'ac-modes 'php-mode) 
-  (add-to-list 'ac-modes 'web-mode) )
+;;  (require 'ac-php)
+;;  (define-key ac-menu-map "\C-n" 'ac-next)
+;;  (define-key ac-menu-map "\C-p" 'ac-previous)
+;;  (define-key ac-menu-map "\C-s" 'ac-isearch)
+;;  (add-to-list 'ac-modes 'php-mode) 
+;;  (add-to-list 'ac-modes 'web-mode) )
+)
 
 ;; ]
 
