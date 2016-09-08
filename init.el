@@ -130,10 +130,6 @@
 
 (global-set-key (kbd "M-Z") #'zap-up-to-char)
 
-(add-to-list 'auto-mode-alist '("\.dll\\'" . hexl-mode))
-(add-to-list 'auto-mode-alist '("\.exe\\'" . hexl-mode))
-(add-to-list 'auto-mode-alist '("\.so\\'" . hexl-mode))
-
 ;; TODO: advicing has changed! This should be around to evaluate mouse-set-point parameter and wether region is set at
 ;; all. 
 
@@ -471,21 +467,15 @@ This way region can be inserted into isearch easily with yank command."
 
 (use-package auto-complete
   :config
-  ;; this gives default configuration for a couple of modes
-  ;; see end of file auto-complete-config.el
-  ;; for more custom configuration see http://auto-complete.org/doc/manual.html
-;;  (require 'auto-complete-config) 
-;;  (ac-config-default)
-;;  (define-key ac-mode-map (kbd "C-c C-<SPC>") 'auto-complete) 
-;;  (setq ac-use-menu-map t)
-  ;; Default settings
-;;  (require 'ac-php)
-;;  (define-key ac-menu-map "\C-n" 'ac-next)
-;;  (define-key ac-menu-map "\C-p" 'ac-previous)
-;;  (define-key ac-menu-map "\C-s" 'ac-isearch)
-;;  (add-to-list 'ac-modes 'php-mode) 
-;;  (add-to-list 'ac-modes 'web-mode) )
-)
+  (define-key ac-mode-map (kbd "C-c C-<SPC>") 'auto-complete)
+  (setq ac-use-menu-map t)
+  (require 'ac-php)
+  (define-key ac-menu-map "\C-n" 'ac-next)
+  (define-key ac-menu-map "\C-p" 'ac-previous)
+  (define-key ac-menu-map "\C-s" 'ac-isearch)
+  (add-to-list 'ac-modes 'php-mode) 
+  (add-to-list 'ac-modes 'web-mode) )
+
 
 ;; ]
 
@@ -1281,8 +1271,8 @@ and display corresponding buffer in new frame."
       "</head>\n"
       "<body>\n"
       "</body>\n"
-      "</html>\n"
-      ) indent-buffer ] )
+      "</html>\n" )
+    indent-buffer ] )
 
 (add-hook 'html-mode-hook 'mp/html-mode-setup)
 
@@ -1347,3 +1337,14 @@ and display corresponding buffer in new frame."
 
 ;; ]
 
+;; [ shared objects elf mode
+
+ (when (eq system-type 'gnu/linux)
+  (use-package elf-mode
+    :init
+    (add-to-list 'auto-mode-alist '("\\(\\.\\(?:o\\|so\\.\\(?:[0-9]\\.[0-9]\\.[0-9]\\|[0-9]\\.[0-9]\\|[0-9]\\)\\)\\)\\'" . elf-mode))))
+
+(add-to-list 'auto-mode-alist '("\.dll\\'" . hexl-mode))
+(add-to-list 'auto-mode-alist '("\.exe\\'" . hexl-mode))
+
+;; ]
