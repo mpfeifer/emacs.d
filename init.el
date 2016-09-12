@@ -52,23 +52,59 @@
 
 (require 'package)
 
-(setq package-archives '(("melpa" . "http://melpa.org/packages/"))
+(defconst mp/fn-package-guard "~/.emacs.d/.package-guard")
+(defconst mp/package-guard-renewal 604800) ;; this is one week. use 86400 for one day.
+
+(setq package-archives '(("gnu" . "https://elpa.gnu.org/packages/")
+                         ("melpa" . "http://melpa.org/packages/"))
       package-enable-at-startup nil
       package-user-dir "~/.emacs.d/packages/")
 
 (package-initialize)
 
-(unless (package-installed-p 'use-package)
-  (package-refresh-contents)
-  (package-install 'use-package))
+;; periodically refresh package contents
+
+(defun mp/timeval-to-seconds (tv)
+  "Calculate SEC-HIGH * 2^16 + SEC-LOW for value contained in TV."
+  (let* ((sec-high (nth 0 tv))
+         (sec-low (nth 1 tv))
+         (sec-total (+ sec-low (* sec-high (expt 2 16))))
+         sec-total)))
+
+(defun mp/package-refresh-necessary-p ()
+  (if (file-exists-p mp/fn-package-guard)
+      (progn
+        (let* ((mtime (mp/timeval-to-seconds (nth 5 (file-attributes mp/fn-package-guard))))
+               (ctime (mp/timeval-to-seconds (current-time))))
+          (< (+ mtime mp/package-guard-renewal ctime )))
+    t)))
+
+(defun mp/create-package-guard ()
+  "Create file for the package guard subsystem."
+  (with-temp-buffer
+    (progn
+      (find-file mp/fn-package-guard)
+      (save-buffer)
+      (kill-buffer))))
+      
+(global-set-key (kbd "C-c 5") #'package-list-packages)
+
+;; see if this emacs is starting for the first time with this init.el
+;; and if pacakge refresh is necessary (currently once in a week)
+
+(when (not (file-exists-p mp/fn-package-guard))
+  (progn
+    (package-refresh-contents)
+    (mp/create-package-guard)
+    (package-install 'use-package))
+  (when (mp/package-refresh-necessary-p)
+    (package-refresh-contents)))
 
 (require 'use-package)
 
 (setq use-package-verbose t
       use-package-always-ensure t
       load-prefer-newer t) 
-
-(global-set-key (kbd "C-c 5") #'package-list-packages)
 
 ;; ]
 
@@ -712,12 +748,31 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; ]
 
-;; [ tags
+;; [ xref
 
 (setq tags-revert-without-query t)
 
-(defadvice xref-find-definitions (before push-mark-before-find activate)
-  (push-mark))
+(defun ad-xref-goto-xref-close-buffer (orig-fun &rest args)
+  (when (string= (buffer-name) "*xref*")
+    (let ((window (get-buffer-window))
+          (result (apply orig-fun args)))
+      (delete-window window)
+      result)))
+
+(defvar mp/xref-window nil)
+(defun ad-xref-goto-xref-save-window ()
+  (when (string= (buffer-name) "*xref*")
+    (setq mp/xref-window (get-buffer-window))
+    ))
+(defun ad-xref-goto-xref-delete-window ()
+  (when (windowp mp/xref-window)
+    (delete-window mp/xref-window)))
+
+(advice-add 'xref-goto-xref :before #'ad-xref-goto-xref-save-window)
+(advice-add 'xref-goto-xref :after #'ad-xref-goto-xref-delete-window)
+
+(global-set-key (kbd "M-*") #'xref-pop-marker-stack)
+
 
 ;; ]
 
