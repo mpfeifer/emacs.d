@@ -116,13 +116,6 @@ class Application:
         print(interrupt_msg)
         exit(0)
 
-    def setup_network_logger(self):
-        self.log.addHandler(socketHandler)
-
-        rootLogger.addHandler(socketHandler)
-        
-        self.network_logging_enabled=1
-
     def run(self):
         time.sleep(10) # <-- Application logic goes here
 
