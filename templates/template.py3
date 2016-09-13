@@ -78,11 +78,12 @@ class Application:
 
         if os.path.isfile(self.inifile_name):
             self.inifile=configparser.ConfigParser()
+            self.inifile.read(self.inifile_name)
 
         if self.inifile:
-            self.loghost_name=self.inifile.get('logging', 'hostname', fallback=self.loghost_name)
+            self.loghost_name=self.inifile.get('logging', 'hostname') # , fallback=self.loghost_name)
             self.loghost_port=self.inifile.get('logging', 'port', fallback=self.loghost_port)
-            if (self.inifile.get('logging', 'remote_logging', fallback=False)):
+            if (self.inifile.getboolean('logging', 'remote_logging', fallback=False)):
                 self.remote_logger_enabled=True
 
         try:
