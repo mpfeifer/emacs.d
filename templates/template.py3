@@ -19,21 +19,24 @@ class Application:
         self.loghost_port  = logging.handlers.DEFAULT_TCP_LOGGING_PORT
         self.loghost_name  = 'localhost'
         self.logdomain     = 'template.py'
-        self.usage_string  = 'Usage: this-script.py [inifile] -h -p <numeric> -l <hostname> -r\r\n\r\n'
+        self.usage_string  = 'Usage: this-script.py [inifile] -h -v -p <numeric> -l <hostname> -r\r\n\r\n'
         self.usage_string+=' [inifile]  if inifile is set it is read before commandline switches\r\n'
         self.usage_string+='    -h      print usage string\r\n'
         self.usage_string+='    -l      set remote logging host (this enables network logging)\r\n'
         self.usage_string+='    -p      set remote logging port\r\n'
-        self.usage_string+='    -r      enabled remote logging'
+        self.usage_string+='    -r      enabled remote logging\r\n'
+        self.usage_string+='    -v      be more verbose\r\n'
         self.usage_string+='\r\nIf remote logging is enabled in inifile it cannot be disabled via commandline.\r\n'
         self.usage_string+='{} version {}'.format(Application.name, Application.version)
         self.inifile       = None
         self.inifile_name  = 'undefined'
-        self.log           = self.get_logger()
-        self.remote_logger_enabled = 0
+        self.remote_logger_enabled = False
+        self.log_verbose = False
         self.gather_parameter()
-        signal.signal(signal.SIGINT, Application.signal_int_handler)
+        self.log           = self.get_logger()
         self.log_configuration()
+        signal.signal(signal.SIGINT, Application.signal_int_handler)        
+
 
     def log_configuration(self):
         self.log.debug("%28s = %s", "Application.name", Application.name)
@@ -44,17 +47,26 @@ class Application:
         self.log.debug("%28s = %s", "loghost_port", self.loghost_port)
         self.log.debug("%28s = %s", "loghost_name", self.loghost_name)
 
+        
     def get_logger(self):
         log = logging.getLogger(self.logdomain)
         formatstring='%(asctime)s %(levelname)-15s %(name)s # %(message)s'
         formatter = logging.Formatter(fmt=formatstring)
-        handler = logging.StreamHandler(sys.stderr)
+        handler = None
+        if self.remote_logger_enabled:
+            handler = logging.handlers.SocketHandler(self.loghost_name, self.loghost_port)
+        else:
+            handler = logging.StreamHandler(sys.stderr)
         handler.setFormatter(formatter)
         log.addHandler(handler)
-        log.setLevel(logging.DEBUG)
-        log.propagate=1
+        level = logging.INFO
+        if self.log_verbose:
+            level = logging.DEBUG
+        log.setLevel(level)
+        log.propagate=0
         return log
 
+        
     def gather_parameter(self):
         '''Collect parameters from inifile (first) and then from commandline.'''
 
@@ -63,42 +75,35 @@ class Application:
         if len(sys.argv)> 1 and not sys.argv[1].startswith('-'):
             self.inifile_name=sys.argv[1]
             first_getopt_index=2
-            self.log.info('will read inifile ' + self.inifile_name)
 
         if os.path.isfile(self.inifile_name):
             self.inifile=configparser.ConfigParser()
 
         if self.inifile:
-            self.log.info('inifile ' + self.inifile_name + "successfully opened")
-            self.loghost_name=inifile.get('[logging]', 'hostname', fallback=self.loghost_name)
-            self.loghost_port=inifile.get('[logging]', 'port', fallback=self.loghost_port)
-            if (inifile.get('[logging]', 'network_logging', fallback=0)):
-                self.setup_network_logger()
+            self.loghost_name=self.inifile.get('logging', 'hostname', fallback=self.loghost_name)
+            self.loghost_port=self.inifile.get('logging', 'port', fallback=self.loghost_port)
+            if (self.inifile.get('logging', 'remote_logging', fallback=False)):
+                self.remote_logger_enabled=True
+
         try:
-            opts, args = getopt.getopt(sys.argv[first_getopt_index:], 'hp:l:r', 'help')
+            opts, args = getopt.getopt(sys.argv[first_getopt_index:], 'vhp:l:r', 'help')
         except getop.GetoptError as err:
             print(err)
             self.usage()
-
-        output = None
-        verbose = False
-
-        enable_network_logging = False
 
         for option, arg in opts:
             if option == '-h':
                 self.usage();
             elif option == '-p':
                 self.loghost_port=int(arg)
-                enable_network_logging = True
+                self.remote_logger_enabled = True
             elif option == '-l':
                 self.loghost_name=argument
-                enable_network_logging = True
+                self.remote_logger_enabled = True
             elif option == '-r':
-                enable_network_logging = True
-
-        if enable_network_logging:
-            self.setup_network_logger()
+                self.remote_logger_enabled = True
+            elif option == '-v':
+                self.log_verbose = True
 
     def usage(self):
         print(self.usage_string)
@@ -111,11 +116,10 @@ class Application:
         exit(0)
 
     def setup_network_logger(self):
-        rootLogger = logging.getLogger('')
-        rootLogger.setLevel(logging.DEBUG)
-        socketHandler = logging.handlers.SocketHandler(self.loghost_name,
-                                                       self.loghost_port)
+        self.log.addHandler(socketHandler)
+
         rootLogger.addHandler(socketHandler)
+        
         self.network_logging_enabled=1
 
     def run(self):
