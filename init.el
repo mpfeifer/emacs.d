@@ -348,7 +348,7 @@ This way region can be inserted into isearch easily with yank command."
   :config
   (setq ibuffer-show-empty-filter-groups nil
         ibuffer-formats '((mark modified read-only " "
-                                (name 18 18 :left :elide)
+                                (name 26 26 :left :elide)
                                 " "
                                 (size 9 -1 :right)
                                 " "
