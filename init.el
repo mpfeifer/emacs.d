@@ -910,7 +910,12 @@ This way region can be inserted into isearch easily with yank command."
     (find-file (concat projectroot "/" name ".css"))
     (save-buffer)
     (other-window -1)
-    (copy-file "~/.emacs.d/templates/jquery-3.0.0.js" (concat projectroot "/"))
+    (copy-file "~/.emacs.d/templates/jquery-3.1.0.js" (concat projectroot "/"))
+    (copy-file "~/.emacs.d/templates/jquery-ui-1.12.0.css" (concat projectroot "/"))
+    (copy-file "~/.emacs.d/templates/jquery-ui-1.12.0.js" (concat projectroot "/"))
+    (copy-file "~/.emacs.d/templates/jquery.mobile-1.4.5.js" (concat projectroot "/"))
+    (copy-file "~/.emacs.d/templates/qunit-2.0.1.js" (concat projectroot "/"))
+    (copy-file "~/.emacs.d/templates/qunit-2.0.1.css" (concat projectroot "/"))
     (switch-to-buffer (concat name ".html"))
     (mp/html-project-post-processing name)))
 
@@ -1313,6 +1318,16 @@ and display corresponding buffer in new frame."
 (defun mp/html-mode-setup ()
   (interactive))
 
+(defun mp/html-post-processing ()
+  "This method looks for strings %CSSFILE% and %TITLE% and replaces them with some meaningful values."
+  (save-excursion
+    (goto-char (point-min))
+    (when (re-search-forward "%TITLE%" nil t)
+      (replace-match (replace-regexp-in-string (regexp-quote ".html") "" (buffer-name) 'fixedcase 'literal)))
+    (goto-char (point-min))
+    (when (re-search-forward "%CSSFILE%" nil t)
+      (replace-match (replace-regexp-in-string (regexp-quote ".html") ".css" (buffer-name) 'fixedcase 'literal) 'fixedcase))))
+
 (define-auto-insert '("\\.html\\'" . "HTML5 Skeleton")
   [ '(nil
       "<!DOCTYPE html>\n"
@@ -1320,14 +1335,16 @@ and display corresponding buffer in new frame."
       "<head>\n"
       "<meta charset=\"UTF-8\">\n"
       "<title>%TITLE%</title>\n"
-      "<script src=\"jquery-3.0.0.js\"></script>\n"
+      "<script src=\"jquery-3.1.0.js\"></script>\n"
+      "<script src=\"jquery-ui-1.12.0.js\"></script>\n"
       "<script src=\"subrx.js\"></script>\n"
       "<link rel=\"stylesheet\" type=\"text.css\" href=\"%CSSFILE%\">\n"
       "</head>\n"
       "<body>\n"
       "</body>\n"
       "</html>\n" )
-    indent-buffer ] )
+    indent-buffer 
+    mp/html-post-processing ] )
 
 (add-hook 'html-mode-hook 'mp/html-mode-setup)
 
