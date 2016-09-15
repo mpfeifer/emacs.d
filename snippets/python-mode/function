@@ -1,7 +1,9 @@
 # -*- mode: snippet -*-
 # name: function
-# key: f
+# key: def
 # group: definitions
 # --
 def ${1:fun}(${2:args}):
+    log.debug("${1}: enter")
     $0
+    log.debug("${1}: exit")

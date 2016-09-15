@@ -493,13 +493,10 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; [ auto complete
 ;;
-;; TODO - want keybindings in auto-complete for search and scroll
 ;; TODO - want to understand how documentation in auto-complete works
 ;; TODO - want per mode and per file dictionary files
 ;; TODO - want to understand auto-complete-config and how to extend/customize it
 
-;; see https://github.com/xcwen/ac-php
-(use-package ac-php)
 
 (use-package auto-complete
   :config
@@ -512,6 +509,16 @@ This way region can be inserted into isearch easily with yank command."
   (add-to-list 'ac-modes 'php-mode) 
   (add-to-list 'ac-modes 'web-mode) )
 
+;; see https://github.com/xcwen/ac-php
+(use-package ac-php)
+
+(defun mp/setup-ac-php ()
+  "Turn on auto-complete mode and set ac-sources for ac-php."
+  (auto-complete-mode)
+  (require 'ac-php)
+  (setq ac-sources  '(ac-source-php) ) )
+
+(add-hook 'php-mode-hook 'mp/setup-ac-php)
 
 ;; ]
 
@@ -540,6 +547,11 @@ This way region can be inserted into isearch easily with yank command."
       (file-name-nondirectory (buffer-file-name)) "\n"
       " * Started on " (format-time-string "%A, %e %B %Y.") \n
       " */" \n \n \n ) indent-buffer ] )
+
+(defun mp/qunit-test-for-current-buffer ()
+  (interactive)
+  (let ((test-file-name (replace-regexp-in-string (regexp-quote ".js") "-test.html" (buffer-name))))
+      (find-file test-file-name)))
 
 (use-package js2-mode
   :mode "\\.js\\'"
@@ -888,7 +900,7 @@ This way region can be inserted into isearch easily with yank command."
       (replace-match name))
     (goto-char (point-min))
     (when (re-search-forward "%CSSFILE%" nil t)
-      (replace-match (replace-regexp-in-string (regexp-quote ".html") ".css" (buffer-name) 'fixedcase 'literal) 'fixedcase))))
+      (replace-match (replace-regexp-in-string (regexp-quote ".html") ".css" (buffer-name) 'fixedcase) 'fixedcase))))
 
 (defun mp/start-web-project (name)
   "Create a new web project with NAME.  Create initial html, js, css file."
@@ -907,7 +919,12 @@ This way region can be inserted into isearch easily with yank command."
     (find-file (concat projectroot "/" name ".css"))
     (save-buffer)
     (other-window -1)
-    (copy-file "~/.emacs.d/templates/jquery-3.0.0.js" (concat projectroot "/"))
+    (copy-file "~/.emacs.d/templates/jquery-3.1.0.js" (concat projectroot "/"))
+    (copy-file "~/.emacs.d/templates/jquery-ui-1.12.0.css" (concat projectroot "/"))
+    (copy-file "~/.emacs.d/templates/jquery-ui-1.12.0.js" (concat projectroot "/"))
+    (copy-file "~/.emacs.d/templates/jquery.mobile-1.4.5.js" (concat projectroot "/"))
+    (copy-file "~/.emacs.d/templates/qunit-2.0.1.js" (concat projectroot "/"))
+    (copy-file "~/.emacs.d/templates/qunit-2.0.1.css" (concat projectroot "/"))
     (switch-to-buffer (concat name ".html"))
     (mp/html-project-post-processing name)))
 
@@ -1310,6 +1327,41 @@ and display corresponding buffer in new frame."
 (defun mp/html-mode-setup ()
   (interactive))
 
+(defun mp/html-post-processing ()
+  "This method looks for strings %CSSFILE% and %TITLE% and replaces them with some meaningful values."
+  (save-excursion
+    (goto-char (point-min))
+    (when (re-search-forward "%TITLE%" nil t)
+      (replace-match (replace-regexp-in-string (regexp-quote ".html") "" (buffer-name) 'fixedcase)))
+    (goto-char (point-min))
+    (when (re-search-forward "%CSSFILE%" nil t)
+      (replace-match (replace-regexp-in-string (regexp-quote ".html") ".css" (buffer-name) 'fixedcase) 'fixedcase))
+    (when (re-search-forward "%TESTEE%" nil t)
+      (replace-match (replace-regexp-in-string (regexp-quote "-test.html") "" (buffer-name) 'fixedcase) 'fixedcase))))
+
+(define-auto-insert '("-test.html\\'" . "HTML5 Skeleton for QUnit test")
+  [ '(nil
+      "<!DOCTYPE html>\n"
+      "<html>\n"
+      "<head>\n"
+      "<meta charset=\"UTF-8\">\n"
+      "<title>QUnit Testcase</title>\n"
+      "<link rel=\"stylesheet\" href=\"qunit-2.0.1.css\">\n"
+      "</head>\n"
+      "<body>\n"
+      "<div id=\"qunit\"></div>\n"
+      "<div id=\"qunit-fixture\"><\div>/n"
+      "<script src=\"%TESTEE%\"></script>\n"
+      "<script src=\"qunit-2.0.1.js\"></script>\n"
+      "<script>\n"
+      "// Testcases go here. Use eg yasnippet test to expand template test.\n"
+      "});\n"
+      "</script>\n"
+      "</body>\n"
+      "</html>\n" )
+    indent-buffer 
+    mp/html-post-processing ] )
+
 (define-auto-insert '("\\.html\\'" . "HTML5 Skeleton")
   [ '(nil
       "<!DOCTYPE html>\n"
@@ -1317,14 +1369,16 @@ and display corresponding buffer in new frame."
       "<head>\n"
       "<meta charset=\"UTF-8\">\n"
       "<title>%TITLE%</title>\n"
-      "<script src=\"jquery-3.0.0.js\"></script>\n"
+      "<script src=\"jquery-3.1.0.js\"></script>\n"
+      "<script src=\"jquery-ui-1.12.0.js\"></script>\n"
       "<script src=\"subrx.js\"></script>\n"
-      "<link rel=\"stylesheet\" type=\"text.css\" href=\"%CSSFILE%\">\n"
+      "<link rel=\"stylesheet\" href=\"%CSSFILE%\">\n"
       "</head>\n"
       "<body>\n"
       "</body>\n"
       "</html>\n" )
-    indent-buffer ] )
+    indent-buffer 
+    mp/html-post-processing ] )
 
 (add-hook 'html-mode-hook 'mp/html-mode-setup)
 
@@ -1333,12 +1387,9 @@ and display corresponding buffer in new frame."
 ;; [ php mode
 
 (defun mp/php-mode-extension ()
-  (interactive)
-  (require 'ac-php)
-  (setq indent-tabs-mode nil)
-  (setq c-basic-offset 4)
-  (setq php-template-compatibility nil) 
-  (setq ac-sources '(ac-source-php) ) )
+  (setq indent-tabs-mode nil
+        c-basic-offset 4
+        php-template-compatibility nil) )
 
 (use-package php-mode
   :config
