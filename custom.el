@@ -10,8 +10,8 @@
  '(ac-comphist-file "~/.emacs.d/ac-comphist.dat")
  '(ac-dictionary-directories (quote ("~/.emacs.d/dictionaries/")))
  '(ac-dictionary-files (quote ("~/.emacs.d/dictionary")))
- '(ac-quick-help-delay 4.0)
- '(ac-trigger-key "C-c C-SPC")
+ '(ac-quick-help-delay 3.0)
+ '(ac-trigger-key "C-x C-SPC")
  '(ac-use-fuzzy t)
  '(ac-user-dictionary (quote ("")))
  '(auto-save-list-file-prefix "~/.emacs.d/auto-save/saved-")
@@ -66,7 +66,7 @@
       ("help-mode"
        (mode . help-mode))
       ("elisp-byte-code-mode"
-       (mode . elisp-byte-code-mode))))))
+       (mode . elisp-byte-code-mode))))) t)
  '(ibuffer-saved-filters
    (quote
     (("gnus"
@@ -95,7 +95,7 @@
  '(org-todo-keywords (quote ((sequence "TODO" "DONE"))))
  '(package-selected-packages
    (quote
-    (sunny-day-theme sunshine elf-mode volatile-highlights ac-slime ac-php web-mode jdee auto-complete yatemplate aggressive-indent ac-ispell yaml-mode org-bullets ibuffer-git ibuffer-projectile projectile projectile-speedbar htmlize paredit edit-server flycheck auto-compile neotree elpy material-theme log4e company-jedi autumn-light-theme paper-theme soft-morning-theme restclient org-ac foggy-night-theme yasnippet use-package sr-speedbar solarized-theme smex prodigy php-mode js2-mode jedi-direx ido-vertical-mode ido-ubiquitous hungry-delete expand-region elisp-slime-nav dracula-theme color-theme-solarized avy aurora-theme anti-zenburn-theme ample-zen-theme ample-theme airline-themes ahungry-theme afternoon-theme)))
+    (magit sunny-day-theme sunshine elf-mode volatile-highlights ac-slime ac-php web-mode jdee auto-complete yatemplate aggressive-indent ac-ispell yaml-mode org-bullets ibuffer-git ibuffer-projectile projectile projectile-speedbar htmlize paredit edit-server flycheck auto-compile neotree elpy material-theme log4e company-jedi autumn-light-theme paper-theme soft-morning-theme restclient org-ac foggy-night-theme yasnippet use-package sr-speedbar solarized-theme smex prodigy php-mode js2-mode jedi-direx ido-vertical-mode ido-ubiquitous hungry-delete expand-region elisp-slime-nav dracula-theme color-theme-solarized avy aurora-theme anti-zenburn-theme ample-zen-theme ample-theme airline-themes ahungry-theme afternoon-theme)))
  '(projectile-cache-file "~/.emacs.d/projectile.cache")
  '(projectile-known-projects-file "~/.emacs.d/projectile-bookmarks.eld")
  '(python-environment-directory "~/.emacs.d/python-environments")
