@@ -752,27 +752,24 @@ This way region can be inserted into isearch easily with yank command."
 
 (setq tags-revert-without-query t)
 
-(defun ad-xref-goto-xref-close-buffer (orig-fun &rest args)
-  (when (string= (buffer-name) "*xref*")
-    (let ((window (get-buffer-window))
-          (result (apply orig-fun args)))
-      (delete-window window)
-      result)))
+;; these do not seem to be available prior to emacs 24.5
+(when (and (fboundp 'advice-add)
+           (fboundp 'xref-goto-xref))
+  (progn
+    (defvar mp/xref-window nil)
 
-(defvar mp/xref-window nil)
-(defun ad-xref-goto-xref-save-window ()
-  (when (string= (buffer-name) "*xref*")
-    (setq mp/xref-window (get-buffer-window))
-    ))
-(defun ad-xref-goto-xref-delete-window ()
-  (when (windowp mp/xref-window)
-    (delete-window mp/xref-window)))
+    (defun ad-xref-goto-xref-save-window ()
+      (when (string= (buffer-name) "*xref*")
+        (setq mp/xref-window (get-buffer-window))))
 
-(advice-add 'xref-goto-xref :before #'ad-xref-goto-xref-save-window)
-(advice-add 'xref-goto-xref :after #'ad-xref-goto-xref-delete-window)
+    (defun ad-xref-goto-xref-delete-window ()
+      (when (windowp mp/xref-window)
+        (delete-window mp/xref-window)))
+  
+    (advice-add 'xref-goto-xref :before #'ad-xref-goto-xref-save-window)
+    (advice-add 'xref-goto-xref :after #'ad-xref-goto-xref-delete-window)
 
-(global-set-key (kbd "M-*") #'xref-pop-marker-stack)
-
+    (global-set-key (kbd "M-*") #'xref-pop-marker-stack)))
 
 ;; ]
 
@@ -1257,6 +1254,7 @@ and display corresponding buffer in new frame."
   (auto-fill-mode 1)
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
+  (setq python-indent-offset 4)
   (local-set-key (kbd "M-;") 'comment-dwim))
 
 (add-hook 'python-mode-hook 'mp/python-mode-hook)
@@ -1265,9 +1263,8 @@ and display corresponding buffer in new frame."
 (add-to-list 'auto-mode-alist '("\\.py2\\'" . python-mode))
 (add-to-list 'auto-mode-alist '("\\.py3\\'" . python-mode))
 
-(add-to-list 'auto-insert-alist '(".*\\.py[23]?$" . [ "template.py" ] ) )
-
-
+(add-to-list 'auto-insert-alist '(".*\\.py3?$" . [ "template.py3" ] ) )
+(add-to-list 'auto-insert-alist '(".*\\.py2$" . [ "template.py" ] ) )
 
 
 ;; ]
