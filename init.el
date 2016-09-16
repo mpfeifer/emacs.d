@@ -641,61 +641,57 @@ This way region can be inserted into isearch easily with yank command."
 ;; [ session management
 
 ;; save and restore open buffers
+
 (desktop-save-mode)
 
 ;; [ org mode
 
 (global-set-key (kbd "C-c c") #'org-capture)
 
+(require 'ob-plantuml)
+(require 'ob-python)
+
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((plantuml . t)
+   (python . t)
+   (C . t)
+   (emacs-lisp t)
+   (awk . t)
+   (dot . t)
+   (gnuplot . t)
+   (java . t)
+   (perl . t)
+   (sh . t)))
+
+(setq org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
+      org-ellipsis "…"
+      org-directory "~/org"
+      org-default-notes-file "~/org/gtd.org"
+      org-confirm-babel-evaluate nil)
+
+(setq org-capture-templates
+      (quote (("t" "todo" entry (file "~/org/gtd.org")
+               "** TODO %?\n%U\n%a\n" :clock-in t :clock-resume t)
+              ("r" "respond" entry (file "~/org/gtd.org")
+               "** NEXT Respond to %:from on %:subject\nSCHEDULED: %t\n%U\n%a\n" :clock-in t :clock-resume t :immediate-finish t)
+              ("n" "note" entry (file "~/org/gtd.org")
+               "** %? :NOTE:\n%U\n%a\n" :clock-in t :clock-resume t)
+              ("j" "Journal" entry (file+datetree "~/org/diary.org")
+               "** %?\n%U\n" :clock-in t :clock-resume t)
+              ("w" "org-protocol" entry (file "~/org/gtd.org")
+               "** TODO Review %c\n%U\n" :immediate-finish t)
+              ("m" "Meeting" entry (file "~/org/gtd.org")
+               "** MEETING with %? :MEETING:\n%U" :clock-in t :clock-resume t)
+              ("p" "Phone call" entry (file "~/org/gtd.org")
+               "** PHONE %? :PHONE:\n%U" :clock-in t :clock-resume t)
+              ("h" "Habit" entry (file "~/org/gtd.org")
+               "** NEXT %?\n%U\n%a\nSCHEDULED: %(format-time-string \"%<<%Y-%m-%d %a .+1d/3d>>\")\n:PROPERTIES:\n:STYLE: habit\n:REPEAT_TO_STATE: NEXT\n:END:\n"))))
+
 (defun mp/org-mode-hook ()
-  "org mode hook extender [mp]"
-
-  (require 'ob-plantuml)
-  (require 'ob-python)
-
-  ;; babel
-
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((plantuml . t)
-     (python . t)
-     (C . t)
-     (emacs-lisp t)
-     (awk . t)
-     (dot . t)
-     (gnuplot . t)
-     (java . t)
-     (perl . t)
-     (sh . t)))
-
+  "org mode hook extender."
   (auto-fill-mode)
-
   (local-set-key (kbd "<return>") 'org-return-indent)
-
-  (setq org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
-        org-ellipsis "…"
-        org-directory "~/org"
-        org-default-notes-file "~/org/gtd.org"
-        org-confirm-babel-evaluate nil)
-
-  (setq org-capture-templates
-        (quote (("t" "todo" entry (file "~/org/gtd.org")
-                 "** TODO %?\n%U\n%a\n" :clock-in t :clock-resume t)
-                ("r" "respond" entry (file "~/org/gtd.org")
-                 "** NEXT Respond to %:from on %:subject\nSCHEDULED: %t\n%U\n%a\n" :clock-in t :clock-resume t :immediate-finish t)
-                ("n" "note" entry (file "~/org/gtd.org")
-                 "** %? :NOTE:\n%U\n%a\n" :clock-in t :clock-resume t)
-                ("j" "Journal" entry (file+datetree "~/org/diary.org")
-                 "** %?\n%U\n" :clock-in t :clock-resume t)
-                ("w" "org-protocol" entry (file "~/org/gtd.org")
-                 "** TODO Review %c\n%U\n" :immediate-finish t)
-                ("m" "Meeting" entry (file "~/org/gtd.org")
-                 "** MEETING with %? :MEETING:\n%U" :clock-in t :clock-resume t)
-                ("p" "Phone call" entry (file "~/org/gtd.org")
-                 "** PHONE %? :PHONE:\n%U" :clock-in t :clock-resume t)
-                ("h" "Habit" entry (file "~/org/gtd.org")
-                 "** NEXT %?\n%U\n%a\nSCHEDULED: %(format-time-string \"%<<%Y-%m-%d %a .+1d/3d>>\")\n:PROPERTIES:\n:STYLE: habit\n:REPEAT_TO_STATE: NEXT\n:END:\n"))))
-
   (setenv "GRAPHVIZ_DOT" "dot") )
 
 (add-hook 'org-mode-hook 'mp/org-mode-hook)
@@ -764,18 +760,12 @@ This way region can be inserted into isearch easily with yank command."
 
 (setq tags-revert-without-query t)
 
-(defun ad-xref-goto-xref-close-buffer (orig-fun &rest args)
-  (when (string= (buffer-name) "*xref*")
-    (let ((window (get-buffer-window))
-          (result (apply orig-fun args)))
-      (delete-window window)
-      result)))
-
 (defvar mp/xref-window nil)
+
 (defun ad-xref-goto-xref-save-window ()
   (when (string= (buffer-name) "*xref*")
-    (setq mp/xref-window (get-buffer-window))
-    ))
+    (setq mp/xref-window (get-buffer-window))))
+
 (defun ad-xref-goto-xref-delete-window ()
   (when (windowp mp/xref-window)
     (delete-window mp/xref-window)))
