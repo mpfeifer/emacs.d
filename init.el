@@ -530,12 +530,20 @@ This way region can be inserted into isearch easily with yank command."
       "/*\n * "
       (file-name-nondirectory (buffer-file-name)) "\n"
       " * Started on " (format-time-string "%A, %e %B %Y.") \n
-      " */" \n \n \n ) indent-buffer ] )
+      " */" \n \n \n )
+    indent-buffer ] )
 
 (defun mp/qunit-test-for-current-buffer ()
   (interactive)
-  (let ((test-file-name (replace-regexp-in-string (regexp-quote ".js") "-test.html" (buffer-name))))
-      (find-file test-file-name)))
+  (let ((test-html-file (replace-regexp-in-string (regexp-quote ".js") "-test.html" (buffer-name)))
+        (test-js-file (replace-regexp-in-string (regexp-quote ".js") "-test.js" (buffer-name))))
+    (when (eq 1 (length (window-list)))
+      (progn
+        (find-file test-html-file)
+        (goto-char (point-min))
+        (split-window (selected-window) 15)
+        (other-window 1)
+        (find-file test-js-file)))))
 
 (use-package js2-mode
   :mode "\\.js\\'"
@@ -1310,7 +1318,7 @@ and display corresponding buffer in new frame."
   (interactive))
 
 (defun mp/html-post-processing ()
-  "This method looks for strings %CSSFILE% and %TITLE% and replaces them with some meaningful values."
+  "This method looks for a couple of key-strings and replaces them with some meaningful values."
   (save-excursion
     (goto-char (point-min))
     (when (re-search-forward "%TITLE%" nil t)
@@ -1319,30 +1327,9 @@ and display corresponding buffer in new frame."
     (when (re-search-forward "%CSSFILE%" nil t)
       (replace-match (replace-regexp-in-string (regexp-quote ".html") ".css" (buffer-name) 'fixedcase) 'fixedcase))
     (when (re-search-forward "%TESTEE%" nil t)
-      (replace-match (replace-regexp-in-string (regexp-quote "-test.html") "" (buffer-name) 'fixedcase) 'fixedcase))))
-
-(define-auto-insert '("-test.html\\'" . "HTML5 Skeleton for QUnit test")
-  [ '(nil
-      "<!DOCTYPE html>\n"
-      "<html>\n"
-      "<head>\n"
-      "<meta charset=\"UTF-8\">\n"
-      "<title>QUnit Testcase</title>\n"
-      "<link rel=\"stylesheet\" href=\"qunit-2.0.1.css\">\n"
-      "</head>\n"
-      "<body>\n"
-      "<div id=\"qunit\"></div>\n"
-      "<div id=\"qunit-fixture\"><\div>/n"
-      "<script src=\"%TESTEE%\"></script>\n"
-      "<script src=\"qunit-2.0.1.js\"></script>\n"
-      "<script>\n"
-      "// Testcases go here. Use eg yasnippet test to expand template test.\n"
-      "});\n"
-      "</script>\n"
-      "</body>\n"
-      "</html>\n" )
-    indent-buffer 
-    mp/html-post-processing ] )
+      (replace-match (replace-regexp-in-string (regexp-quote "-test.html") ".js" (buffer-name) 'fixedcase) 'fixedcase))
+    (when (re-search-forward "%UNITTESTS%" nil t)
+      (replace-match (replace-regexp-in-string (regexp-quote "-test.js") ".js" (buffer-name) 'fixedcase) 'fixedcase))))
 
 (define-auto-insert '("\\.html\\'" . "HTML5 Skeleton")
   [ '(nil
@@ -1357,6 +1344,28 @@ and display corresponding buffer in new frame."
       "<link rel=\"stylesheet\" href=\"%CSSFILE%\">\n"
       "</head>\n"
       "<body>\n"
+      "</body>\n"
+      "</html>\n" )
+    indent-buffer 
+    mp/html-post-processing ] )
+
+;; this auto-insert must be defined *after* the one for *.html files
+(define-auto-insert '("-test.html\\'" . "HTML5 Skeleton for QUnit test")
+  [ '(nil
+      "<!DOCTYPE html>\n"
+      "<html>\n"
+      "<head>\n"
+      "<meta charset=\"UTF-8\">\n"
+      "<title>QUnit Testcase</title>\n"
+      "<link rel=\"stylesheet\" href=\"qunit-2.0.1.css\">\n"
+      "</head>\n"
+      "<body>\n"
+      "<div id=\"qunit\"></div>\n"
+      "<div id=\"qunit-fixture\"><\div>/n"
+      "<script src=\"%TESTEE%\"></script>\n"
+      "<script src=\"qunit-2.0.1.js\"></script>\n"
+      "<script src=\"%UNITTESTS%\"></script>\n"
+      "// Testcases go here. Use eg yasnippet test to expand template test.\n"
       "</body>\n"
       "</html>\n" )
     indent-buffer 
