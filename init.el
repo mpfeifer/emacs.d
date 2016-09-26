@@ -67,17 +67,16 @@
 (defun mp/timeval-to-seconds (tv)
   "Calculate SEC-HIGH * 2^16 + SEC-LOW for value contained in TV."
   (let* ((sec-high (nth 0 tv))
-         (sec-low (nth 1 tv))
-         (sec-total (+ sec-low (* sec-high (expt 2 16))))
-         sec-total)))
+         (sec-low (nth 1 tv)))
+    (+ sec-low (* sec-high (expt 2 16)))))
 
 (defun mp/package-refresh-necessary-p ()
   (if (file-exists-p mp/fn-package-guard)
       (progn
         (let* ((mtime (mp/timeval-to-seconds (nth 5 (file-attributes mp/fn-package-guard))))
                (ctime (mp/timeval-to-seconds (current-time))))
-          (< (+ mtime mp/package-guard-renewal ctime )))
-    t)))
+          (< (+ mtime mp/package-guard-renewal) ctime )))
+    t))
 
 (defun mp/create-package-guard ()
   "Create file for the package guard subsystem."
@@ -481,6 +480,8 @@ This way region can be inserted into isearch easily with yank command."
 ;; TODO - want per mode and per file dictionary files
 ;; TODO - want to understand auto-complete-config and how to extend/customize it
 
+;; see https://github.com/xcwen/ac-php
+(use-package ac-php)
 
 (use-package auto-complete
   :config
@@ -492,9 +493,6 @@ This way region can be inserted into isearch easily with yank command."
   (define-key ac-menu-map "\C-s" 'ac-isearch)
   (add-to-list 'ac-modes 'php-mode) 
   (add-to-list 'ac-modes 'web-mode) )
-
-;; see https://github.com/xcwen/ac-php
-(use-package ac-php)
 
 (defun mp/setup-ac-php ()
   "Turn on auto-complete mode and set ac-sources for ac-php."
