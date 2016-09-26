@@ -125,14 +125,18 @@
 
 ;; [ General Emacs Behaviour
 
+;; basicall if file starts with #! make set exec bit after saving
+(add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
+
 (defun indent-buffer ()
+  "A helper function that is called after some templates are auto-inserted."
   (interactive)
   (indent-region (point-min) (point-max)) )
 
+;; Tabs - no.
 (setq-default indent-tabs-mode nil)
 
-(add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
-
+;; Tempaltes - yes.
 (setq auto-insert-directory "~/.emacs.d/templates/"
       auto-insert-query nil)
 
@@ -141,22 +145,24 @@
 (put 'set-goal-column 'disabled nil)
 (put 'downcase-region 'disabled nil)
 
-(global-set-key [S-down-mouse-1] 'ignore)
-
+;; yes or no is y or n
 (defalias 'yes-or-no-p 'y-or-n-p)
+
+;; handy alias to circumvent the not so intuitive emacs naming
 (defalias 'symbol-to-string 'symbol-name)
 (defalias 'string-to-symbol 'intern)
 
+;; 
 (recentf-mode 1)
 
+;; here goes my personal emacs extension files
 (add-to-list 'load-path "~/.emacs.d/lib/")
 
+;; 
 (setq scroll-step 1
       scroll-conservatively 10000
       auto-window-vscroll nil
       delete-exited-processes t)
-
-;; (setq gc-cons-threshold 5000000) ;; 
 
 ;; Kill buffers when done (M-x #)
 (add-hook 'server-done-hook (lambda nil (kill-buffer nil)))
@@ -166,31 +172,9 @@
 
 (global-set-key (kbd "M-Z") #'zap-up-to-char)
 
-;; TODO: advicing has changed! This should be around to evaluate mouse-set-point parameter and wether region is set at
-;; all. 
-
-;; (setq mp/unhighlight-regexp nil)
-
-;; (defadvice mouse-set-point (after mouse-highlight-selection activate)
-;;   (progn
-;;     (unhighlight-regexp t)
-;;     (setq mp/unhighlight-regexp t)
-;;     (highlight-regexp 
-;;      (regexp-quote 
-;;       (buffer-substring-no-properties (region-beginning) (region-end))))))
-
-;; (add-hook 'deactivate-mark-hook '(lambda () (when mp/unhighlight-regexp (unhighlight-regexp t))))
-
-;; ]
-
-;; [ the mark
-
 ;; use C-u C-SPC to pop mark positions
-
+;; and C-x C-SPC to pop global mark position
 (setq set-mark-command-repeat-pop t)
-
-;; TODO want some nice stuff here that hooks into
-;; activate-mark-hook and deactivate-mark-hook
 
 ;; ]
 
