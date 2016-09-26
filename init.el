@@ -1329,19 +1329,19 @@ and display corresponding buffer in new frame."
     (when (re-search-forward "%TESTEE%" nil t)
       (replace-match (replace-regexp-in-string (regexp-quote "-test.html") ".js" (buffer-name) 'fixedcase) 'fixedcase))
     (when (re-search-forward "%UNITTESTS%" nil t)
-      (replace-match (replace-regexp-in-string (regexp-quote "-test.js") ".js" (buffer-name) 'fixedcase) 'fixedcase))))
+      (replace-match (replace-regexp-in-string (regexp-quote "-test.html") "-test.js" (buffer-name) 'fixedcase) 'fixedcase))))
 
 (define-auto-insert '("\\.html\\'" . "HTML5 Skeleton")
   [ '(nil
       "<!DOCTYPE html>\n"
       "<html>\n"
       "<head>\n"
-      "<meta charset=\"UTF-8\">\n"
+      "<meta charset=\"UTF-8\" />\n"
       "<title>%TITLE%</title>\n"
       "<script src=\"jquery-3.1.0.js\"></script>\n"
       "<script src=\"jquery-ui-1.12.0.js\"></script>\n"
       "<script src=\"subrx.js\"></script>\n"
-      "<link rel=\"stylesheet\" href=\"%CSSFILE%\">\n"
+      "<link rel=\"stylesheet\" href=\"%CSSFILE%\" />\n"
       "</head>\n"
       "<body>\n"
       "</body>\n"
@@ -1355,17 +1355,16 @@ and display corresponding buffer in new frame."
       "<!DOCTYPE html>\n"
       "<html>\n"
       "<head>\n"
-      "<meta charset=\"UTF-8\">\n"
+      "<meta charset=\"UTF-8\" />\n"
       "<title>QUnit Testcase</title>\n"
-      "<link rel=\"stylesheet\" href=\"qunit-2.0.1.css\">\n"
+      "<link rel=\"stylesheet\" href=\"qunit-2.0.1.css\" />\n"
       "</head>\n"
       "<body>\n"
       "<div id=\"qunit\"></div>\n"
-      "<div id=\"qunit-fixture\"><\div>/n"
-      "<script src=\"%TESTEE%\"></script>\n"
+      "<div id=\"qunit-fixture\"></div>\n"
       "<script src=\"qunit-2.0.1.js\"></script>\n"
+      "<script src=\"%TESTEE%\"></script>\n"
       "<script src=\"%UNITTESTS%\"></script>\n"
-      "// Testcases go here. Use eg yasnippet test to expand template test.\n"
       "</body>\n"
       "</html>\n" )
     indent-buffer 
