@@ -124,7 +124,12 @@
 
 ;; [ General Emacs Behaviour
 
-;; basicall if file starts with #! make set exec bit after saving
+;; this is a global minor mode and displays the name
+;; of the function that surrounds point
+
+(which-function-mode)
+
+;; if file starts with #! make set exec bit after saving
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
 
 (defun indent-buffer ()
