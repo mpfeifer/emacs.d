@@ -400,12 +400,15 @@ This way region can be inserted into isearch easily with yank command."
                  ("Perl" (mode . cperl-mode))
                  ("Python" (mode . python-mode)))))
 
-  (add-hook 'ibuffer-mode-hook
-            '(lambda ()
-               (ibuffer-auto-mode 1)
-               (define-key ibuffer-mode-map (kbd "C-p") 'ibuffer-previous-line)
-               (define-key ibuffer-mode-map (kbd "C-n") 'ibuffer-next-line)
-               (ibuffer-switch-to-saved-filter-groups "modes+projects"))))
+  (defun mp/ibuffer-mode-extender ()
+    (ibuffer-auto-mode 1) ;; auto updates
+    (hl-line-mode)
+    (define-key ibuffer-mode-map (kbd "C-p") 'ibuffer-previous-line)
+    (define-key ibuffer-mode-map (kbd "C-n") 'ibuffer-next-line)
+    (ibuffer-switch-to-saved-filter-groups "modes+projects"))
+
+  (add-hook 'ibuffer-mode-hook 'mp/ibuffer-mode-hook-extender)
+
 ;; ]
 
 ;; [ emacs lisp mode
