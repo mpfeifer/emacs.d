@@ -182,6 +182,25 @@
 
 ;; ]
 
+;; [ abbreviations
+
+;; (C-u 4 ) C-x a g  to define a global abbrev for word before point
+
+(setq abbrev-file-name "~/.emacs.d/abbrev_defs"
+      save-abbrevs t) ;; save abbrevs when file is saved and emacs quits
+
+(if (file-exists-p abbrev-file-name)
+    (quietly-read-abbrev-file))
+
+(add-hook 'post-self-insert-hook 'expand-abbrev)
+
+(setq-default abbrev-mode t) ;; TODO Need to look what this does ( i already expand-abbref in hook )
+
+;; ]
+
+
+
+
 ;; [ server mode
 
 (setq server-use-tcp nil
