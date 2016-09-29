@@ -28,23 +28,6 @@
 
 (load custom-file)
 
-;; do some initialization stuff when init.el was moved onto a new host
-
-(let* ((emacs-dir (expand-file-name "~/.emacs.d/"))
-       (autosave-dir (concat emacs-dir "auto-save/"))
-       (boot nil))
-  (progn
-    (when (not (file-exists-p autosave-dir))
-      (progn
-        (setq boot t)
-        (message (concat "[emacs boot] Creating directory " dir))
-        (make-directory dir))))
-  (when boot
-    (let ((package-archives '(("melpa" . "http://melpa.org/packages/")))
-          (package-enable-at-startup nil)
-          (package-user-dir "~/.emacs.d/packages/"))
-      (package-refresh-contents))))
-
 ;; ]
 
 
@@ -85,17 +68,21 @@
       (find-file mp/fn-package-guard)
       (save-buffer)
       (kill-buffer))))
-      
+
 (global-set-key (kbd "C-c 5") #'package-list-packages)
 
 ;; see if this emacs is starting for the first time with this init.el
 ;; and if pacakge refresh is necessary (currently once in a week)
 
-(when (not (file-exists-p mp/fn-package-guard))
-  (progn
-    (package-refresh-contents)
-    (mp/create-package-guard)
-    (package-install 'use-package))
+(if (not (file-exists-p mp/fn-package-guard))
+    (progn ;; do some first time initialization
+      (let* ((emacs-dir (expand-file-name "~/.emacs.d/"))
+             (autosave-dir (concat emacs-dir "auto-save/")))
+        (when (not (file-exists-p autosave-dir))
+          (make-directory autosave-dir)))
+      (mp/create-package-guard)
+      (package-refresh-contents)
+      (package-install 'use-package))
   (when (mp/package-refresh-necessary-p)
     (package-refresh-contents)))
 
@@ -103,7 +90,7 @@
 
 (setq use-package-verbose t
       use-package-always-ensure t
-      load-prefer-newer t) 
+      load-prefer-newer t)
 
 ;; ]
 
@@ -397,17 +384,17 @@ This way region can be inserted into isearch easily with yank command."
                  ("Snake.js" (filename . "^/home/matthias/public_html/snake/.*"))
                  ("Timelapse" (filename . "^/home/matthias/timelapse/.*"))
                  ("Dired" (mode . dired-mode)))
-                 ("Perl" (mode . cperl-mode))
-                 ("Python" (mode . python-mode)))))
+                ("Perl" (mode . cperl-mode))
+                ("Python" (mode . python-mode)))))
 
-  (defun mp/ibuffer-mode-extender ()
+  (defun mp/ibuffer-mode-hook-extender ()
     (ibuffer-auto-mode 1) ;; auto updates
     (hl-line-mode)
     (define-key ibuffer-mode-map (kbd "C-p") 'ibuffer-previous-line)
     (define-key ibuffer-mode-map (kbd "C-n") 'ibuffer-next-line)
     (ibuffer-switch-to-saved-filter-groups "modes+projects"))
 
-  (add-hook 'ibuffer-mode-hook 'mp/ibuffer-mode-hook-extender)
+  (add-hook 'ibuffer-mode-hook 'mp/ibuffer-mode-hook-extender))
 
 ;; ]
 
@@ -736,24 +723,24 @@ This way region can be inserted into isearch easily with yank command."
   (global-set-key (kbd "<f5>") #'mp/toggle-prodigy-buffer)
 
   (prodigy-define-service
-    :name "Date Server (python)"
-    :command mp:prodigy-python-interpreter
-    :args '("date.py" "14002")
-    :stop-signal 'int
-    :cwd (concat mp:prodigy-service-root "date/"))
+   :name "Date Server (python)"
+   :command mp:prodigy-python-interpreter
+   :args '("date.py" "14002")
+   :stop-signal 'int
+   :cwd (concat mp:prodigy-service-root "date/"))
 
   (prodigy-define-service
-    :name "Network Log-Receiver"
-    :command "/usr/bin/python2"
-    :args '("logwebmon.py")
-    :cwd (concat mp:prodigy-service-root "loghost/"))
+   :name "Network Log-Receiver"
+   :command "/usr/bin/python2"
+   :args '("logwebmon.py")
+   :cwd (concat mp:prodigy-service-root "loghost/"))
 
   (prodigy-define-service
-    :name "Echo Server (python)"
-    :command mp:prodigy-python-interpreter
-    :args '("echo.py" "14001")
-    :stop-signal 'int
-    :cwd (concat mp:prodigy-service-root "echo/") ) )
+   :name "Echo Server (python)"
+   :command mp:prodigy-python-interpreter
+   :args '("echo.py" "14001")
+   :stop-signal 'int
+   :cwd (concat mp:prodigy-service-root "echo/") ) )
 
 ;; ]
 
@@ -789,7 +776,7 @@ This way region can be inserted into isearch easily with yank command."
     (defun ad-xref-goto-xref-delete-window ()
       (when (windowp mp/xref-window)
         (delete-window mp/xref-window)))
-  
+    
     (advice-add 'xref-goto-xref :before #'ad-xref-goto-xref-save-window)
     (advice-add 'xref-goto-xref :after #'ad-xref-goto-xref-delete-window)
 
@@ -1132,7 +1119,7 @@ and display corresponding buffer in new frame."
 
 (add-hook 'nxml-mode-hook 'mp/nxml-mode-setup)
 
-(add-to-list 'auto-insert-alist '("^pom.xml$" . [ "pom.xml" ]))
+(add-to-list 'auto-insert-alist '("pom.xml$" . [ "pom.xml" ]))
 
 (setq xml-modes (list ".*\\.xul\\" ".*\\..rdf\\" ".*\\.xsd\\"))
 
@@ -1276,7 +1263,7 @@ and display corresponding buffer in new frame."
 (use-package elpy
   :init
   (elpy-enable)
-)
+  )
 
 (defun mp/python-mode-hook ()
   "Personal python mode hook extension."
@@ -1454,7 +1441,7 @@ and display corresponding buffer in new frame."
 
 ;; [ shared objects elf mode
 
- (when (eq system-type 'gnu/linux)
+(when (eq system-type 'gnu/linux)
   (use-package elf-mode
     :init
     (add-to-list 'auto-mode-alist '("\\(\\.\\(?:o\\|so\\.\\(?:[0-9]\\.[0-9]\\.[0-9]\\|[0-9]\\.[0-9]\\|[0-9]\\)\\)\\)\\'" . elf-mode))))
