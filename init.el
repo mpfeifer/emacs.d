@@ -111,6 +111,10 @@
 
 ;; [ General Emacs Behaviour
 
+
+;; has to find out what this means :/
+(put 'narrow-to-region 'disabled nil)
+
 ;; this is a global minor mode and displays the name
 ;; of the function that surrounds point
 
@@ -1062,11 +1066,13 @@ and display corresponding buffer in new frame."
 (defun mp:java-preprocessor()
   (let ((classname (file-name-sans-extension (buffer-name)))
         (packagename (mp:predict-package-name-for-current-buffer)))
-    (while (search-forward "CLASSNAME" nil t)
+    (while (search-forward "CLASSNAME" nil t) ;; want: something more smart
+      ;; e.g. if the project has maven standard directory layout get correct
+      ;; package name
       (replace-match classname t))
     (goto-char (point-min))
     (while (search-forward "PACKAGE" nil t)
-      (replace-match packagename) ) ) )
+      (replace-match packagename t) ) ) )
 
 (defun mp:java-mode-hook()
   (setq-local comment-auto-fill-only-comments t)
@@ -1252,9 +1258,6 @@ and display corresponding buffer in new frame."
 
 ;; ]
 
-
-(put 'narrow-to-region 'disabled nil)
-
 ;; [ python
 
 (use-package elpy
@@ -1278,7 +1281,6 @@ and display corresponding buffer in new frame."
 
 (add-to-list 'auto-insert-alist '(".*\\.py3?$" . [ "template.py3" ] ) )
 (add-to-list 'auto-insert-alist '(".*\\.py2$" . [ "template.py" ] ) )
-
 
 ;; ]
 
