@@ -360,16 +360,7 @@ This way region can be inserted into isearch easily with yank command."
                            (name . "^\\*scratch\\*$")
                            (name . "^\\*Messages\\*$")
                            (filename . "^.*/.emacs.d/.*$")))
-                 ("Emacs Lisp" (mode . emacs-lisp-mode))
-                 ("Gnus" (or
-                          (mode . message-mode)
-                          (mode . bbdb-mode)
-                          (mode . mail-mode)
-                          (mode . gnus-group-mode)
-                          (mode . gnus-summary-mode)
-                          (mode . gnus-article-mode)
-                          (name . "^\\.bbdb$")
-                          (name . "^\\.newsrc-dribble")))
+
                  ("Graph Designer.js" (filename . "^/home/matthias/public_html/graphjs/.*"))
                  ("JDEE" (or
                           (name . "^\\*JDEE.*")
@@ -377,15 +368,16 @@ This way region can be inserted into isearch easily with yank command."
                  ("Customization" (name . "^\\*Customize.*"))
                  ("Nevelex Demo" (filename . "^/home/matthias/java/projects/nevelex/.*"))
                  ("Mailguard" (filename . "^.*nightly_build/.*"))
-                 ("Organizer" (mode . org-mode))
                  ("OpenGL-Lab" (filename . "^/home/matthias/opengl/lab/.*"))
                  ("OpenGL-Maze" (filename . "^/home/matthias/opengl/openmaze/.*"))
                  ("Pocketmine" (filename . "^.*Minecraft/Pocketmine/git/.*"))
                  ("Snake.js" (filename . "^/home/matthias/public_html/snake/.*"))
                  ("Timelapse" (filename . "^/home/matthias/timelapse/.*"))
-                 ("Dired" (mode . dired-mode)))
-                ("Perl" (mode . cperl-mode))
-                ("Python" (mode . python-mode)))))
+                 ("Organizer" (mode . org-mode))
+                 ("Emacs Lisp" (mode . emacs-lisp-mode))
+                 ("Dired" (mode . dired-mode))
+                 ("Perl" (mode . cperl-mode))
+                 ("Python" (mode . python-mode))))))
 
   (defun mp/ibuffer-mode-hook-extender ()
     (ibuffer-auto-mode 1) ;; auto updates
