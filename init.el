@@ -379,6 +379,11 @@ This way region can be inserted into isearch easily with yank command."
                  ("Perl" (mode . cperl-mode))
                  ("Python" (mode . python-mode))))))
 
+  ;; want: when opening file (via find-file) there is a check performed whether or not the file is part of
+  ;; some project (Makefile, pom.xml, .git directory). The topmost directory containing any of the mentioned
+  ;; files would be considered the root-directory of the project. And the filename of this directory would
+  ;; be the name of the filter-group. 
+
   (defun mp/ibuffer-mode-hook-extender ()
     (ibuffer-auto-mode 1) ;; auto updates
     (hl-line-mode)
