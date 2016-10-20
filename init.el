@@ -669,11 +669,15 @@ This way region can be inserted into isearch easily with yank command."
    (perl . t)
    (sh . t)))
 
-(setq org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
-      org-ellipsis "…"
-      org-directory "~/org"
-      org-default-notes-file "~/org/gtd.org"
-      org-confirm-babel-evaluate nil)
+;; useful clocking commands
+;;    C-c C-x C-i (org-clock-in)
+;;    C-c C-x C-o (org-clock-out)
+;;    C-c C-x C-q (org-clock-cancel)
+;;    C-c C-x C-d (org-clock-displa)
+;;    C-S-<up/down> (org-clock-timestamps-up/down)
+;;    S-M-<up/down> (org-timestamp-up-down)
+
+(org-clock-persistence-insinuate)
 
 (setq org-capture-templates
       (quote (("s" "source code location" entry (file "~/org/bookmarks.org")
@@ -691,8 +695,12 @@ This way region can be inserted into isearch easily with yank command."
 
 (defun mp/org-mode-hook ()
   "org mode hook extender."
-  (setq fill-column 120)
-  (auto-fill-mode)
+  (setq org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
+        org-ellipsis "…"
+        org-directory "~/org"
+        org-default-notes-file "~/org/gtd.org"
+        org-confirm-babel-evaluate nil
+        org-clock-persist 'history)
   (local-set-key (kbd "<return>") 'org-return-indent)
   (setenv "GRAPHVIZ_DOT" "dot") )
 
