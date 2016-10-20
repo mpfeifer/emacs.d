@@ -116,6 +116,10 @@
 
 ;; [ General Emacs Behaviour
 
+
+;; has to find out what this means :/
+(put 'narrow-to-region 'disabled nil)
+
 ;; this is a global minor mode and displays the name
 ;; of the function that surrounds point
 
@@ -369,16 +373,7 @@ This way region can be inserted into isearch easily with yank command."
                            (name . "^\\*scratch\\*$")
                            (name . "^\\*Messages\\*$")
                            (filename . "^.*/.emacs.d/.*$")))
-                 ("Emacs Lisp" (mode . emacs-lisp-mode))
-                 ("Gnus" (or
-                          (mode . message-mode)
-                          (mode . bbdb-mode)
-                          (mode . mail-mode)
-                          (mode . gnus-group-mode)
-                          (mode . gnus-summary-mode)
-                          (mode . gnus-article-mode)
-                          (name . "^\\.bbdb$")
-                          (name . "^\\.newsrc-dribble")))
+
                  ("Graph Designer.js" (filename . "^/home/matthias/public_html/graphjs/.*"))
                  ("JDEE" (or
                           (name . "^\\*JDEE.*")
@@ -386,15 +381,21 @@ This way region can be inserted into isearch easily with yank command."
                  ("Customization" (name . "^\\*Customize.*"))
                  ("Nevelex Demo" (filename . "^/home/matthias/java/projects/nevelex/.*"))
                  ("Mailguard" (filename . "^.*nightly_build/.*"))
-                 ("Organizer" (mode . org-mode))
                  ("OpenGL-Lab" (filename . "^/home/matthias/opengl/lab/.*"))
                  ("OpenGL-Maze" (filename . "^/home/matthias/opengl/openmaze/.*"))
                  ("Pocketmine" (filename . "^.*Minecraft/Pocketmine/git/.*"))
                  ("Snake.js" (filename . "^/home/matthias/public_html/snake/.*"))
                  ("Timelapse" (filename . "^/home/matthias/timelapse/.*"))
-                 ("Dired" (mode . dired-mode)))
-                ("Perl" (mode . cperl-mode))
-                ("Python" (mode . python-mode)))))
+                 ("Organizer" (mode . org-mode))
+                 ("Emacs Lisp" (mode . emacs-lisp-mode))
+                 ("Dired" (mode . dired-mode))
+                 ("Perl" (mode . cperl-mode))
+                 ("Python" (mode . python-mode))))))
+
+  ;; want: when opening file (via find-file) there is a check performed whether or not the file is part of
+  ;; some project (Makefile, pom.xml, .git directory). The topmost directory containing any of the mentioned
+  ;; files would be considered the root-directory of the project. And the filename of this directory would
+  ;; be the name of the filter-group. 
 
   (defun mp:ibuffer-mode-hook-extender ()
     (ibuffer-auto-mode 1) ;; auto updates
@@ -674,11 +675,15 @@ This way region can be inserted into isearch easily with yank command."
    (perl . t)
    (sh . t)))
 
-(setq org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
-      org-ellipsis "…"
-      org-directory "~/org"
-      org-default-notes-file "~/org/gtd.org"
-      org-confirm-babel-evaluate nil)
+; useful clocking commands
+;;    C-c C-x C-i (org-clock-in)
+;;    C-c C-x C-o (org-clock-out)
+;;    C-c C-x C-q (org-clock-cancel)
+;;    C-c C-x C-d (org-clock-displa)
+;;    C-S-<up/down> (org-clock-timestamps-up/down)
+;;    S-M-<up/down> (org-timestamp-up-down)
+
+(org-clock-persistence-insinuate)
 
 (setq org-capture-templates
       (quote (("s" "source code location" entry (file "~/org/bookmarks.org")
@@ -696,8 +701,12 @@ This way region can be inserted into isearch easily with yank command."
 
 (defun mp:org-mode-hook ()
   "org mode hook extender."
-  (setq fill-column 120)
-  (auto-fill-mode)
+  (setq org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
+        org-ellipsis "…"
+        org-directory "~/org"
+        org-default-notes-file "~/org/gtd.org"
+        org-confirm-babel-evaluate nil
+        org-clock-persist 'history)
   (local-set-key (kbd "<return>") 'org-return-indent)
   (setenv "GRAPHVIZ_DOT" "dot") )
 
@@ -1092,11 +1101,13 @@ If so calculate pacakge name from current directory name."
 (defun mp:java-preprocessor()
   (let ((classname (file-name-sans-extension (buffer-name)))
         (packagename (mp:predict-package-name-for-current-buffer)))
-    (while (search-forward "CLASSNAME" nil t)
+    (while (search-forward "CLASSNAME" nil t) ;; want: something more smart
+      ;; e.g. if the project has maven standard directory layout get correct
+      ;; package name
       (replace-match classname t))
     (goto-char (point-min))
     (while (search-forward "PACKAGE" nil t)
-      (replace-match packagename) ) ) )
+      (replace-match packagename t) ) ) )
 
 (defgroup mp:java nil "All things related to web development" :group 'development)
 
@@ -1312,9 +1323,6 @@ If so calculate pacakge name from current directory name."
 
 ;; ]
 
-
-(put 'narrow-to-region 'disabled nil)
-
 ;; [ python
 
 (use-package elpy
@@ -1338,7 +1346,6 @@ If so calculate pacakge name from current directory name."
 
 (add-to-list 'auto-insert-alist '(".*\\.py3?$" . [ "template.py3" ] ) )
 (add-to-list 'auto-insert-alist '(".*\\.py2$" . [ "template.py" ] ) )
-
 
 ;; ]
 
