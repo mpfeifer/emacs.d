@@ -669,7 +669,7 @@ This way region can be inserted into isearch easily with yank command."
    (perl . t)
    (sh . t)))
 
-;; useful clocking commands
+; useful clocking commands
 ;;    C-c C-x C-i (org-clock-in)
 ;;    C-c C-x C-o (org-clock-out)
 ;;    C-c C-x C-q (org-clock-cancel)
