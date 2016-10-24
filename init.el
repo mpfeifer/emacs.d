@@ -729,7 +729,21 @@ This way region can be inserted into isearch easily with yank command."
     "/usr/bin/python3"
     "Location of python interpreter used by prodigy.  Default just grabs one from PATH.")
 
+  (defvar mp:prodigy-tomcat-root-dir
+    "~/opt/apache-tomcat-8.5.4/"
+    "Root directory of tomcat installation")
+
+  (defvar mp:prodigy-tomcat-start-script
+    (concat mp:prodigy-tomcat-root-dir "bin/catalina.sh")
+    "Path to script that starts Tomcat.")
+
   (global-set-key (kbd "<f5>") #'mp/toggle-prodigy-buffer)
+
+  (prodigy-define-service
+    :name "Tomcat 8.5.4"
+    :command mp:prodigy-tomcat-start-script
+    :args '("run")
+    :cwd mp:prodigy-tomcat-root-dir)
 
   (prodigy-define-service
    :name "Date Server (python)"
