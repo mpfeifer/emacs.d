@@ -278,9 +278,9 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; nice dark theme
 
-(use-package zerodark-theme
-  :init
-  (load-theme 'zerodark))
+(use-package zerodark-theme)
+
+(load-theme 'zerodark)
 
 (use-package volatile-highlights 
   :init
