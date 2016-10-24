@@ -662,19 +662,6 @@ This way region can be inserted into isearch easily with yank command."
 (require 'ob-plantuml)
 (require 'ob-python)
 
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((plantuml . t)
-   (python . t)
-   (C . t)
-   (emacs-lisp t)
-   (awk . t)
-   (dot . t)
-   (gnuplot . t)
-   (java . t)
-   (perl . t)
-   (sh . t)))
-
 ; useful clocking commands
 ;;    C-c C-x C-i (org-clock-in)
 ;;    C-c C-x C-o (org-clock-out)
@@ -683,32 +670,48 @@ This way region can be inserted into isearch easily with yank command."
 ;;    C-S-<up/down> (org-clock-timestamps-up/down)
 ;;    S-M-<up/down> (org-timestamp-up-down)
 
-(org-clock-persistence-insinuate)
-
-(setq org-capture-templates
-      (quote (("s" "source code location" entry (file "~/org/bookmarks.org")
-               "* New Entry\n  - %U\n  - %A%?\n" :clock-in nil :clock-resume nil)
-              ("t" "todo" entry (file "~/org/gtd.org")
-               "** TODO %?\n%U\n%a\n" :clock-in t :clock-resume t)
-              ("r" "respond" entry (file "~/org/gtd.org")
-               "** NEXT Respond to %:from on %:subject\nSCHEDULED: %t\n%U\n%a\n" :clock-in t :clock-resume t :immediate-finish t)
-              ("n" "note" entry (file "~/org/gtd.org")
-               "** %? :NOTE:\n%U\n%a\n" :clock-in t :clock-resume t)
-              ("m" "Meeting" entry (file "~/org/gtd.org")
-               "** MEETING with %? :MEETING:\n%U" :clock-in t :clock-resume t)
-              ("p" "Phone call" entry (file "~/org/gtd.org")
-               "** PHONE %? :PHONE:\n%U" :clock-in t :clock-resume t))))
-
 (defun mp:org-mode-hook ()
   "org mode hook extender."
+
   (setq org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
         org-ellipsis "…"
         org-directory "~/org"
         org-default-notes-file "~/org/gtd.org"
         org-confirm-babel-evaluate nil
         org-clock-persist 'history)
+
   (local-set-key (kbd "<return>") 'org-return-indent)
-  (setenv "GRAPHVIZ_DOT" "dot") )
+
+  (setenv "GRAPHVIZ_DOT" "dot")
+
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((plantuml . t)
+     (python . t)
+     (C . t)
+     (emacs-lisp t)
+     (awk . t)
+     (dot . t)
+     (gnuplot . t)
+     (java . t)
+     (perl . t)
+     (sh . t) ) )
+
+  (org-clock-persistence-insinuate)
+
+  (setq org-capture-templates
+        (quote (("s" "source code location" entry (file "~/org/bookmarks.org")
+                 "* New Entry\n  - %U\n  - %A%?\n" :clock-in nil :clock-resume nil)
+                ("t" "todo" entry (file "~/org/gtd.org")
+                 "** TODO %?\n%U\n%a\n" :clock-in t :clock-resume t)
+                ("r" "respond" entry (file "~/org/gtd.org")
+                 "** NEXT Respond to %:from on %:subject\nSCHEDULED: %t\n%U\n%a\n" :clock-in t :clock-resume t :immediate-finish t)
+                ("n" "note" entry (file "~/org/gtd.org")
+                 "** %? :NOTE:\n%U\n%a\n" :clock-in t :clock-resume t)
+                ("m" "Meeting" entry (file "~/org/gtd.org")
+                 "** MEETING with %? :MEETING:\n%U" :clock-in t :clock-resume t)
+                ("p" "Phone call" entry (file "~/org/gtd.org")
+                 "** PHONE %? :PHONE:\n%U" :clock-in t :clock-resume t) ) ) ) )
 
 (add-hook 'org-mode-hook 'mp:org-mode-hook)
 
