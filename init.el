@@ -505,10 +505,25 @@ This way region can be inserted into isearch easily with yank command."
 (use-package ac-php)
 
 (use-package auto-complete
+
   :config
+
+  (setq
+   ac-auto-show-menu nil
+   ac-auto-start nil
+   ac-comphist-file "~/.emacs.d/ac-comphist.dat"
+   ac-dictionary-directories (quote ("~/.emacs.d/dictionaries/"))
+   ac-dictionary-files (quote ("~/.emacs.d/dictionary"))
+   ac-quick-help-delay 3.0
+   ac-trigger-key "C-x C-SPC"
+   ac-use-fuzzy t
+   ac-use-menu-map t
+   ac-user-dictionary (quote ("")))
+
   (define-key ac-mode-map (kbd "C-c C-<SPC>") 'auto-complete)
-  (setq ac-use-menu-map t)
+
   (require 'ac-php)
+
   (define-key ac-menu-map "\C-n" 'ac-next)
   (define-key ac-menu-map "\C-p" 'ac-previous)
   (define-key ac-menu-map "\C-s" 'ac-isearch)
@@ -662,7 +677,7 @@ This way region can be inserted into isearch easily with yank command."
 (require 'ob-plantuml)
 (require 'ob-python)
 
-; useful clocking commands
+                                        ; useful clocking commands
 ;;    C-c C-x C-i (org-clock-in)
 ;;    C-c C-x C-o (org-clock-out)
 ;;    C-c C-x C-q (org-clock-cancel)
@@ -755,24 +770,24 @@ This way region can be inserted into isearch easily with yank command."
     :cwd mp:prodigy-tomcat-root-dir)
 
   (prodigy-define-service
-   :name "Date Server (python)"
-   :command mp:prodigy-python-interpreter
-   :args '("date.py" "14002")
-   :stop-signal 'int
-   :cwd (concat mp:prodigy-service-root "date/"))
+    :name "Date Server (python)"
+    :command mp:prodigy-python-interpreter
+    :args '("date.py" "14002")
+    :stop-signal 'int
+    :cwd (concat mp:prodigy-service-root "date/"))
 
   (prodigy-define-service
-   :name "Network Log-Receiver"
-   :command "/usr/bin/python2"
-   :args '("logwebmon.py")
-   :cwd (concat mp:prodigy-service-root "loghost/"))
+    :name "Network Log-Receiver"
+    :command "/usr/bin/python2"
+    :args '("logwebmon.py")
+    :cwd (concat mp:prodigy-service-root "loghost/"))
 
   (prodigy-define-service
-   :name "Echo Server (python)"
-   :command mp:prodigy-python-interpreter
-   :args '("echo.py" "14001")
-   :stop-signal 'int
-   :cwd (concat mp:prodigy-service-root "echo/") ) )
+    :name "Echo Server (python)"
+    :command mp:prodigy-python-interpreter
+    :args '("echo.py" "14001")
+    :stop-signal 'int
+    :cwd (concat mp:prodigy-service-root "echo/") ) )
 
 ;; ]
 
@@ -1079,12 +1094,41 @@ and display corresponding buffer in new frame."
 
 ;; [ java mode
 
+(defun mp:start-new-web-application (project-path group-id artifact-id version-number)
+  (interactive "DProjectc-directory: \nMGroup-id: \nMArtifact-id: \nMVersion-number: ")
+  (let* ((live-buffer-name "*mvn*")
+         (live-buffer (get-buffer-create live-buffer-name)))
+    (when (not (file-exists-p project-path))
+        (make-directory project-path))
+    (let ((default-directory project-path)
+          (target-web-xml (concat project-path "/" artifact-id "/src/main/webapp/WEB-INF/web.xml"))
+          (pom-xml (concat artifact-id "/pom.xml")))
+      (split-window-below -10)
+;;      (other-window -1)
+;;      (set-window-buffer (selected-window) live-buffer)
+;;      (when (string= (buffer-name) live-buffer-name)
+;;        (erase-buffer))
+      (call-process "mvn" nil '(live-buffer t) t "archetype:generate"
+                    (format "-DgroupId=%s" group-id)
+                    (format "-DartifactId=%s" artifact-id)
+                    (format "-Dversion=%s" version-number)
+                    (format "-DarchetypeArtifactId=%s" "maven-archetype-webapp")
+                    "-DinteractiveMode=false")
+      (save-excursion
+        (goto-char (point-min))
+        (when (search-forward "BUILD SUCCESS")
+          (other-window 1)
+          (find-file pom-xml)
+          (split-window-below -10)
+          (other-window 1)
+          (mp:copy-template "web-3.0.xml" target-web-xml
+                            (list 
+                             (list 'DISPLAY-NAME (format "%s %s" artifact-id version-number)))))))))
 
 (use-package jdee
   :disabled
   :config
   (setq jdee-server-dir "~/.emacs.d/jdee-server") )
-
 
 (defun mp:predict-package-name-for-current-buffer ()
   "See if this is a maven project with standard directory layout.
@@ -1130,18 +1174,17 @@ If so calculate pacakge name from current directory name."
 
 (defcustom java-project-root "~/src/" "New java projects are stored in this directory." :group 'mp:java)
 
-(defun mp:open-template (filename target-file alist)
-  (interactive)
+(defun mp:copy-template (filename target-file alist)
   "Copy FILENAME to TARGET-FILE. Then replace keys with values looked up in ALIST"
-  (copy-file filename target-file)
+  (copy-file (concat "~/.emacs.d/templates/" filename) target-file t)
   (find-file target-file)
   (dolist (key-value alist)
-          (let ((key (symbol-to-string (car key-value)))
-                (value (car (cdr key-value)))
-                (case-fold-search nil))
-            (goto-char (point-min))
-            (while (search-forward key nil t)
-              (replace-match value t)))))
+    (let ((key (symbol-to-string (car key-value)))
+          (value (car (cdr key-value)))
+          (case-fold-search nil))
+      (goto-char (point-min))
+      (while (search-forward key nil t)
+        (replace-match value t)))))
 
 (defun mp:new-java-project (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
@@ -1149,7 +1192,7 @@ If so calculate pacakge name from current directory name."
          (project-root (concat java-project-root "/" artifact-id))
          (target-pom (concat project-root "/pom.xml")))
     (make-directory project-root)
-    (mp:open-template template-pom target-pom
+    (mp:copy-template template-pom target-pom
                       (list (list 'GROUP-ID group-id)
                             (list 'ARTIFACT-ID artifact-id)
                             (list 'VERSION version-number)))))
@@ -1532,3 +1575,4 @@ If so calculate pacakge name from current directory name."
 (add-to-list 'auto-mode-alist '("\.exe\\'" . hexl-mode))
 
 ;; ]
+(put 'erase-buffer 'disabled nil)
