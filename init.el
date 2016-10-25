@@ -69,7 +69,7 @@
 
 (global-set-key (kbd "C-c 5") #'package-list-packages)
 
-;; see if this emacs is starting for the first time with this init.el
+;; see if this emacs is starting for the first time (with this init.el)
 ;; and if pacakge refresh is necessary (currently once in a week)
 
 (if (not (file-exists-p mp:fn-package-guard))
@@ -117,13 +117,11 @@
 ;; [ General Emacs Behaviour
 
 
-;; has to find out what this means :/
+;; have to find out what this means :/
 (put 'narrow-to-region 'disabled nil)
 
-;; this is a global minor mode and displays the name
-;; of the function that surrounds point
-
-(which-function-mode)
+;; do not ask when erasing buffer
+(put 'erase-buffer 'disabled nil)
 
 ;; if file starts with #! make set exec bit after saving
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
@@ -278,9 +276,9 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; nice dark theme
 
-(use-package zerodark-theme
-  :init
-  (load-theme 'zerodark))
+(use-package zerodark-theme)
+
+(load-theme 'zerodark)
 
 (use-package volatile-highlights 
   :init
@@ -505,10 +503,25 @@ This way region can be inserted into isearch easily with yank command."
 (use-package ac-php)
 
 (use-package auto-complete
+
   :config
+
+  (setq
+   ac-auto-show-menu nil
+   ac-auto-start nil
+   ac-comphist-file "~/.emacs.d/ac-comphist.dat"
+   ac-dictionary-directories (quote ("~/.emacs.d/dictionaries/"))
+   ac-dictionary-files (quote ("~/.emacs.d/dictionary"))
+   ac-quick-help-delay 3.0
+   ac-trigger-key "C-x C-SPC"
+   ac-use-fuzzy t
+   ac-use-menu-map t
+   ac-user-dictionary (quote ("")))
+
   (define-key ac-mode-map (kbd "C-c C-<SPC>") 'auto-complete)
-  (setq ac-use-menu-map t)
+
   (require 'ac-php)
+
   (define-key ac-menu-map "\C-n" 'ac-next)
   (define-key ac-menu-map "\C-p" 'ac-previous)
   (define-key ac-menu-map "\C-s" 'ac-isearch)
@@ -662,20 +675,7 @@ This way region can be inserted into isearch easily with yank command."
 (require 'ob-plantuml)
 (require 'ob-python)
 
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((plantuml . t)
-   (python . t)
-   (C . t)
-   (emacs-lisp t)
-   (awk . t)
-   (dot . t)
-   (gnuplot . t)
-   (java . t)
-   (perl . t)
-   (sh . t)))
-
-; useful clocking commands
+;; useful clocking commands
 ;;    C-c C-x C-i (org-clock-in)
 ;;    C-c C-x C-o (org-clock-out)
 ;;    C-c C-x C-q (org-clock-cancel)
@@ -683,32 +683,57 @@ This way region can be inserted into isearch easily with yank command."
 ;;    C-S-<up/down> (org-clock-timestamps-up/down)
 ;;    S-M-<up/down> (org-timestamp-up-down)
 
-(org-clock-persistence-insinuate)
-
-(setq org-capture-templates
-      (quote (("s" "source code location" entry (file "~/org/bookmarks.org")
-               "* New Entry\n  - %U\n  - %A%?\n" :clock-in nil :clock-resume nil)
-              ("t" "todo" entry (file "~/org/gtd.org")
-               "** TODO %?\n%U\n%a\n" :clock-in t :clock-resume t)
-              ("r" "respond" entry (file "~/org/gtd.org")
-               "** NEXT Respond to %:from on %:subject\nSCHEDULED: %t\n%U\n%a\n" :clock-in t :clock-resume t :immediate-finish t)
-              ("n" "note" entry (file "~/org/gtd.org")
-               "** %? :NOTE:\n%U\n%a\n" :clock-in t :clock-resume t)
-              ("m" "Meeting" entry (file "~/org/gtd.org")
-               "** MEETING with %? :MEETING:\n%U" :clock-in t :clock-resume t)
-              ("p" "Phone call" entry (file "~/org/gtd.org")
-               "** PHONE %? :PHONE:\n%U" :clock-in t :clock-resume t))))
-
 (defun mp:org-mode-hook ()
   "org mode hook extender."
-  (setq org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
-        org-ellipsis "…"
-        org-directory "~/org"
-        org-default-notes-file "~/org/gtd.org"
+
+  (setq org-babel-python-command "python"
+        org-clock-into-drawer t
+        org-clock-persist 'history
         org-confirm-babel-evaluate nil
-        org-clock-persist 'history)
+        org-default-notes-file "~/org/gtd.org"
+        org-directory "~/org/"
+        org-ellipsis "…"
+        org-log-done (quote note)
+        org-log-into-drawer t
+        org-mobile-directory "~/org/MobileOrg/"
+        org-mobile-files (quote (org-agenda-files "projects.org"))
+        org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
+        org-todo-keywords (quote ((sequence "TODO" "DONE"))))
+
+  (add-to-list 'org-mobile-files "projects.org") ;; paths relative to org-directory
+
   (local-set-key (kbd "<return>") 'org-return-indent)
-  (setenv "GRAPHVIZ_DOT" "dot") )
+
+  (setenv "GRAPHVIZ_DOT" "dot")
+
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((plantuml . t)
+     (python . t)
+     (C . t)
+     (emacs-lisp t)
+     (awk . t)
+     (dot . t)
+     (gnuplot . t)
+     (java . t)
+     (perl . t)
+     (sh . t) ) )
+
+  (org-clock-persistence-insinuate)
+
+  (setq org-capture-templates
+        (quote (("s" "source code location" entry (file "~/org/bookmarks.org")
+                 "* New Entry\n  - %U\n  - %A%?\n" :clock-in nil :clock-resume nil)
+                ("t" "todo" entry (file "~/org/gtd.org")
+                 "** TODO %?\n%U\n%a\n" :clock-in t :clock-resume t)
+                ("r" "respond" entry (file "~/org/gtd.org")
+                 "** NEXT Respond to %:from on %:subject\nSCHEDULED: %t\n%U\n%a\n" :clock-in t :clock-resume t :immediate-finish t)
+                ("n" "note" entry (file "~/org/gtd.org")
+                 "** %? :NOTE:\n%U\n%a\n" :clock-in t :clock-resume t)
+                ("m" "Meeting" entry (file "~/org/gtd.org")
+                 "** MEETING with %? :MEETING:\n%U" :clock-in t :clock-resume t)
+                ("p" "Phone call" entry (file "~/org/gtd.org")
+                 "** PHONE %? :PHONE:\n%U" :clock-in t :clock-resume t) ) ) ) )
 
 (add-hook 'org-mode-hook 'mp:org-mode-hook)
 
@@ -735,27 +760,41 @@ This way region can be inserted into isearch easily with yank command."
     "/usr/bin/python3"
     "Location of python interpreter used by prodigy.  Default just grabs one from PATH.")
 
+  (defvar mp:prodigy-tomcat-root-dir
+    "~/opt/apache-tomcat-8.5.4/"
+    "Root directory of tomcat installation")
+
+  (defvar mp:prodigy-tomcat-start-script
+    (concat mp:prodigy-tomcat-root-dir "bin/catalina.sh")
+    "Path to script that starts Tomcat.")
+
   (global-set-key (kbd "<f5>") #'mp:toggle-prodigy-buffer)
 
   (prodigy-define-service
-   :name "Date Server (python)"
-   :command mp:prodigy-python-interpreter
-   :args '("date.py" "14002")
-   :stop-signal 'int
-   :cwd (concat mp:prodigy-service-root "date/"))
+    :name "Tomcat 8.5.4"
+    :command mp:prodigy-tomcat-start-script
+    :args '("run")
+    :cwd mp:prodigy-tomcat-root-dir)
 
   (prodigy-define-service
-   :name "Network Log-Receiver"
-   :command "/usr/bin/python2"
-   :args '("logwebmon.py")
-   :cwd (concat mp:prodigy-service-root "loghost/"))
+    :name "Date Server (python)"
+    :command mp:prodigy-python-interpreter
+    :args '("date.py" "14002")
+    :stop-signal 'int
+    :cwd (concat mp:prodigy-service-root "date/"))
 
   (prodigy-define-service
-   :name "Echo Server (python)"
-   :command mp:prodigy-python-interpreter
-   :args '("echo.py" "14001")
-   :stop-signal 'int
-   :cwd (concat mp:prodigy-service-root "echo/") ) )
+    :name "Network Log-Receiver"
+    :command "/usr/bin/python2"
+    :args '("logwebmon.py")
+    :cwd (concat mp:prodigy-service-root "loghost/"))
+
+  (prodigy-define-service
+    :name "Echo Server (python)"
+    :command mp:prodigy-python-interpreter
+    :args '("echo.py" "14001")
+    :stop-signal 'int
+    :cwd (concat mp:prodigy-service-root "echo/") ) )
 
 ;; ]
 
@@ -1068,12 +1107,40 @@ and display corresponding buffer in new frame."
 
 ;; [ java mode
 
+(defun mp:start-new-web-application (project-path group-id artifact-id version-number)
+  (interactive "DProjectc-directory: \nMGroup-id: \nMArtifact-id: \nMVersion-number: ")
+  (let* ((live-buffer-name "*mvn*")
+         (live-buffer (get-buffer-create live-buffer-name)))
+    (when (not (file-exists-p project-path))
+        (make-directory project-path))
+    (let ((default-directory project-path)
+          (target-web-xml (concat project-path "/" artifact-id "/src/main/webapp/WEB-INF/web.xml"))
+          (pom-xml (concat artifact-id "/pom.xml")))
+      (split-window-below -10)
+      (other-window 1)
+      (switch-to-buffer live-buffer-name)
+      (when (string= (buffer-name) live-buffer-name)
+        (erase-buffer))
+      (call-process "mvn" nil live-buffer-name t "archetype:generate"
+                    (format "-DgroupId=%s" group-id)
+                    (format "-DartifactId=%s" artifact-id)
+                    (format "-Dversion=%s" version-number)
+                    (format "-DarchetypeArtifactId=%s" "maven-archetype-webapp")
+                    (format "-DinteractiveMode=%s" "false") )
+      (goto-char (point-min))
+      (if (search-forward "BUILD SUCCESS")
+          (progn
+            (other-window 1)
+            (find-file pom-xml)
+            (mp:copy-template "web-3.0.xml" target-web-xml
+                              (list 
+                               (list 'DISPLAY-NAME (format "%s %s" artifact-id version-number)))))
+        (goto-char (point-max)) ) ) ) )
 
 (use-package jdee
   :disabled
   :config
   (setq jdee-server-dir "~/.emacs.d/jdee-server") )
-
 
 (defun mp:predict-package-name-for-current-buffer ()
   "See if this is a maven project with standard directory layout.
@@ -1119,18 +1186,19 @@ If so calculate pacakge name from current directory name."
 
 (defcustom java-project-root "~/src/" "New java projects are stored in this directory." :group 'mp:java)
 
-(defun mp:open-template (filename target-file alist)
-  (interactive)
+(defun mp:copy-template (filename target-file alist)
   "Copy FILENAME to TARGET-FILE. Then replace keys with values looked up in ALIST"
-  (copy-file filename target-file)
-  (find-file target-file)
-  (dolist (key-value alist)
-          (let ((key (symbol-to-string (car key-value)))
-                (value (car (cdr key-value)))
-                (case-fold-search nil))
-            (goto-char (point-min))
-            (while (search-forward key nil t)
-              (replace-match value t)))))
+  (with-temp-buffer
+    (insert-file (concat "~/.emacs.d/templates/" filename))
+    (dolist (key-value alist)
+      (goto-char (point-min))
+      (let ((key (symbol-to-string (car key-value)))
+            (value (car (cdr key-value)))
+            (case-fold-search nil))
+        (while (search-forward key nil t)
+          (replace-match value t))))
+    (write-file target-file nil) 
+    (kill-buffer) ) )
 
 (defun mp:new-java-project (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
@@ -1138,10 +1206,11 @@ If so calculate pacakge name from current directory name."
          (project-root (concat java-project-root "/" artifact-id))
          (target-pom (concat project-root "/pom.xml")))
     (make-directory project-root)
-    (mp:open-template template-pom target-pom
+    (mp:copy-template template-pom target-pom
                       (list (list 'GROUP-ID group-id)
                             (list 'ARTIFACT-ID artifact-id)
-                            (list 'VERSION version-number)))))
+                            (list 'VERSION version-number)))
+    (find-file target-pom) ) )
 
 (defun mp:java-mode-hook()
   (setq-local comment-auto-fill-only-comments t)
@@ -1193,11 +1262,10 @@ If so calculate pacakge name from current directory name."
 
 (add-to-list 'auto-insert-alist '("pom.xml$" . [ "pom.xml" ]))
 
-(setq xml-modes (list ".*\\.xul\\" ".*\\..rdf\\" ".*\\.xsd\\"))
+(setq xml-modes (list ".*\\.xul\\'" ".*\\..rdf\\'" ".*\\.xsd\\'" ".*\\.wsdl\\'"))
 
-(add-to-list 'auto-mode-alist '(".*\\.xul\\'" . xml-mode))
-(add-to-list 'auto-mode-alist '(".*\\.rdf\\'" . xml-mode))
-(add-to-list 'auto-mode-alist '(".*\\.xsd\\'" . xml-mode))
+(dolist (mode xml-modes)
+  (add-to-list 'auto-mode-alist (cons mode 'xml-mode)))
 
 (defun mp:maven-integration ()
   (interactive)
@@ -1519,5 +1587,18 @@ If so calculate pacakge name from current directory name."
 
 (add-to-list 'auto-mode-alist '("\.dll\\'" . hexl-mode))
 (add-to-list 'auto-mode-alist '("\.exe\\'" . hexl-mode))
+
+;; ]
+
+
+;; [ which function mode
+
+;; this is a global minor mode and displays the name
+;; of the function that surrounds point. To look into
+;; how it works look at which-func-* variables.
+
+(which-function-mode)
+
+(setq which-func-unknown "∅")
 
 ;; ]
