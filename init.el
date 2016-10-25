@@ -69,7 +69,7 @@
 
 (global-set-key (kbd "C-c 5") #'package-list-packages)
 
-;; see if this emacs is starting for the first time with this init.el
+;; see if this emacs is starting for the first time (with this init.el)
 ;; and if pacakge refresh is necessary (currently once in a week)
 
 (if (not (file-exists-p mp:fn-package-guard))
@@ -686,13 +686,19 @@ This way region can be inserted into isearch easily with yank command."
 (defun mp:org-mode-hook ()
   "org mode hook extender."
 
-  (setq org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
-        org-ellipsis "…"
-        org-directory "~/org/"
-        org-default-notes-file "~/org/gtd.org"
-        org-confirm-babel-evaluate nil
+  (setq org-babel-python-command "python"
+        org-clock-into-drawer t
         org-clock-persist 'history
-        org-mobile-directory "~/org/MobileOrg/" )
+        org-confirm-babel-evaluate nil
+        org-default-notes-file "~/org/gtd.org"
+        org-directory "~/org/"
+        org-ellipsis "…"
+        org-log-done (quote note)
+        org-log-into-drawer t
+        org-mobile-directory "~/org/MobileOrg/"
+        org-mobile-files (quote (org-agenda-files "projects.org"))
+        org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
+        org-todo-keywords (quote ((sequence "TODO" "DONE"))))
 
   (add-to-list 'org-mobile-files "projects.org") ;; paths relative to org-directory
 
@@ -1250,11 +1256,10 @@ If so calculate pacakge name from current directory name."
 
 (add-to-list 'auto-insert-alist '("pom.xml$" . [ "pom.xml" ]))
 
-(setq xml-modes (list ".*\\.xul\\" ".*\\..rdf\\" ".*\\.xsd\\"))
+(setq xml-modes (list ".*\\.xul\\'" ".*\\..rdf\\'" ".*\\.xsd\\'" ".*\\.wsdl\\'"))
 
-(add-to-list 'auto-mode-alist '(".*\\.xul\\'" . xml-mode))
-(add-to-list 'auto-mode-alist '(".*\\.rdf\\'" . xml-mode))
-(add-to-list 'auto-mode-alist '(".*\\.xsd\\'" . xml-mode))
+(dolist (mode xml-modes)
+  (add-to-list 'auto-mode-alist (cons mode 'xml-mode)))
 
 (defun mp:maven-integration ()
   (interactive)
@@ -1583,7 +1588,10 @@ If so calculate pacakge name from current directory name."
 ;; [ which function mode
 
 ;; this is a global minor mode and displays the name
-;; of the function that surrounds point
+;; of the function that surrounds point. To look into
+;; how it works look at which-func-* variables.
+
+(which-function-mode)
 
 (setq which-func-unknown "∅")
 
