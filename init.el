@@ -117,13 +117,11 @@
 ;; [ General Emacs Behaviour
 
 
-;; has to find out what this means :/
+;; have to find out what this means :/
 (put 'narrow-to-region 'disabled nil)
 
-;; this is a global minor mode and displays the name
-;; of the function that surrounds point
-
-(which-function-mode)
+;; do not ask when erasing buffer
+(put 'erase-buffer 'disabled nil)
 
 ;; if file starts with #! make set exec bit after saving
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
@@ -677,7 +675,7 @@ This way region can be inserted into isearch easily with yank command."
 (require 'ob-plantuml)
 (require 'ob-python)
 
-                                        ; useful clocking commands
+;; useful clocking commands
 ;;    C-c C-x C-i (org-clock-in)
 ;;    C-c C-x C-o (org-clock-out)
 ;;    C-c C-x C-q (org-clock-cancel)
@@ -690,10 +688,13 @@ This way region can be inserted into isearch easily with yank command."
 
   (setq org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
         org-ellipsis "…"
-        org-directory "~/org"
+        org-directory "~/org/"
         org-default-notes-file "~/org/gtd.org"
         org-confirm-babel-evaluate nil
-        org-clock-persist 'history)
+        org-clock-persist 'history
+        org-mobile-directory "~/org/MobileOrg/" )
+
+  (add-to-list 'org-mobile-files "projects.org") ;; paths relative to org-directory
 
   (local-set-key (kbd "<return>") 'org-return-indent)
 
@@ -1577,4 +1578,13 @@ If so calculate pacakge name from current directory name."
 (add-to-list 'auto-mode-alist '("\.exe\\'" . hexl-mode))
 
 ;; ]
-(put 'erase-buffer 'disabled nil)
+
+
+;; [ which function mode
+
+;; this is a global minor mode and displays the name
+;; of the function that surrounds point
+
+(setq which-func-unknown "∅")
+
+;; ]
