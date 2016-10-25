@@ -1104,26 +1104,25 @@ and display corresponding buffer in new frame."
           (target-web-xml (concat project-path "/" artifact-id "/src/main/webapp/WEB-INF/web.xml"))
           (pom-xml (concat artifact-id "/pom.xml")))
       (split-window-below -10)
-;;      (other-window -1)
-;;      (set-window-buffer (selected-window) live-buffer)
-;;      (when (string= (buffer-name) live-buffer-name)
-;;        (erase-buffer))
-      (call-process "mvn" nil '(live-buffer t) t "archetype:generate"
+      (other-window 1)
+      (switch-to-buffer live-buffer-name)
+      (when (string= (buffer-name) live-buffer-name)
+        (erase-buffer))
+      (call-process "mvn" nil live-buffer-name t "archetype:generate"
                     (format "-DgroupId=%s" group-id)
                     (format "-DartifactId=%s" artifact-id)
                     (format "-Dversion=%s" version-number)
                     (format "-DarchetypeArtifactId=%s" "maven-archetype-webapp")
-                    "-DinteractiveMode=false")
-      (save-excursion
-        (goto-char (point-min))
-        (when (search-forward "BUILD SUCCESS")
-          (other-window 1)
-          (find-file pom-xml)
-          (split-window-below -10)
-          (other-window 1)
-          (mp:copy-template "web-3.0.xml" target-web-xml
-                            (list 
-                             (list 'DISPLAY-NAME (format "%s %s" artifact-id version-number)))))))))
+                    (format "-DinteractiveMode=%s" "false") )
+      (goto-char (point-min))
+      (if (search-forward "BUILD SUCCESS")
+          (progn
+            (other-window 1)
+            (find-file pom-xml)
+            (mp:copy-template "web-3.0.xml" target-web-xml
+                              (list 
+                               (list 'DISPLAY-NAME (format "%s %s" artifact-id version-number)))))
+        (goto-char (point-max)) ) ) ) )
 
 (use-package jdee
   :disabled
@@ -1176,15 +1175,17 @@ If so calculate pacakge name from current directory name."
 
 (defun mp:copy-template (filename target-file alist)
   "Copy FILENAME to TARGET-FILE. Then replace keys with values looked up in ALIST"
-  (copy-file (concat "~/.emacs.d/templates/" filename) target-file t)
-  (find-file target-file)
-  (dolist (key-value alist)
-    (let ((key (symbol-to-string (car key-value)))
-          (value (car (cdr key-value)))
-          (case-fold-search nil))
+  (with-temp-buffer
+    (insert-file (concat "~/.emacs.d/templates/" filename))
+    (dolist (key-value alist)
       (goto-char (point-min))
-      (while (search-forward key nil t)
-        (replace-match value t)))))
+      (let ((key (symbol-to-string (car key-value)))
+            (value (car (cdr key-value)))
+            (case-fold-search nil))
+        (while (search-forward key nil t)
+          (replace-match value t))))
+    (write-file target-file nil) 
+    (kill-buffer) ) )
 
 (defun mp:new-java-project (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
@@ -1195,7 +1196,8 @@ If so calculate pacakge name from current directory name."
     (mp:copy-template template-pom target-pom
                       (list (list 'GROUP-ID group-id)
                             (list 'ARTIFACT-ID artifact-id)
-                            (list 'VERSION version-number)))))
+                            (list 'VERSION version-number)))
+    (find-file target-pom) ) )
 
 (defun mp:java-mode-hook()
   (setq-local comment-auto-fill-only-comments t)
