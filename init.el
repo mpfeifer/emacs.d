@@ -116,6 +116,9 @@
 
 ;; [ General Emacs Behaviour
 
+(defgroup mp nil "All things related to my customization" :group 'Emacs)
+
+(defgroup development nil "All things related to development" :group 'mp)
 
 ;; have to find out what this means :/
 (put 'narrow-to-region 'disabled nil)
@@ -377,7 +380,6 @@ This way region can be inserted into isearch easily with yank command."
                           (name . "^\\*JDEE.*")
                           (name . "^\\*check style\\*")))
                  ("Customization" (name . "^\\*Customize.*"))
-                 ("Nevelex Demo" (filename . "^/home/matthias/java/projects/nevelex/.*"))
                  ("Mailguard" (filename . "^.*nightly_build/.*"))
                  ("OpenGL-Lab" (filename . "^/home/matthias/opengl/lab/.*"))
                  ("OpenGL-Maze" (filename . "^/home/matthias/opengl/openmaze/.*"))
@@ -499,9 +501,6 @@ This way region can be inserted into isearch easily with yank command."
 ;; TODO - want per mode and per file dictionary files
 ;; TODO - want to understand auto-complete-config and how to extend/customize it
 
-;; see https://github.com/xcwen/ac-php
-(use-package ac-php)
-
 (use-package auto-complete
 
   :config
@@ -511,30 +510,18 @@ This way region can be inserted into isearch easily with yank command."
    ac-auto-start nil
    ac-comphist-file "~/.emacs.d/ac-comphist.dat"
    ac-dictionary-directories (quote ("~/.emacs.d/dictionaries/"))
-   ac-dictionary-files (quote ("~/.emacs.d/dictionary"))
+   ac-dictionary-files (quote ("~/.emacs.d/dict"))
    ac-quick-help-delay 3.0
-   ac-trigger-key "C-x C-SPC"
    ac-use-fuzzy t
    ac-use-menu-map t
    ac-user-dictionary (quote ("")))
 
   (define-key ac-mode-map (kbd "C-c C-<SPC>") 'auto-complete)
 
-  (require 'ac-php)
-
   (define-key ac-menu-map "\C-n" 'ac-next)
   (define-key ac-menu-map "\C-p" 'ac-previous)
   (define-key ac-menu-map "\C-s" 'ac-isearch)
-  (add-to-list 'ac-modes 'php-mode) 
   (add-to-list 'ac-modes 'web-mode) )
-
-(defun mp:setup-ac-php ()
-  "Turn on auto-complete mode and set ac-sources for ac-php."
-  (auto-complete-mode)
-  (require 'ac-php)
-  (setq ac-sources  '(ac-source-php) ) )
-
-(add-hook 'php-mode-hook 'mp:setup-ac-php)
 
 ;; ]
 
@@ -936,10 +923,6 @@ This way region can be inserted into isearch easily with yank command."
 ;; ]
 
 ;; [ web development
-
-(defgroup mp nil "All things related to my customization" :group 'Emacs)
-
-(defgroup development nil "All things related to development" :group 'mp)
 
 (defgroup web nil "All things related to web development" :group 'development)
 
@@ -1522,6 +1505,17 @@ If so calculate pacakge name from current directory name."
   (setq indent-tabs-mode nil
         c-basic-offset 4
         php-template-compatibility nil) )
+
+;; see https://github.com/xcwen/ac-php
+(use-package ac-php)
+
+(defun mp:setup-ac-php ()
+  "Turn on auto-complete mode and set ac-sources for ac-php."
+  (auto-complete-mode)
+  (require 'ac-php)
+  (setq ac-sources  '(ac-source-php) ) )
+
+(add-hook 'php-mode-hook 'mp:setup-ac-php)
 
 (use-package php-mode
   :config
