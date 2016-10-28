@@ -670,6 +670,15 @@ This way region can be inserted into isearch easily with yank command."
 ;;    C-S-<up/down> (org-clock-timestamps-up/down)
 ;;    S-M-<up/down> (org-timestamp-up-down)
 
+(defun mp:org-clone-and-narrow-to-block ()
+  (interactive)
+  (if (eq 1 (length (window-list)))
+      (progn
+        (clone-indirect-buffer-other-window nil t)
+        (org-narrow-to-block) )
+    (message "This function is only applicable for frames that show a single window.") ) )
+
+
 (defun mp:org-mode-hook ()
   "org mode hook extender."
 
@@ -690,6 +699,7 @@ This way region can be inserted into isearch easily with yank command."
   (add-to-list 'org-mobile-files "projects.org") ;; paths relative to org-directory
 
   (local-set-key (kbd "<return>") 'org-return-indent)
+  (local-set-key (kbd "C-x n c") 'mp:org-clone-and-narrow-to-block)
 
   (setenv "GRAPHVIZ_DOT" "dot")
 
