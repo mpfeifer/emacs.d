@@ -1,0 +1,1 @@
+To add new entries just edit "dir" file by hand.

@@ -10,5 +10,15 @@ ido.last
 *~
 packages/
 custom.el
+tramp
+diary
+recentf
+bookmarks
+history
+smex-items
+savehist
+org-clock-save.el
+lastdir
+session.*
+ac-comphist.dat
 
-trampdiaryrecentfbookmarks
