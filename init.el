@@ -502,12 +502,12 @@ This way region can be inserted into isearch easily with yank command."
 ;; TODO - want to understand auto-complete-config and how to extend/customize it
 
 (use-package auto-complete
-
-  :config
+  :defer 1
+  :init
 
   (setq
-   ac-auto-show-menu nil
-   ac-auto-start nil
+   ac-auto-show-menu 2
+   ac-auto-start 3
    ac-comphist-file "~/.emacs.d/ac-comphist.dat"
    ac-dictionary-directories (quote ("~/.emacs.d/dictionaries/"))
    ac-dictionary-files (quote ("~/.emacs.d/dict"))
@@ -521,6 +521,7 @@ This way region can be inserted into isearch easily with yank command."
   (define-key ac-menu-map "\C-n" 'ac-next)
   (define-key ac-menu-map "\C-p" 'ac-previous)
   (define-key ac-menu-map "\C-s" 'ac-isearch)
+
   (add-to-list 'ac-modes 'web-mode) )
 
 ;; ]
