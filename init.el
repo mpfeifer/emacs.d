@@ -350,7 +350,7 @@ This way region can be inserted into isearch easily with yank command."
 
 (use-package ibuffer
   :bind ("C-x C-b" . ibuffer)
-  :config
+  :init
   (setq ibuffer-show-empty-filter-groups nil
         ibuffer-formats '((mark modified read-only " "
                                 (name 26 26 :left :elide)
@@ -800,6 +800,12 @@ This way region can be inserted into isearch easily with yank command."
 (use-package sr-speedbar
   :bind ("<f6>" . sr-speedbar-toggle)
   :config
+  (setq speedbar-fetch-etags-arguments (quote ("--declarations" "-D" "-I" "-o" "-"))
+        speedbar-sort-tags t
+        speedbar-ag-hierarchy-method (quote (speedbar-sort-tag-hierarchy))
+        speedbar-use-imenu-flag nil
+        speedbar-verbosity-level 2
+        sr-speedbar-right-side nil)
   (define-key speedbar-file-key-map (kbd "C-j") 'speedbar-expand-line)
   (define-key speedbar-file-key-map (kbd "C-k") 'speedbar-contract-line)
   (defadvice sr-speedbar-toggle (after select-speedbar activate)
@@ -927,7 +933,7 @@ This way region can be inserted into isearch easily with yank command."
 
 (use-package web-mode
   :bind ("C-c 6" . toggle-php-flavor-mode)
-  :config
+  :init
   (add-hook 'web-mode-hook 'mp:web-mode-extension)  )
 
 ;; ]
