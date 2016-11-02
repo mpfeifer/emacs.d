@@ -1386,18 +1386,24 @@ If so calculate pacakge name from current directory name."
 
 ;; [ python
 
-(use-package elpy
-  :init
-  (elpy-enable)
-  )
+(use-package elpy)
+
+(defun mp:electric-= ()
+  (interactive)
+  (when (not (eq font-lock-string-face (face-at-point t)))
+    (when (not (looking-back " "))
+      (insert " ") )
+    (insert "= ") ) )
 
 (defun mp:python-mode-hook ()
   "Personal python mode hook extension."
   (auto-fill-mode 1)
+  (elpy-enable)
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
   (setq python-indent-offset 4)
-  (local-set-key (kbd "M-;") 'comment-dwim))
+  (local-set-key (kbd "M-;") 'comment-dwim)
+  (local-set-key (kbd "=") 'mp:electric-=) )
 
 (add-hook 'python-mode-hook 'mp:python-mode-hook)
 
@@ -1549,15 +1555,17 @@ If so calculate pacakge name from current directory name."
 
 ;; [ openssl
 
-(defun mp:show-pem-csr ()
-  (interactive)
-  (call-process "openssl" nil "openssl.tmp" t "req" "-text" "-noout" "-in" (buffer-file-name)))
+(add-to-list 'auto-mode-alist '("\.cer") . hexl-mode)
 
-(defun mp:show-pem-cert ()
+(defun mp:show-x509 ()
   (interactive)
-  (split-window-below)
-  (call-process "openssl" nil "openssl.tmp" t "x509" "-text" "-noout" "-in" (buffer-file-name))
-  (find-file-other-window "openssl.tmp"))
+  (let ((cert-file (buffer-file-name))
+        (right-window (split-window-right))
+        (openssl-buffer (generate-new-buffer (generate-new-buffer-name "*openssl*"))))
+    (select-window right-window)
+    (set-window-buffer nil openssl-buffer)
+    (call-process "openssl" nil t (list openssl-buffer t) "x509" "-text" "-noout" "-in" cert-file)))
+
 
 ;; ]
 
