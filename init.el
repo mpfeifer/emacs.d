@@ -441,11 +441,10 @@ This way region can be inserted into isearch easily with yank command."
 (defun mp:emacs-lisp-mode-hook ()
   (when (string= (buffer-name) "init.el")
     (mp:dotemacs-mode-hook))
-  (eldoc-mode 1)
   (local-set-key (kbd "C-/") 'comment-dwim)
   (local-set-key (kbd "C-c C-c") 'byte-compile-current-buffer)
   (electric-pair-mode)
-  (setq fill-column 120) )
+  (flyspell-prog-mode) )
 
 (add-hook 'emacs-lisp-mode-hook 'mp:emacs-lisp-mode-hook)
 
@@ -1208,11 +1207,12 @@ If so calculate pacakge name from current directory name."
 (defun mp:java-mode-hook()
   (setq-local comment-auto-fill-only-comments t)
   (auto-fill-mode 1)
+  (flyspell-prog-mode)
   (setq-local comment-multi-line t) )
 
 (add-hook 'java-mode-hook 'mp:java-mode-hook)
 
-(add-to-list 'auto-insert-alist '(".*\\.java$" . [ "template.java" mp:java-preprocessor] ) ) 
+(add-to-list 'auto-insert-alist '(".*\\.java$" . [ "template.java" mp:java-preprocessor] ) )
 
 ;; ]
 
@@ -1409,7 +1409,8 @@ If so calculate pacakge name from current directory name."
   (setq-local comment-multi-line t)
   (setq python-indent-offset 4)
   (local-set-key (kbd "M-;") 'comment-dwim)
-  (local-set-key (kbd "=") 'mp:electric-=) )
+  (local-set-key (kbd "=") 'mp:electric-=)
+  (flyspell-prog-mode) )
 
 (add-hook 'python-mode-hook 'mp:python-mode-hook)
 
@@ -1437,8 +1438,10 @@ If so calculate pacakge name from current directory name."
 ;; (add-to-list 'exec-path "C:/mp:aspell/bin/")
 
 
-(setq ispell-program-name "aspell")
-(setq ispell-personal-dictionary "~/.emacs.d/ispell.txt")
+(setq ispell-program-name "aspell"
+      ispell-personal-dictionary "~/.emacs.d/dict")
+
+(ispell-change-dictionary "english")
 
 ;; ]
 
@@ -1458,7 +1461,7 @@ If so calculate pacakge name from current directory name."
 
 (add-hook 'html-mode-hook 'hs-minor-mode)
 
-;; optional key bindings, easier than hs defaults
+;; optional key bindings, easier than hide-show defaults
 (define-key html-mode-map (kbd "C--") 'hs-toggle-hiding)
 
 (defun mp:html-mode-setup ()
@@ -1555,23 +1558,25 @@ If so calculate pacakge name from current directory name."
       (when (re-search-forward "_" nil t)
         (replace-match "") ) ) ) )
 
-(add-to-list 'auto-insert-alist '(".*\\.sh$" . [ "template.sh" mp:elisp-post-processor] ) )
+(add-to-list 'auto-insert-alist
+             '(".*\\.sh$" . [ "template.sh" mp:elisp-post-processor] ) )
 
 ;; ]
 
 ;; [ openssl
 
-(add-to-list 'auto-mode-alist '("\.cer") . hexl-mode)
+(add-to-list 'auto-mode-alist '("\.cer\\'" . hexl-mode))
 
 (defun mp:show-x509 ()
   (interactive)
   (let ((cert-file (buffer-file-name))
         (right-window (split-window-right))
-        (openssl-buffer (generate-new-buffer (generate-new-buffer-name "*openssl*"))))
+        (openssl-buffer (generate-new-buffer
+                         (generate-new-buffer-name "*openssl*"))))
     (select-window right-window)
     (set-window-buffer nil openssl-buffer)
-    (call-process "openssl" nil t (list openssl-buffer t) "x509" "-text" "-noout" "-in" cert-file)))
-
+    (call-process "openssl" nil (list openssl-buffer t)
+                  t "x509" "-text" "-noout" "-in" cert-file)))
 
 ;; ]
 
@@ -1580,7 +1585,8 @@ If so calculate pacakge name from current directory name."
 ;; Note: use /ssh:hostname.domain:/path/to/file to access remote files.
 ;; For ease of use: Make sure that ssh access is granted via public key
 
-(setq tramp-default-method "ssh")
+(setq tramp-default-method "ssh"
+      tramp-auto-save-directory "~/.emacs.d/tramp-auto-save/")
 
 ;; ]
 
@@ -1612,5 +1618,13 @@ If so calculate pacakge name from current directory name."
 (which-function-mode)
 
 (setq which-func-unknown "∅")
+
+;; ]
+
+;; [ eldoc
+
+(setq eldoc-echo-area-use-multiline-p t)
+
+(global-eldoc-mode)
 
 ;; ]
