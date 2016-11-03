@@ -444,7 +444,8 @@ This way region can be inserted into isearch easily with yank command."
   (local-set-key (kbd "C-/") 'comment-dwim)
   (local-set-key (kbd "C-c C-c") 'byte-compile-current-buffer)
   (electric-pair-mode)
-  (flyspell-prog-mode) )
+  ;; (flyspell-prog-mode)
+  )
 
 (add-hook 'emacs-lisp-mode-hook 'mp:emacs-lisp-mode-hook)
 
@@ -679,9 +680,17 @@ This way region can be inserted into isearch easily with yank command."
 
 
 (defun mp:org-mode-hook ()
-  "org mode hook extender."
+  (interactive)
+;;  (flyspell-mode)
 
-  (setq org-babel-python-command "python"
+  (add-to-list 'auto-mode-alist '("organizer\\'" . org-mode))
+
+  (setq org-agenda-span 7
+        org-agenda-comact-blocks t
+        org-agenda-show-all-dates t
+        org-agenda-files '("~/org/organizer"
+                           "~/org/gtd.org")
+        org-babel-python-command "python"
         org-clock-into-drawer t
         org-clock-persist 'history
         org-confirm-babel-evaluate nil
@@ -693,12 +702,16 @@ This way region can be inserted into isearch easily with yank command."
         org-mobile-directory "~/org/MobileOrg/"
         org-mobile-files (quote (org-agenda-files "projects.org"))
         org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
-        org-todo-keywords (quote ((sequence "TODO" "DONE"))))
+        org-special-ctrl-a/e t
+        org-special-ctrl-k t
+        org-todo-keywords (quote ((sequence "TODO(t)" "DONE(d)" ))))
 
-  (add-to-list 'org-mobile-files "projects.org") ;; paths relative to org-directory
+  ;; paths relative to org-directory
+  (add-to-list 'org-mobile-files "mobile.org")
 
   (local-set-key (kbd "<return>") 'org-return-indent)
   (local-set-key (kbd "C-x n c") 'mp:org-clone-and-narrow-to-block)
+  (local-set-key (kbd "C-x b") 'org-iswitchb)
 
   (setenv "GRAPHVIZ_DOT" "dot")
 
@@ -713,7 +726,7 @@ This way region can be inserted into isearch easily with yank command."
      (gnuplot . t)
      (java . t)
      (perl . t)
-     (sh . t) ) )
+     (sh . t) ) ) )
 
   (org-clock-persistence-insinuate)
 
@@ -729,7 +742,7 @@ This way region can be inserted into isearch easily with yank command."
                 ("m" "Meeting" entry (file "~/org/gtd.org")
                  "** MEETING with %? :MEETING:\n%U" :clock-in t :clock-resume t)
                 ("p" "Phone call" entry (file "~/org/gtd.org")
-                 "** PHONE %? :PHONE:\n%U" :clock-in t :clock-resume t) ) ) ) )
+                 "** PHONE %? :PHONE:\n%U" :clock-in t :clock-resume t) ) ) )
 
 (add-hook 'org-mode-hook 'mp:org-mode-hook)
 
@@ -1100,34 +1113,40 @@ and display corresponding buffer in new frame."
 ;; [ java mode
 
 (defun mp:start-new-web-application (project-path group-id artifact-id version-number)
-  (interactive "DProjectc-directory: \nMGroup-id: \nMArtifact-id: \nMVersion-number: ")
+  (interactive "DProject-directory: \nMGroup-id: \nMArtifact-id: \nMVersion-number: ")
   (let* ((live-buffer-name "*mvn*")
-         (live-buffer (get-buffer-create live-buffer-name)))
-    (when (not (file-exists-p project-path))
+         (live-buffer (get-buffer-create live-buffer-name))
+         (target-web-xml (concat project-path "/" artifact-id "/src/main/webapp/WEB-INF/web.xml"))
+         (win-edges (window-edges))
+         (this-window-x-min (nth 0 win-edges))
+         (this-window-x-max (nth 2 win-edges))
+         (ww (- this-window-x-max this-window-x-min)))
+    (progn
+      (when (not (file-exists-p project-path))
         (make-directory project-path))
-    (let ((default-directory project-path)
-          (target-web-xml (concat project-path "/" artifact-id "/src/main/webapp/WEB-INF/web.xml"))
-          (pom-xml (concat artifact-id "/pom.xml")))
-      (split-window-below -10)
-      (other-window 1)
-      (switch-to-buffer live-buffer-name)
+      (switch-to-buffer live-buffer)
       (when (string= (buffer-name) live-buffer-name)
         (erase-buffer))
+      (cd project-path)
       (call-process "mvn" nil live-buffer-name t "archetype:generate"
                     (format "-DgroupId=%s" group-id)
                     (format "-DartifactId=%s" artifact-id)
                     (format "-Dversion=%s" version-number)
                     (format "-DarchetypeArtifactId=%s" "maven-archetype-webapp")
-                    (format "-DinteractiveMode=%s" "false") )
+                    (format "-DinteractiveMode=%s" "false") ) 
+      (when (file-exists-p artifact-id)
+        (cd artifact-id))
       (goto-char (point-min))
-      (if (search-forward "BUILD SUCCESS")
+      (when (search-forward "BUILD SUCCESS")
           (progn
-            (other-window 1)
-            (find-file pom-xml)
+            (split-window-below -8)
+            (find-file (concat project-path "/" artifact-id "/pom.xml"))
+            (sr-speedbar-open)
+            (shrink-window-horizontally (- ww 64))
             (mp:copy-template "web-3.0.xml" target-web-xml
                               (list 
-                               (list 'DISPLAY-NAME (format "%s %s" artifact-id version-number)))))
-        (goto-char (point-max)) ) ) ) )
+                               (list 'DISPLAY-NAME (format "%s %s" artifact-id version-number))))))
+      (goto-char (point-max)) ) ) )
 
 (use-package jdee
   :disabled
@@ -1207,7 +1226,7 @@ If so calculate pacakge name from current directory name."
 (defun mp:java-mode-hook()
   (setq-local comment-auto-fill-only-comments t)
   (auto-fill-mode 1)
-  (flyspell-prog-mode)
+;;  (flyspell-prog-mode)
   (setq-local comment-multi-line t) )
 
 (add-hook 'java-mode-hook 'mp:java-mode-hook)
@@ -1294,10 +1313,9 @@ If so calculate pacakge name from current directory name."
   :config
   (ido-vertical-mode))
 
-(use-package ido-ubiquitous  ;; ido-completing-read instead of completing-read
+(use-package ido-ubiquitous
   :config
-  (ido-ubiquitous-mode)
-  (setq ido-cr+-max-items nil) )
+  (ido-ubiquitous-mode) )
 
 ;; [ tags
 
@@ -1404,13 +1422,14 @@ If so calculate pacakge name from current directory name."
 (defun mp:python-mode-hook ()
   "Personal python mode hook extension."
   (auto-fill-mode 1)
-  (elpy-enable)
+  (elpy-mode)
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
   (setq python-indent-offset 4)
   (local-set-key (kbd "M-;") 'comment-dwim)
   (local-set-key (kbd "=") 'mp:electric-=)
-  (flyspell-prog-mode) )
+;;  (flyspell-prog-mode)
+  )
 
 (add-hook 'python-mode-hook 'mp:python-mode-hook)
 
