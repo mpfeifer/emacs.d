@@ -1584,6 +1584,36 @@ If so calculate pacakge name from current directory name."
 
 ;; [ openssl
 
+
+;; define several category of keywords (note: order matters - sort by length)
+(setq openssl-keywords '(;;"-----BEGIN CERTIFICATE-----" "-----END CERTIFICATE-----"
+                         "X509v3 Authority Key Identifier" "X509v3 CRL Distribution Points"
+                         "X509v3 Subject Key Identifier" "Authority Information Access"
+                         "X509v3 Certificate Policies" "X509v3 Basic Constraints"
+                         "Subject Public Key Info" "Public Key Algorithm" "Signature Algorithm"
+                         "X509v3 extensions" "X509v3 Key Usage" "Serial Number" "\\^Certificate"
+                         "Not Before" "Public-Key" "Full Name" "Not After" "Validity" "Exponent"
+                         "Subject" "Version" "Modulus" "Policy" "Issuer" "keyid" "Data" "CPS" ) )
+
+(setq openssl-keywords-regexp (regexp-opt openssl-keywords 'words))
+
+;; note: order for openssl-font-lock-keywords  matters,
+;; because once colored, that part won't change.
+;; in general, longer words first
+(setq openssl-font-lock-keywords`((,openssl-keywords-regexp . font-lock-keyword-face)))
+
+(define-derived-mode openssl-mode view-mode "ossl"
+  "Major mode for viewing pem files"
+  ;; code for syntax highlighting
+  (setq font-lock-defaults '((openssl-font-lock-keywords)))
+  (font-lock-mode)
+  (mp:show-x509) )
+
+;; clear memory. no longer needed
+(setq openssl-keywords-regexp nil)
+
+(add-to-list 'auto-mode-alist '("\.pem\\'" . openssl-mode))
+
 (add-to-list 'auto-mode-alist '("\.cer\\'" . hexl-mode))
 
 (defun mp:show-x509 ()
