@@ -386,6 +386,7 @@ This way region can be inserted into isearch easily with yank command."
                  ("Pocketmine" (filename . "^.*Minecraft/Pocketmine/git/.*"))
                  ("Snake.js" (filename . "^/home/matthias/public_html/snake/.*"))
                  ("Timelapse" (filename . "^/home/matthias/timelapse/.*"))
+                 ("Prodigy" (name . "^\\*prodigy.*$"))
                  ("Organizer" (mode . org-mode))
                  ("Emacs Lisp" (mode . emacs-lisp-mode))
                  ("Dired" (mode . dired-mode))
@@ -522,7 +523,14 @@ This way region can be inserted into isearch easily with yank command."
   (define-key ac-menu-map "\C-p" 'ac-previous)
   (define-key ac-menu-map "\C-s" 'ac-isearch)
 
-  (add-to-list 'ac-modes 'web-mode) )
+  (add-to-list 'ac-modes 'web-mode)
+
+  (dolist (mode (list 'xml-mode 'web-mode 'sh-mode
+                      'emacs-lisp-mode 'java-mode))
+    (add-to-list 'ac-modes mode))
+
+  ) ;; end of use-package
+
 
 ;; ]
 
@@ -682,7 +690,7 @@ This way region can be inserted into isearch easily with yank command."
 
 (defun mp:org-mode-hook ()
   (interactive)
-;;  (flyspell-mode)
+  ;;  (flyspell-mode)
 
   (add-to-list 'auto-mode-alist '("organizer\\'" . org-mode))
 
@@ -729,21 +737,21 @@ This way region can be inserted into isearch easily with yank command."
      (perl . t)
      (sh . t) ) ) )
 
-  (org-clock-persistence-insinuate)
+(org-clock-persistence-insinuate)
 
-  (setq org-capture-templates
-        (quote (("s" "source code location" entry (file "~/org/bookmarks.org")
-                 "* New Entry\n  - %U\n  - %A%?\n" :clock-in nil :clock-resume nil)
-                ("t" "todo" entry (file "~/org/gtd.org")
-                 "** TODO %?\n%U\n%a\n" :clock-in t :clock-resume t)
-                ("r" "respond" entry (file "~/org/gtd.org")
-                 "** NEXT Respond to %:from on %:subject\nSCHEDULED: %t\n%U\n%a\n" :clock-in t :clock-resume t :immediate-finish t)
-                ("n" "note" entry (file "~/org/gtd.org")
-                 "** %? :NOTE:\n%U\n%a\n" :clock-in t :clock-resume t)
-                ("m" "Meeting" entry (file "~/org/gtd.org")
-                 "** MEETING with %? :MEETING:\n%U" :clock-in t :clock-resume t)
-                ("p" "Phone call" entry (file "~/org/gtd.org")
-                 "** PHONE %? :PHONE:\n%U" :clock-in t :clock-resume t) ) ) )
+(setq org-capture-templates
+      (quote (("s" "source code location" entry (file "~/org/bookmarks.org")
+               "* New Entry\n  - %U\n  - %A%?\n" :clock-in nil :clock-resume nil)
+              ("t" "todo" entry (file "~/org/gtd.org")
+               "** TODO %?\n%U\n%a\n" :clock-in t :clock-resume t)
+              ("r" "respond" entry (file "~/org/gtd.org")
+               "** NEXT Respond to %:from on %:subject\nSCHEDULED: %t\n%U\n%a\n" :clock-in t :clock-resume t :immediate-finish t)
+              ("n" "note" entry (file "~/org/gtd.org")
+               "** %? :NOTE:\n%U\n%a\n" :clock-in t :clock-resume t)
+              ("m" "Meeting" entry (file "~/org/gtd.org")
+               "** MEETING with %? :MEETING:\n%U" :clock-in t :clock-resume t)
+              ("p" "Phone call" entry (file "~/org/gtd.org")
+               "** PHONE %? :PHONE:\n%U" :clock-in t :clock-resume t) ) ) )
 
 (add-hook 'org-mode-hook 'mp:org-mode-hook)
 
@@ -753,14 +761,16 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; Warning: prodigy does not seem to allow stopping services on Windows
 
-(defsubst mp:toggle-prodigy-buffer ()
-  (interactive)
-  (if (string= (buffer-name) "*prodigy*")
-      (quit-window)
-    (prodigy)))
-
 (use-package prodigy
   :config
+
+  (add-to-list 'display-buffer-alist `( ,(rx bos "*prodigy*" eos) . (display-buffer-same-window . ((window-height . 25)))))
+
+  (defsubst mp:toggle-prodigy-buffer ()
+    (interactive)
+    (if (string= (buffer-name) "*prodigy*")
+      (quit-window)
+    (prodigy)))
 
   (defvar mp:prodigy-service-root
     "~/.emacs.d/services/"
@@ -1139,14 +1149,14 @@ and display corresponding buffer in new frame."
         (cd artifact-id))
       (goto-char (point-min))
       (when (search-forward "BUILD SUCCESS")
-          (progn
-            (split-window-below -8)
-            (find-file (concat project-path "/" artifact-id "/pom.xml"))
-            (sr-speedbar-open)
-            (shrink-window-horizontally (- ww 64))
-            (mp:copy-template "web-3.0.xml" target-web-xml
-                              (list 
-                               (list 'DISPLAY-NAME (format "%s %s" artifact-id version-number))))))
+        (progn
+          (split-window-below -8)
+          (find-file (concat project-path "/" artifact-id "/pom.xml"))
+          (sr-speedbar-open)
+          (shrink-window-horizontally (- ww 64))
+          (mp:copy-template "web-3.0.xml" target-web-xml
+                            (list 
+                             (list 'DISPLAY-NAME (format "%s %s" artifact-id version-number))))))
       (goto-char (point-max)) ) ) )
 
 (use-package jdee
@@ -1228,7 +1238,7 @@ If so calculate pacakge name from current directory name."
 (defun mp:java-mode-hook()
   (setq-local comment-auto-fill-only-comments t)
   (auto-fill-mode 1)
-;;  (flyspell-prog-mode)
+  ;;  (flyspell-prog-mode)
   (setq-local comment-multi-line t) )
 
 (add-hook 'java-mode-hook 'mp:java-mode-hook)
@@ -1430,7 +1440,7 @@ If so calculate pacakge name from current directory name."
   (setq python-indent-offset 4)
   (local-set-key (kbd "M-;") 'comment-dwim)
   (local-set-key (kbd "=") 'mp:electric-=)
-;;  (flyspell-prog-mode)
+  ;;  (flyspell-prog-mode)
   )
 
 (add-hook 'python-mode-hook 'mp:python-mode-hook)
@@ -1585,6 +1595,36 @@ If so calculate pacakge name from current directory name."
 ;; ]
 
 ;; [ openssl
+
+
+;; define several category of keywords (note: order matters - sort by length)
+(setq openssl-keywords '(;;"-----BEGIN CERTIFICATE-----" "-----END CERTIFICATE-----"
+                         "X509v3 Authority Key Identifier" "X509v3 CRL Distribution Points"
+                         "X509v3 Subject Key Identifier" "Authority Information Access"
+                         "X509v3 Certificate Policies" "X509v3 Basic Constraints"
+                         "Subject Public Key Info" "Public Key Algorithm" "Signature Algorithm"
+                         "X509v3 extensions" "X509v3 Key Usage" "Serial Number" "\\^Certificate"
+                         "Not Before" "Public-Key" "Full Name" "Not After" "Validity" "Exponent"
+                         "Subject" "Version" "Modulus" "Policy" "Issuer" "keyid" "Data" "CPS" ) )
+
+(setq openssl-keywords-regexp (regexp-opt openssl-keywords 'words))
+
+;; note: order for openssl-font-lock-keywords  matters,
+;; because once colored, that part won't change.
+;; in general, longer words first
+(setq openssl-font-lock-keywords`((,openssl-keywords-regexp . font-lock-keyword-face)))
+
+(define-derived-mode openssl-mode view-mode "ossl"
+  "Major mode for viewing pem files"
+  ;; code for syntax highlighting
+  (setq font-lock-defaults '((openssl-font-lock-keywords)))
+  (font-lock-mode)
+  (mp:show-x509) )
+
+;; clear memory. no longer needed
+(setq openssl-keywords-regexp nil)
+
+(add-to-list 'auto-mode-alist '("\.pem\\'" . openssl-mode))
 
 (add-to-list 'auto-mode-alist '("\.cer\\'" . hexl-mode))
 
