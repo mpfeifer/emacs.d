@@ -386,6 +386,7 @@ This way region can be inserted into isearch easily with yank command."
                  ("Pocketmine" (filename . "^.*Minecraft/Pocketmine/git/.*"))
                  ("Snake.js" (filename . "^/home/matthias/public_html/snake/.*"))
                  ("Timelapse" (filename . "^/home/matthias/timelapse/.*"))
+                 ("Prodigy" (name . "^\\*prodigy.*$"))
                  ("Organizer" (mode . org-mode))
                  ("Emacs Lisp" (mode . emacs-lisp-mode))
                  ("Dired" (mode . dired-mode))
