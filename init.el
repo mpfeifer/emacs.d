@@ -1152,7 +1152,8 @@ and display corresponding buffer in new frame."
 (use-package jdee
   :disabled
   :config
-  (setq jdee-server-dir "~/.emacs.d/jdee-server") )
+  (setq jdee-server-dir "~/.emacs.d/jdee-server"
+        jdee-checkstyle-classpath '("~/.emacs.d/jdee-server/checkstyle/")))
 
 (defun mp:predict-package-name-for-current-buffer ()
   "See if this is a maven project with standard directory layout.
