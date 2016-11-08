@@ -506,12 +506,12 @@ This way region can be inserted into isearch easily with yank command."
 ;; TODO - want to understand auto-complete-config and how to extend/customize it
 
 (use-package auto-complete
-
-  :config
+  :defer 1
+  :init
 
   (setq
-   ac-auto-show-menu nil
-   ac-auto-start nil
+   ac-auto-show-menu 2
+   ac-auto-start 3
    ac-comphist-file "~/.emacs.d/ac-comphist.dat"
    ac-dictionary-directories (quote ("~/.emacs.d/dictionaries/"))
    ac-dictionary-files (quote ("~/.emacs.d/dict"))
@@ -526,11 +526,14 @@ This way region can be inserted into isearch easily with yank command."
   (define-key ac-menu-map "\C-p" 'ac-previous)
   (define-key ac-menu-map "\C-s" 'ac-isearch)
 
+  (add-to-list 'ac-modes 'web-mode)
+
   (dolist (mode (list 'xml-mode 'web-mode 'sh-mode
                       'emacs-lisp-mode 'java-mode))
     (add-to-list 'ac-modes mode))
 
   ) ;; end of use-package
+
 
 ;; ]
 
@@ -1192,7 +1195,8 @@ and display corresponding buffer in new frame."
 (use-package jdee
   :disabled
   :config
-  (setq jdee-server-dir "~/.emacs.d/jdee-server") )
+  (setq jdee-server-dir "~/.emacs.d/jdee-server"
+        jdee-checkstyle-classpath '("~/.emacs.d/jdee-server/checkstyle/")))
 
 (defun mp:predict-package-name-for-current-buffer ()
   "See if this is a maven project with standard directory layout.

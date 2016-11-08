@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# author: Matthias
+# name: readline
+# key: readline
+# --
+
+with open('$1') as file:
+    for line in file:
+        $0
