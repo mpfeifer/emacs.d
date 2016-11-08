@@ -120,6 +120,9 @@
 
 (defgroup development nil "All things related to development" :group 'mp)
 
+;; add system clipboard content to kill ring when copying and yanking
+(setq save-interprogram-paste-before-kill t)
+
 ;; have to find out what this means :/
 (put 'narrow-to-region 'disabled nil)
 
@@ -763,11 +766,15 @@ This way region can be inserted into isearch easily with yank command."
 
   (add-to-list 'display-buffer-alist `( ,(rx bos "*prodigy*" eos) . (display-buffer-same-window . ((window-height . 25)))))
 
-  (defsubst mp:toggle-prodigy-buffer ()
+  (defun mp:toggle-prodigy-buffer ()
     (interactive)
     (if (string= (buffer-name) "*prodigy*")
-      (quit-window)
-    (prodigy)))
+        (if (eq 1 (length (window-list)))
+            (delete-frame)
+          (quit-window))
+      (progn
+        (mp:prodigy-setup-frame)
+        (prodigy))))
 
   (defvar mp:prodigy-service-root
     "~/.emacs.d/services/"
@@ -785,6 +792,26 @@ This way region can be inserted into isearch easily with yank command."
     (concat mp:prodigy-tomcat-root-dir "bin/catalina.sh")
     "Path to script that starts Tomcat.")
 
+  (defvar mp:prodigy-wildfly-root-dir
+    "~/opt/wildfly-10.1.0.Final/"
+    "Root directory of wildfly installation")
+
+  (defvar mp:prodigy-wildfly-start-script
+    (concat mp:prodigy-tomcat-root-dir "bin/standalone.sh")
+    "Path to script that starts Wildfly. Path is relative to mp:prodigy-wildfly-root-dir.")
+
+  (defun mp:prodigy-setup-frame ()
+    (interactive)
+    (if (eq 1 (length (window-list)))
+        (progn
+          (split-window-vertically -15)
+          (other-window 1))
+      (let ((frame-parameters '((name . "Prodigy")
+                                (height . 25)
+                                (width . 80)
+                                (minibuffer . nil))))
+        (select-frame (make-frame frame-parameters)))))
+
   (global-set-key (kbd "<f5>") #'mp:toggle-prodigy-buffer)
 
   (prodigy-define-service
@@ -792,6 +819,12 @@ This way region can be inserted into isearch easily with yank command."
     :command mp:prodigy-tomcat-start-script
     :args '("run")
     :cwd mp:prodigy-tomcat-root-dir)
+
+  (prodigy-define-service
+    :name "Wildfly 10.1.0"
+    :command mp:prodigy-wildfly-start-script
+    :args '("run")
+    :cwd mp:prodigy-wildfly-root-dir)
 
   (prodigy-define-service
     :name "Date Server (python)"
@@ -1037,7 +1070,7 @@ and display corresponding buffer in new frame."
   (split-window-right)
   (other-window 1) )
 
-(defun swap-windows ()
+(defun swap-buffers ()
   "Exchange buffer content between two windows. Current frame must host exactly two windows."
   (interactive)
   (if (eq 2 (length (window-list)))
@@ -1073,7 +1106,7 @@ and display corresponding buffer in new frame."
 (global-set-key (kbd "<f3>") #'delete-frame)
 (global-set-key (kbd "C-x 2") #'split-window-below-select)
 (global-set-key (kbd "C-x 3") #'split-window-right-select)
-(global-set-key (kbd "C-<f8>") #'swap-windows)
+(global-set-key (kbd "<f9>") #'swap-buffers)
 (global-set-key (kbd "<f8>") #'rotate-windows)
 
 ;; ]
@@ -1083,7 +1116,7 @@ and display corresponding buffer in new frame."
 (add-hook 'ediff-after-quit-hook-internal 'winner-undo)
 
 (defun mp:ediff-this ()
-  "If current frame hosts exactly two windows. ediff these two buffers."
+  "If current frame hosts exactly two windows. ediff the two window buffers."
   (interactive)
   (if (eq 2 (length (window-list)))
       (let* ((win-1 (nth 0 (window-list)))
@@ -1193,9 +1226,7 @@ If so calculate pacakge name from current directory name."
 (defun mp:java-preprocessor()
   (let ((classname (file-name-sans-extension (buffer-name)))
         (packagename (mp:predict-package-name-for-current-buffer)))
-    (while (search-forward "CLASSNAME" nil t) ;; want: something more smart
-      ;; e.g. if the project has maven standard directory layout get correct
-      ;; package name
+    (while (search-forward "CLASSNAME" nil t)
       (replace-match classname t))
     (goto-char (point-min))
     (while (search-forward "PACKAGE" nil t)
@@ -1221,11 +1252,11 @@ If so calculate pacakge name from current directory name."
 
 (defun mp:new-java-project (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
-  (let* ((template-pom "~/.emacs.d/templates/pom.xml")
-         (project-root (concat java-project-root "/" artifact-id))
+  (let* ((project-root (concat java-project-root "/" artifact-id))
          (target-pom (concat project-root "/pom.xml")))
-    (make-directory project-root)
-    (mp:copy-template template-pom target-pom
+    (when (not (file-exists-p project-root))
+      (make-directory project-root))
+    (mp:copy-template "pom.xml" target-pom
                       (list (list 'GROUP-ID group-id)
                             (list 'ARTIFACT-ID artifact-id)
                             (list 'VERSION version-number)))
@@ -1239,6 +1270,7 @@ If so calculate pacakge name from current directory name."
 
 (add-hook 'java-mode-hook 'mp:java-mode-hook)
 
+;; preprocessor for interactively generating files from templates
 (add-to-list 'auto-insert-alist '(".*\\.java$" . [ "template.java" mp:java-preprocessor] ) )
 
 ;; ]
@@ -1594,46 +1626,52 @@ If so calculate pacakge name from current directory name."
 
 
 ;; define several category of keywords (note: order matters - sort by length)
-(setq openssl-keywords '(;;"-----BEGIN CERTIFICATE-----" "-----END CERTIFICATE-----"
-                         "X509v3 Authority Key Identifier" "X509v3 CRL Distribution Points"
-                         "X509v3 Subject Key Identifier" "Authority Information Access"
-                         "X509v3 Certificate Policies" "X509v3 Basic Constraints"
-                         "Subject Public Key Info" "Public Key Algorithm" "Signature Algorithm"
-                         "X509v3 extensions" "X509v3 Key Usage" "Serial Number" "\\^Certificate"
-                         "Not Before" "Public-Key" "Full Name" "Not After" "Validity" "Exponent"
-                         "Subject" "Version" "Modulus" "Policy" "Issuer" "keyid" "Data" "CPS" ) )
+;; (setq openssl-keywords '(;;"-----BEGIN CERTIFICATE-----" "-----END CERTIFICATE-----"
+;;                          "X509v3 Authority Key Identifier" "X509v3 CRL Distribution Points"
+;;                          "X509v3 Subject Key Identifier" "Authority Information Access"
+;;                          "X509v3 Certificate Policies" "X509v3 Basic Constraints"
+;;                          "Subject Public Key Info" "Public Key Algorithm" "Signature Algorithm"
+;;                          "X509v3 extensions" "X509v3 Key Usage" "Serial Number" "\\^Certificate"
+;;                          "Not Before" "Public-Key" "Full Name" "Not After" "Validity" "Exponent"
+;;                          "Subject" "Version" "Modulus" "Policy" "Issuer" "keyid" "Data" "CPS" ) )
 
-(setq openssl-keywords-regexp (regexp-opt openssl-keywords 'words))
+;; (setq openssl-keywords-regexp (regexp-opt openssl-keywords 'words))
 
-;; note: order for openssl-font-lock-keywords  matters,
-;; because once colored, that part won't change.
-;; in general, longer words first
-(setq openssl-font-lock-keywords`((,openssl-keywords-regexp . font-lock-keyword-face)))
+;; ;; note: order matters for openssl-font-lock-keywords,
+;; ;; because once colored, that part won't change.
+;; ;; in general, longer words first
+;; (setq openssl-font-lock-keywords`((,openssl-keywords-regexp . font-lock-keyword-face)))
 
-(define-derived-mode openssl-mode view-mode "ossl"
-  "Major mode for viewing pem files"
-  ;; code for syntax highlighting
-  (setq font-lock-defaults '((openssl-font-lock-keywords)))
-  (font-lock-mode)
-  (mp:show-x509) )
-
-;; clear memory. no longer needed
-(setq openssl-keywords-regexp nil)
-
-(add-to-list 'auto-mode-alist '("\.pem\\'" . openssl-mode))
-
-(add-to-list 'auto-mode-alist '("\.cer\\'" . hexl-mode))
-
-(defun mp:show-x509 ()
-  (interactive)
-  (let ((cert-file (buffer-file-name))
-        (right-window (split-window-right))
-        (openssl-buffer (generate-new-buffer
-                         (generate-new-buffer-name "*openssl*"))))
-    (select-window right-window)
-    (set-window-buffer nil openssl-buffer)
-    (call-process "openssl" nil (list openssl-buffer t)
-                  t "x509" "-text" "-noout" "-in" cert-file)))
+;; (define-derived-mode openssl-mode view-mode "ossl"
+;;   "Major mode for viewing pem files"
+;;   ;; code for syntax highlighting
+;;   (setq font-lock-defaults '((openssl-font-lock-keywords)))
+;;   (font-lock-mode) )
+;;
+;; ;; clear memory. no longer needed
+;; (setq openssl-keywords-regexp nil)
+;;
+;; (add-to-list 'auto-mode-alist '("\.pem\\'" . openssl-mode))
+;; (add-to-list 'auto-mode-alist '("\.cer\\'" . hexl-mode))
+;;
+;; other extensios: key, der, csr
+;; other openssl commands:
+;;    openssl x509 -in some.file -text [ -inform der]
+;;    openssl req -in some.file -text
+;; pem file header
+;;    ----- BEGIN CERTIFICATE REQUEST -----
+;;    ----- BEGIN RSA PRIVATE KEY -----
+;;    ----- BEGIN CERTIFICATE -----
+;; (defun mp:show-x509 ()
+;;   (interactive)
+;;   (let ((cert-file (buffer-file-name))
+;;         (right-window (split-window-right))
+;;         (openssl-buffer (generate-new-buffer
+;;                          (generate-new-buffer-name "*openssl*"))))
+;;     (select-window right-window)
+;;     (set-window-buffer nil openssl-buffer)
+;;     (call-process "openssl" nil (list openssl-buffer t)
+;;                   t "rsa" "-text" "-noout" "-in" cert-file)))
 
 ;; ]
 
@@ -1671,6 +1709,8 @@ If so calculate pacakge name from current directory name."
 ;; this is a global minor mode and displays the name
 ;; of the function that surrounds point. To look into
 ;; how it works look at which-func-* variables.
+;; TODO: Want to do this:
+;; http://emacs.stackexchange.com/questions/28104/customize-in-which-func-mode
 
 (which-function-mode)
 
