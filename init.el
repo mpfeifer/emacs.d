@@ -280,11 +280,11 @@ This way region can be inserted into isearch easily with yank command."
 ;; do not show startup screen
 (setq inhibit-startup-screen t)
 
-;; nice dark theme
+;; nice dark theme with a light variante
 
-(use-package zerodark-theme)
+(use-package material-theme)
 
-(load-theme 'zerodark)
+(load-theme 'material-light)
 
 (use-package volatile-highlights 
   :init
@@ -301,8 +301,8 @@ This way region can be inserted into isearch easily with yank command."
   (add-hook 'php-mode-hook 'volatile-highlights-mode)
   (add-hook 'shell-mode-hook 'volatile-highlights-mode) )
 
-
-(show-paren-mode 1)
+;; visualize matching paren
+(show-paren-mode)
 
 ;; [ backups
 
@@ -354,14 +354,22 @@ This way region can be inserted into isearch easily with yank command."
 (use-package ibuffer
   :bind ("C-x C-b" . ibuffer)
   :init
+
+  (define-ibuffer-column dirname 
+    (:name "Directory" :inline nil)
+    (let ((result (buffer-name))
+          (buf-file-name (buffer-file-name buffer)))
+      (and buf-file-name
+           (file-exists-p buf-file-name)
+           (setq result (file-name-directory buf-file-name)))
+      result))
+
   (setq ibuffer-show-empty-filter-groups nil
-        ibuffer-formats '((mark modified read-only " "
-                                (name 26 26 :left :elide)
-                                " "
-                                (size 9 -1 :right)
-                                " "
-                                (git-status-mini) ;;  8 8 :left)
-                                " " filename-and-process)
+        ibuffer-formats '(( mark (git-status-mini) modified read-only "|"
+                                 (name 26 26 :left :elide)
+                                 "|"
+                                 (size 9 -1 :left)
+                                 "|" dirname) ;; filename-and-process)
                           (mark " "
                                 (name 16 -1)
                                 " " filename)))
@@ -383,7 +391,8 @@ This way region can be inserted into isearch easily with yank command."
                           (name . "^\\*JDEE.*")
                           (name . "^\\*check style\\*")))
                  ("Customization" (name . "^\\*Customize.*"))
-                 ("Mailguard" (filename . "^.*nightly_build/.*"))
+                 ("Mailguard Frontend" (filename . "^.*V_6_00_4_cpac.*webmgnt.*"))
+                 ("Mailguard Backend" (filename . "^.*V_6_00_4_cpac.*/src/fw/.*"))
                  ("OpenGL-Lab" (filename . "^/home/matthias/opengl/lab/.*"))
                  ("OpenGL-Maze" (filename . "^/home/matthias/opengl/openmaze/.*"))
                  ("Pocketmine" (filename . "^.*Minecraft/Pocketmine/git/.*"))
@@ -448,6 +457,12 @@ This way region can be inserted into isearch easily with yank command."
   (local-set-key (kbd "C-/") 'comment-dwim)
   (local-set-key (kbd "C-c C-c") 'byte-compile-current-buffer)
   (electric-pair-mode)
+  (setq ac-sources '(ac-source-words-in-same-mode-buffers
+                     ac-source-features
+                     ac-source-functions
+                     ac-source-variables
+                     ac-source-symbols))
+  (auto-complete-mode 1)
   ;; (flyspell-prog-mode)
   )
 
@@ -509,6 +524,8 @@ This way region can be inserted into isearch easily with yank command."
   :defer 1
   :init
 
+  (require 'auto-complete)
+
   (setq
    ac-auto-show-menu 2
    ac-auto-start 3
@@ -518,9 +535,11 @@ This way region can be inserted into isearch easily with yank command."
    ac-quick-help-delay 3.0
    ac-use-fuzzy t
    ac-use-menu-map t
+   ac-use-quick-help t
+   ac-quick-help-delay 1.5
    ac-user-dictionary (quote ("")))
 
-  (define-key ac-mode-map (kbd "C-c C-<SPC>") 'auto-complete)
+  (global-set-key (kbd "C-c C-<SPC>") 'auto-complete)
 
   (define-key ac-menu-map "\C-n" 'ac-next)
   (define-key ac-menu-map "\C-p" 'ac-previous)
@@ -923,8 +942,8 @@ This way region can be inserted into isearch easily with yank command."
 (defun mp:eshell-mode-hook ()
   "Personal eshell mode hook."
   (interactive)
-  (auto-complete-mode t)
   (setq ac-sources '(ac-source-filename ac-source-files-in-current-dir))
+  (auto-complete-mode t)
   (local-set-key (kbd "C-c C-c") 'mp:eshell)
   )
 
@@ -1600,8 +1619,8 @@ If so calculate pacakge name from current directory name."
 (defun mp:setup-ac-php ()
   "Turn on auto-complete mode and set ac-sources for ac-php."
   (auto-complete-mode)
-  (require 'ac-php)
-  (setq ac-sources  '(ac-source-php) ) )
+  (setq ac-sources  '(ac-source-php) )
+  (require 'ac-php) )
 
 (add-hook 'php-mode-hook 'mp:setup-ac-php)
 
