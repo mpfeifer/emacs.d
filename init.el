@@ -984,10 +984,11 @@ This way region can be inserted into isearch easily with yank command."
 
 (defun mp:c-mode-hook ()
   "Personal c mode hook extender."
+  (auto-complete-mode)
+  (setq ac-sources  '(ac-etags))
   (local-set-key (kbd "C-c C-c") 'compile))
 
-
-(add-hook 'c-mode-hook 'mp:c-mode-hook)
+(add-hook 'c++-mode-hook 'mp:c-mode-hook)
 
 ;; ]
 
@@ -997,17 +998,7 @@ This way region can be inserted into isearch easily with yank command."
   (setq indent-tabs-mode nil)
   (setq web-mode-markup-indent-offset 4))
 
-
-(defun toggle-php-flavor-mode ()
-  (interactive)
-  "Toggle mode between PHP & Web-Mode Helper modes"
-  (cond ((string= mode-name "PHP/l")
-         (web-mode))
-        ((string= mode-name "Web")
-         (php-mode))))
-
 (use-package web-mode
-  :bind ("C-c 6" . toggle-php-flavor-mode)
   :init
   (add-hook 'web-mode-hook 'mp:web-mode-extension)  )
 
@@ -1211,13 +1202,7 @@ and display corresponding buffer in new frame."
                              (list 'DISPLAY-NAME (format "%s %s" artifact-id version-number))))))
       (goto-char (point-max)) ) ) )
 
-(use-package jdee
-  :disabled
-  :config
-  (setq jdee-server-dir "~/.emacs.d/jdee-server"
-        jdee-checkstyle-classpath '("~/.emacs.d/jdee-server/checkstyle/")))
-
-(defun mp:predict-package-name-for-current-buffer ()
+(defun mp:guess-package-name-for-current-buffer ()
   "See if this is a maven project with standard directory layout.
 If so calculate pacakge name from current directory name."
   (let* ((components (remq ""
@@ -1248,7 +1233,7 @@ If so calculate pacakge name from current directory name."
 
 (defun mp:java-preprocessor()
   (let ((classname (file-name-sans-extension (buffer-name)))
-        (packagename (mp:predict-package-name-for-current-buffer)))
+        (packagename (mp:guess-package-name-for-current-buffer)))
     (while (search-forward "CLASSNAME" nil t)
       (replace-match classname t))
     (goto-char (point-min))
@@ -1273,17 +1258,38 @@ If so calculate pacakge name from current directory name."
     (write-file target-file nil) 
     (kill-buffer) ) )
 
-(defun mp:new-java-project (group-id artifact-id version-number)
+(defun mp:start-new-java-project (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
   (let* ((project-root (concat java-project-root "/" artifact-id))
-         (target-pom (concat project-root "/pom.xml")))
+         (target-pom (concat project-root "/pom.xml"))
+         (src-dir (concat project-root "/src/main/java/"))
+         (main-class (concat src-dir
+                             (replace-regexp-in-string (regexp-quote "/") "." group-id)
+                             "/" 
+                             artifact-id
+                             ".java")))
+
     (when (not (file-exists-p project-root))
       (make-directory project-root))
+
     (mp:copy-template "pom.xml" target-pom
                       (list (list 'GROUP-ID group-id)
                             (list 'ARTIFACT-ID artifact-id)
                             (list 'VERSION version-number)))
-    (find-file target-pom) ) )
+
+    (when (not (file-exists-p (file-name-directory src-dir)))
+      (make-directory (file-name-directory src-dir) t))
+
+    (find-file main-class)
+
+    ;; TODO: establish window layout. Set buffers for windows
+    ;;    +---+--------+   A tree-view rooted at project-root (nodes expanded)
+    ;;    |A  |B       |   B main-class
+    ;;    |   |        |
+    ;;    +---+--------+
+
+    ;; (find-file target-pom) 
+    ) )
 
 (defun mp:java-mode-hook()
   (setq-local comment-auto-fill-only-comments t)
@@ -1331,7 +1337,6 @@ If so calculate pacakge name from current directory name."
 (define-key nxml-mode-map (kbd "C--") 'hs-toggle-hiding)
 
 (defun mp:nxml-mode-setup ())
-
 
 (add-hook 'nxml-mode-hook 'mp:nxml-mode-setup)
 
@@ -1529,9 +1534,12 @@ If so calculate pacakge name from current directory name."
 
 ;; [ html editing
 
+;; see http://web-mode.org
+
+(add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
+
 (require 'hideshow)
 (require 'sgml-mode)
-(require 'nxml-mode)
 
 (add-to-list 'hs-special-modes-alist
              '(html-mode
