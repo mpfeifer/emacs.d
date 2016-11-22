@@ -870,7 +870,7 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; ]
 
-;; [ speedbar
+;; [ neotree & speedbar
 
 (use-package sr-speedbar
   :bind ("<f6>" . sr-speedbar-toggle)
@@ -886,6 +886,9 @@ This way region can be inserted into isearch easily with yank command."
   (defadvice sr-speedbar-toggle (after select-speedbar activate)
     (let ((window (get-buffer-window "*SPEEDBAR*")))
       (when window (select-window window)))))
+
+(use-package neotree
+  :bind ("C-c n" . neotree))
 
 ;; ]
 
@@ -1246,36 +1249,33 @@ If so calculate pacakge name from current directory name."
 
 (defun mp:start-new-java-project (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
-  (let* ((project-root (concat java-project-root "/" artifact-id))
+  (let* ((project-root (concat (expand-file-name java-project-root) artifact-id))
          (target-pom (concat project-root "/pom.xml"))
          (src-dir (concat project-root "/src/main/java/"))
          (main-class (concat src-dir
-                             (replace-regexp-in-string (regexp-quote "/") "." group-id)
+                             (replace-regexp-in-string "\\." "/" group-id)
                              "/" 
                              artifact-id
-                             ".java")))
+                             ".java"))
+         (class-dir (file-name-directory main-class))
+         (pframe (make-frame))
+         (default-directory project-root))
 
     (when (not (file-exists-p project-root))
-      (make-directory project-root))
+      (make-directory project-root t))
 
     (mp:copy-template "pom.xml" target-pom
                       (list (list 'GROUP-ID group-id)
                             (list 'ARTIFACT-ID artifact-id)
                             (list 'VERSION version-number)))
 
-    (when (not (file-exists-p (file-name-directory src-dir)))
-      (make-directory (file-name-directory src-dir) t))
+    (when (not (file-exists-p class-dir))
+      (make-directory class-dir t))
 
+    (select-frame pframe)
     (find-file main-class)
-
-    ;; TODO: establish window layout. Set buffers for windows
-    ;;    +---+--------+   A tree-view rooted at project-root (nodes expanded)
-    ;;    |A  |B       |   B main-class
-    ;;    |   |        |
-    ;;    +---+--------+
-
-    ;; (find-file target-pom) 
-    ) )
+    (save-buffer)
+    (neotree-dir project-root)) )
 
 (defun mp:java-mode-hook()
   (setq-local comment-auto-fill-only-comments t)
