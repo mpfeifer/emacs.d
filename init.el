@@ -114,11 +114,24 @@
 
 ;; ]
 
-;; [ General Emacs Behaviour
+
+;; customization
 
 (defgroup mp nil "All things related to my customization" :group 'Emacs)
 
 (defgroup development nil "All things related to development" :group 'mp)
+
+(defgroup web nil "All things related to web development" :group 'development)
+
+(defcustom web-project-root "~/public_html/" "New web projects are stored in this directory." :group 'web)
+
+(defgroup mp:java nil "All things related to web development" :group 'development)
+
+(defcustom java-project-root "~/src/" "New java projects are stored in this directory." :group 'mp:java)
+
+;; ]
+
+;; [ General Emacs Behaviour
 
 ;; add system clipboard content to kill ring when copying and yanking
 (setq save-interprogram-paste-before-kill t)
@@ -1009,10 +1022,6 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; [ web development
 
-(defgroup web nil "All things related to web development" :group 'development)
-
-(defcustom web-project-root "~/public_html/" "New web projects are stored in this directory." :group 'web)
-
 (defun mp:html-project-post-processing (name)
   "This method looks for strings %CSSFILE% and %TITLE% and replaces them with some meaningful values ."
   (save-excursion
@@ -1169,37 +1178,47 @@ and display corresponding buffer in new frame."
 
 ;; [ java mode
 
-(defun mp:start-new-web-application (project-path group-id artifact-id version-number)
-  (interactive "DProject-directory: \nMGroup-id: \nMArtifact-id: \nMVersion-number: ")
-  (let* ((live-buffer-name "*mvn*")
+(defun mp:start-new-web-application (group-id artifact-id version-number)
+  (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
+  (let* ((project-path java-project-root)
+         (live-buffer-name "*mvn*")
          (live-buffer (get-buffer-create live-buffer-name))
          (target-web-xml (concat project-path "/" artifact-id "/src/main/webapp/WEB-INF/web.xml"))
          (win-edges (window-edges))
          (this-window-x-min (nth 0 win-edges))
          (this-window-x-max (nth 2 win-edges))
          (ww (- this-window-x-max this-window-x-min)))
+
     (progn
+
       (when (not (file-exists-p project-path))
-        (make-directory project-path))
+        (make-directory project-path t))
+
       (switch-to-buffer live-buffer)
+
       (when (string= (buffer-name) live-buffer-name)
         (erase-buffer))
+
       (cd project-path)
+
       (call-process "mvn" nil live-buffer-name t "archetype:generate"
                     (format "-DgroupId=%s" group-id)
                     (format "-DartifactId=%s" artifact-id)
                     (format "-Dversion=%s" version-number)
                     (format "-DarchetypeArtifactId=%s" "maven-archetype-webapp")
                     (format "-DinteractiveMode=%s" "false") ) 
+
       (when (file-exists-p artifact-id)
         (cd artifact-id))
+
       (goto-char (point-min))
+
       (when (search-forward "BUILD SUCCESS")
         (progn
+          (neotree-dir project-path)
+          (other-window 1)
           (split-window-below -8)
           (find-file (concat project-path "/" artifact-id "/pom.xml"))
-          (sr-speedbar-open)
-          (shrink-window-horizontally (- ww 64))
           (mp:copy-template "web-3.0.xml" target-web-xml
                             (list 
                              (list 'DISPLAY-NAME (format "%s %s" artifact-id version-number))))))
@@ -1228,10 +1247,6 @@ If so calculate pacakge name from current directory name."
     (goto-char (point-min))
     (while (search-forward "PACKAGE" nil t)
       (replace-match packagename t) ) ) )
-
-(defgroup mp:java nil "All things related to web development" :group 'development)
-
-(defcustom java-project-root "~/src/" "New java projects are stored in this directory." :group 'mp:java)
 
 (defun mp:copy-template (filename target-file alist)
   "Copy FILENAME to TARGET-FILE. Then replace keys with values looked up in ALIST"
