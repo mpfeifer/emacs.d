@@ -1202,34 +1202,20 @@ and display corresponding buffer in new frame."
                              (list 'DISPLAY-NAME (format "%s %s" artifact-id version-number))))))
       (goto-char (point-max)) ) ) )
 
+
 (defun mp:guess-package-name-for-current-buffer ()
   "See if this is a maven project with standard directory layout.
 If so calculate pacakge name from current directory name."
-  (let* ((components (remq ""
-                           (reverse
-                            (split-string
-                             (file-name-directory (buffer-file-name))
-                             "\\/"))))
-         (src-encountered nil)
-         (packagename-components nil)
-         (packagename "undefined"))
+  (let* ((dirname (file-name-directory (buffer-file-name)))
+         (indicator "/src/main/java/")
+         (package-name "undefined"))
     (progn
-      (dolist (dirname components)
-        (when (not src-encountered)
-          (add-to-list 'packagename-components dirname))
-        (when (string= "src" dirname)
-          (setq src-encountered 't)))
-      (when (and (string= "src" (nth 0 packagename-components))
-                 (string= "main" (nth 1 packagename-components))
-                 (string= "java" (nth 2 packagename-components)))
-        ;; This looks mavenish. So lets calculate package name.
-        (setq packagename-components (nthcdr 3 packagename-components))
-        (let ((initial (pop packagename-components)))
-          (setq packagename initial)
-          (dolist (dirname packagename-components)
-            (when (not (string= "" dirname))
-              (setq packagename (concat packagename "." dirname)))))))
-    packagename))
+      (string-match (concat ".*" indicator "\\(.*\\)") dirname)
+      (setq package-name (match-string 1 dirname))
+      (when (string-suffix-p "/" package-name)
+        (setq package-name (substring package-name 0 -1)))
+      (setq package-name (replace-regexp-in-string "/" "." package-name))
+      package-name)))
 
 (defun mp:java-preprocessor()
   (let ((classname (file-name-sans-extension (buffer-name)))
