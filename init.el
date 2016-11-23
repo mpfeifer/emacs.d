@@ -133,6 +133,9 @@
 
 ;; [ General Emacs Behaviour
 
+;; do not show startup screen
+(setq inhibit-startup-screen t)
+
 ;; add system clipboard content to kill ring when copying and yanking
 (setq save-interprogram-paste-before-kill t)
 
@@ -290,14 +293,31 @@ This way region can be inserted into isearch easily with yank command."
   (tooltip-mode -1)
   (scroll-bar-mode -1))
 
-;; do not show startup screen
-(setq inhibit-startup-screen t)
+;; mode-line
+
+(setq-default mode-line-format (list
+                                "%e" "[" mode-line-mule-info mode-line-client mode-line-modified "] "
+                                '(:eval
+                                  (propertize "[%b] " 'help-echo (buffer-file-name)))
+                                ;; line and column
+                                "[" ;; '%02' to set to 2 chars at least; prevents flickering
+                                (propertize "%02l") ","
+                                (propertize "%02c") 
+                                "]"
+                                '(vc-mode vc-mode) " " mode-line-misc-info
+                                ;; add the time, with the date and the emacs uptime in the tooltip
+                                '(:eval (propertize (format-time-string "[%H:%M]")
+                                                    'help-echo
+                                                    (concat (format-time-string "%c; ")
+                                                            (emacs-uptime "Uptime:%hh"))))
+                                ))
 
 ;; nice dark theme with a light variante
 
 (use-package material-theme)
 
-(load-theme 'material-light)
+;; (load-theme 'material-light)
+(load-theme 'material)
 
 (use-package volatile-highlights 
   :init
@@ -900,8 +920,11 @@ This way region can be inserted into isearch easily with yank command."
     (let ((window (get-buffer-window "*SPEEDBAR*")))
       (when window (select-window window)))))
 
+  ;; (modify-frame-parameters nil (list '( name . "Emacs" )
+
 (use-package neotree
-  :bind ("C-c n" . neotree))
+  :bind ("C-c n" . neotree)
+  )
 
 ;; ]
 
