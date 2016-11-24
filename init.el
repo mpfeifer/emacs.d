@@ -85,7 +85,7 @@
       (package-refresh-contents)
       (package-install 'use-package))
   (when (mp:package-refresh-necessary-p)
-    (let ((user-information "Will refresh package contents! Press enter."))      
+    (let ((user-information "Will refresh package contents! Press enter."))
       (read-from-minibuffer user-information)
       (package-refresh-contents)
       (mp:update-package-guard))))
@@ -210,8 +210,6 @@
 
 (add-hook 'post-self-insert-hook 'expand-abbrev)
 
-(setq-default abbrev-mode t) ;; TODO Need to look what this does ( i already expand-abbref in hook )
-
 ;; ]
 
 
@@ -230,9 +228,9 @@
 ;; [ isearch
 
 ;; 'C-w'     - Select the (rest of the) word the TextCursor is on as
-;;             the search string; 
+;;             the search string;
 ;; 'M-s C-e' - Select the text up to the end of the line as the search
-;;             string (this was bound to ‘C-y’ up until Emacs 24.1). 
+;;             string (this was bound to ‘C-y’ up until Emacs 24.1).
 ;; 'M-s h r' - Highlight regular expression (‘highlight-regexp’)
 ;; 'M-s h u' - Unhighlight regular expression
 ;; 'M-s o'   - call ‘occur’ with the current search term
@@ -295,6 +293,13 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; mode-line
 
+(defun mp:sunrise-sunset-for-modeline ()
+  (let ((calendar-time-display-form '(24-hours ":" minutes))
+        (l (solar-sunrise-sunset (calendar-current-date))))
+    (format "[↑%s, ↓%s]"
+            (apply 'solar-time-string (car l))
+            (apply 'solar-time-string (cadr l)))))
+
 (setq mode-line-format (list
                         "%e" "[" mode-line-mule-info mode-line-client mode-line-modified "] "
                         '(:eval
@@ -302,8 +307,9 @@ This way region can be inserted into isearch easily with yank command."
                         ;; line and column
                         "[" ;; '%02' to set to 2 chars at least; prevents flickering
                         (propertize "%03l") ","
-                        (propertize "%03c") 
-                        "]"
+                        (propertize "%03c")
+                        "] "
+                        (mp:sunrise-sunset-for-modeline)
                         '(vc-mode vc-mode) " " mode-line-misc-info ))
 
 ;; nice dark theme with a light variante
@@ -313,7 +319,7 @@ This way region can be inserted into isearch easily with yank command."
 ;; (load-theme 'material-light)
 (load-theme 'material)
 
-(use-package volatile-highlights 
+(use-package volatile-highlights
   :init
   (add-hook 'emacs-lisp-mode 'volatile-highlights-mode)
   (add-hook 'js2-mode-hook 'volatile-highlights-mode)
@@ -372,7 +378,7 @@ This way region can be inserted into isearch easily with yank command."
   "Wrap point to first buffer when going after last buffer."
   (interactive)
   (next-line)
-  (if (>= (line-number-at-pos) 
+  (if (>= (line-number-at-pos)
           (- (count-lines (point-min) (point-max)) 1))
       (goto-line 3)))
 
@@ -382,7 +388,7 @@ This way region can be inserted into isearch easily with yank command."
   :bind ("C-x C-b" . ibuffer)
   :init
 
-  (define-ibuffer-column dirname 
+  (define-ibuffer-column dirname
     (:name "Directory" :inline nil)
     (let ((result (buffer-name))
           (buf-file-name (buffer-file-name buffer)))
@@ -402,7 +408,7 @@ This way region can be inserted into isearch easily with yank command."
                                 " " filename)))
 
   ;; Nice to have: functions that operate on ibuffer-save-filter-group
-  ;;               add/replace element, remove element, 
+  ;;               add/replace element, remove element,
 
   ;; use M-n, M-p to navigate between groups
   (setq ibuffer-saved-filter-groups
@@ -435,7 +441,7 @@ This way region can be inserted into isearch easily with yank command."
   ;; want: when opening file (via find-file) there is a check performed whether or not the file is part of
   ;; some project (Makefile, pom.xml, .git directory). The topmost directory containing any of the mentioned
   ;; files would be considered the root-directory of the project. And the filename of this directory would
-  ;; be the name of the filter-group. 
+  ;; be the name of the filter-group.
 
   (defun mp:ibuffer-mode-hook-extender ()
     (ibuffer-auto-mode 1) ;; auto updates
@@ -675,9 +681,29 @@ This way region can be inserted into isearch easily with yank command."
       calendar-view-diary-initially-flag t
       calendar-mark-diary-entries-flag t
       number-of-diary-entries 7
-      calendar-day-name-array ["Sonntag" "Montag" "Dienstag" "Mittwoch" "Donnerstag" "Freitag" "Samstag"]
-      calendar-month-name-array ["Januar" "Februar" "März" "April" "Mai" "Juni" "Juli" "August" "September" "Oktober" "November" "Dezember"]
-      solar-n-hemi-seasons '("Frühlingsanfang" "Sommeranfang" "Herbstanfang" "Winteranfang")
+      calendar-day-name-array [ "Sonntag"
+                                "Montag"
+                                "Dienstag"
+                                "Mittwoch"
+                                "Donnerstag"
+                                "Freitag"
+                                "Samstag" ]
+      calendar-month-name-array [ "Januar"
+                                  "Februar"
+                                  "März"
+                                  "April"
+                                  "Mai"
+                                  "Juni"
+                                  "Juli"
+                                  "August"
+                                  "September"
+                                  "Oktober"
+                                  "November"
+                                  "Dezember" ]
+      solar-n-hemi-seasons '( "Frühlingsanfang"
+                              "Sommeranfang"
+                              "Herbstanfang"
+                              "Winteranfang" )
       holiday-general-holidays '((holiday-fixed 1 1 "Neujahr")
                                  (holiday-fixed 5 1 "1. Mai")
                                  (holiday-fixed 10 3 "Tag der Deutschen Einheit"))
@@ -685,6 +711,7 @@ This way region can be inserted into isearch easily with yank command."
                                    (holiday-float 12 0 -3 "2. Advent")
                                    (holiday-float 12 0 -2 "3. Advent")
                                    (holiday-float 12 0 -1 "4. Advent")
+                                   (holiday-float 11 4 4 "Thanksgiving")
                                    (holiday-fixed 12 25 "1. Weihnachtstag")
                                    (holiday-fixed 12 26 "2. Weihnachtstag")
                                    (holiday-fixed 1 6 "Heilige Drei Könige")
@@ -1200,6 +1227,39 @@ and display corresponding buffer in new frame."
 ;; ]
 
 ;; [ java mode
+
+(defvar mp:ac-classpath-cache nil)
+
+(defun mp:ac-classpath-init ()
+  (setq mp:ac-classpath-cache (mp:read-classes-from-jar)))
+
+(defvar ac-source-classpath
+  '((init . mp:ac-classpath-init)
+    (candidates . mp:ac-classpath-cache)))
+
+(defun mp:read-classes-from-jar ()
+  
+  (with-temp-buffer
+    (call-process "/usr/bin/unzip" nil t nil "-l" "/home/map/opt/jdk1.8.0_101/jre/lib/rt.jar")
+    (goto-char (point-min))
+    (let ((end 0)
+          (result '())
+          (classname ""))
+      (while (search-forward ".class" nil t nil)
+        (end-of-line)
+        (setq end (point))
+        (beginning-of-line)
+        (goto-char (+ (point) 30))
+        (setq classname (substring 
+                         (replace-regexp-in-string "/" "."
+                                                   (buffer-substring-no-properties (point) end))
+                         0 -6))
+        (setq result (cons classname result))
+        (forward-line 1)
+        (beginning-of-line))
+      result)))
+
+(benchmark 1 '(progn (mp:read-classes-from-jar)))
 
 (defun mp:start-new-web-application (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
