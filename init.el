@@ -293,6 +293,9 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; mode-line
 
+(require 'calendar)
+(require 'solar)
+
 (defun mp:sunrise-sunset-for-modeline ()
   (let ((calendar-time-display-form '(24-hours ":" minutes))
         (l (solar-sunrise-sunset (calendar-current-date))))
@@ -309,8 +312,8 @@ This way region can be inserted into isearch easily with yank command."
                         (propertize "%03l") ","
                         (propertize "%03c")
                         "] "
-                        (mp:sunrise-sunset-for-modeline)
-                        '(vc-mode vc-mode) " " mode-line-misc-info ))
+;;                        (mp:sunrise-sunset-for-modeline)
+                        '(vc-mode vc-mode) " " mode-line-misc-info ))q
 
 ;; nice dark theme with a light variante
 
@@ -766,26 +769,25 @@ This way region can be inserted into isearch easily with yank command."
 
 (defun mp:org-mode-hook ()
   (interactive)
-  ;;  (flyspell-mode)
+  (flyspell-mode)
 
   (add-to-list 'auto-mode-alist '("organizer\\'" . org-mode))
 
   (setq org-agenda-span 7
         org-agenda-comact-blocks t
         org-agenda-show-all-dates t
-        org-agenda-files '("~/org/organizer"
-                           "~/org/gtd.org")
+        org-agenda-files '("~/org/organizer")
         org-babel-python-command "python"
         org-clock-into-drawer t
         org-clock-persist 'history
         org-confirm-babel-evaluate nil
-        org-default-notes-file "~/org/gtd.org"
+        org-default-notes-file "~/org/organizer"
         org-directory "~/org/"
         org-ellipsis "…"
         org-log-done (quote note)
         org-log-into-drawer t
         org-mobile-directory "~/org/MobileOrg/"
-        org-mobile-files (quote (org-agenda-files "projects.org"))
+        org-mobile-files (quote ("finanzen.org" org-agenda-files))
         org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
         org-special-ctrl-a/e t
         org-special-ctrl-k t
@@ -842,16 +844,6 @@ This way region can be inserted into isearch easily with yank command."
 
   (add-to-list 'display-buffer-alist `( ,(rx bos "*prodigy*" eos) . (display-buffer-same-window . ((window-height . 25)))))
 
-  (defun mp:toggle-prodigy-buffer ()
-    (interactive)
-    (if (string= (buffer-name) "*prodigy*")
-        (if (eq 1 (length (window-list)))
-            (delete-frame)
-          (quit-window))
-      (progn
-        (mp:prodigy-setup-frame)
-        (prodigy))))
-
   (defvar mp:prodigy-service-root
     "~/.emacs.d/services/"
     "Root directory for various services bundled with init.el." )
@@ -878,17 +870,32 @@ This way region can be inserted into isearch easily with yank command."
 
   (defun mp:prodigy-setup-frame ()
     (interactive)
-    (if (eq 1 (length (window-list)))
-        (progn
-          (split-window-vertically -15)
-          (other-window 1))
-      (let ((frame-parameters '((name . "Prodigy")
-                                (height . 25)
-                                (width . 80)
-                                (minibuffer . nil))))
-        (select-frame (make-frame frame-parameters)))))
+    (let ((frame-parameters '((name . "Prodigy")
+                              (height . 25)
+                              (width . 80)
+                              (minibuffer . t))))
+      (select-frame (make-frame frame-parameters))
+      (prodigy)))
 
-  (global-set-key (kbd "<f5>") #'mp:toggle-prodigy-buffer)
+  (defun mp:prodigy-next-line ()
+    (interactive)
+    (next-line)
+    (prodigy-display-process)
+    (other-frame 1))
+
+  (defun mp:prodigy-previous-line ()
+    (interactive)
+    (previous-line)
+    (prodigy-display-process)
+    (other-frame 1))
+
+  (defun mp:prodigy-mode-extender ()
+    (local-set-key (kbd "C-n") 'mp:prodigy-next-line)
+    (local-set-key (kbd "C-p") 'mp:prodigy-previous-line)))
+
+  (add-hook 'prodigy-mode-hook 'mp:prodigy-mode-extender)
+  
+  (global-set-key (kbd "<f5>") #'mp:prodigy-setup-frame)
 
   (prodigy-define-service
     :name "Tomcat 8.5.4"
