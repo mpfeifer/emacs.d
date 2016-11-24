@@ -295,22 +295,16 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; mode-line
 
-(setq-default mode-line-format (list
-                                "%e" "[" mode-line-mule-info mode-line-client mode-line-modified "] "
-                                '(:eval
-                                  (propertize "[%b] " 'help-echo (buffer-file-name)))
-                                ;; line and column
-                                "[" ;; '%02' to set to 2 chars at least; prevents flickering
-                                (propertize "%02l") ","
-                                (propertize "%02c") 
-                                "]"
-                                '(vc-mode vc-mode) " " mode-line-misc-info
-                                ;; add the time, with the date and the emacs uptime in the tooltip
-                                '(:eval (propertize (format-time-string "[%H:%M]")
-                                                    'help-echo
-                                                    (concat (format-time-string "%c; ")
-                                                            (emacs-uptime "Uptime:%hh"))))
-                                ))
+(setq mode-line-format (list
+                        "%e" "[" mode-line-mule-info mode-line-client mode-line-modified "] "
+                        '(:eval
+                          (propertize "[%b] " 'help-echo (buffer-file-name)))
+                        ;; line and column
+                        "[" ;; '%02' to set to 2 chars at least; prevents flickering
+                        (propertize "%03l") ","
+                        (propertize "%03c") 
+                        "]"
+                        '(vc-mode vc-mode) " " mode-line-misc-info ))
 
 ;; nice dark theme with a light variante
 
@@ -924,7 +918,13 @@ This way region can be inserted into isearch easily with yank command."
 
 (use-package neotree
   :bind ("C-c n" . neotree)
-  )
+  :init
+
+  (defun mp:neotree-mode-hook-extender ()
+    (interactive)
+    (hl-line-mode) )
+
+  (add-hook 'neotree-mode-hook 'mp:neotree-mode-hook-extender) )
 
 ;; ]
 
@@ -1318,7 +1318,10 @@ If so calculate pacakge name from current directory name."
 (defun mp:java-mode-hook()
   (setq-local comment-auto-fill-only-comments t)
   (auto-fill-mode 1)
-  ;;  (flyspell-prog-mode)
+  (auto-complete-mode)
+  (subword-mode)
+  (flyspell-prog-mode)
+  (linum-mode)
   (setq-local comment-multi-line t) )
 
 (add-hook 'java-mode-hook 'mp:java-mode-hook)

@@ -10,7 +10,7 @@ import time
 import socket
 
 # Author     : Matthias
-# Description: Python script template
+# Description: Echo Service in Python
 
 class Application:
 
@@ -29,14 +29,6 @@ class Application:
         self.sel           = selectors.DefaultSelector()
         self.setup_network_logger()
         self.gather_parameter()
-        self.register_signal_handler()
-
-    def register_signal_handler(self):
-        def signal_int_handler(signal, frame):
-            interrupt_msg = '{} {} terminated by keyboard interrupt'.format(self.name, self.version)
-            print(interrupt_msg)
-            exit(0)
-        signal.signal(signal.SIGINT, Application.signal_int_handler)
         
     def get_logger(self):
         log = logging.getLogger(self.logdomain)
