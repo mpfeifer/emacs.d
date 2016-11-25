@@ -131,6 +131,87 @@
 
 ;; ]
 
+;; [ calendar
+
+;; TODO: Want diary view entries be called after moving date marker in calendar
+;; TODO: Want tab to jump from one entry to the next (shift-tab to jump back)
+
+(global-set-key (kbd "<f4>") #'(lambda () (interactive)
+                                 "Toggle calendar visibility"
+                                 (let ((calendar-window
+                                        (get-buffer-window "*Calendar*")))
+                                   (if calendar-window
+                                       (delete-window calendar-window)
+                                     (calendar) ) ) ) )
+
+(defun mp:calendar-mode-hook ()
+  (interactive)
+  (local-set-key (kbd "<RET>") #'diary-view-entries) )
+
+(add-hook 'diary-display-hook 'fancy-diary-display)
+(add-hook 'today-visible-calendar-hook 'calendar-mark-today)
+(add-hook 'calendar-mode-hook 'mp:calendar-mode-hook)
+
+(setq calendar-longitude 6.116951
+      calendar-latitude 50.840401
+      calendar-mark-holidays-flag t
+      calendar-date-style 'european
+      calendar-view-diary-initially-flag t
+      calendar-mark-diary-entries-flag t
+      number-of-diary-entries 7
+      calendar-day-name-array [ "Sonntag"
+                                "Montag"
+                                "Dienstag"
+                                "Mittwoch"
+                                "Donnerstag"
+                                "Freitag"
+                                "Samstag" ]
+      calendar-month-name-array [ "Januar"
+                                  "Februar"
+                                  "März"
+                                  "April"
+                                  "Mai"
+                                  "Juni"
+                                  "Juli"
+                                  "August"
+                                  "September"
+                                  "Oktober"
+                                  "November"
+                                  "Dezember" ]
+      solar-n-hemi-seasons '( "Frühlingsanfang"
+                              "Sommeranfang"
+                              "Herbstanfang"
+                              "Winteranfang" )
+      holiday-general-holidays '((holiday-fixed 1 1 "Neujahr")
+                                 (holiday-fixed 5 1 "1. Mai")
+                                 (holiday-fixed 10 3 "Tag der Deutschen Einheit"))
+      holiday-christian-holidays '((holiday-float 12 0 -4 "1. Advent")
+                                   (holiday-float 12 0 -3 "2. Advent")
+                                   (holiday-float 12 0 -2 "3. Advent")
+                                   (holiday-float 12 0 -1 "4. Advent")
+                                   (holiday-float 11 4 4 "Thanksgiving")
+                                   (holiday-fixed 12 25 "1. Weihnachtstag")
+                                   (holiday-fixed 12 26 "2. Weihnachtstag")
+                                   (holiday-fixed 1 6 "Heilige Drei Könige")
+                                   (holiday-fixed 8 15 "Mariä Himmelfahrt")
+                                   (holiday-fixed 11 1 "Allerheiligen")
+                                   (holiday-float 11 3 1 "Buß- und Bettag" 16)
+                                   (holiday-float 11 0 1 "Totensonntag" 20)
+                                   (holiday-easter-etc -46 "Aschermittwoch")
+                                   (holiday-easter-etc -2 "Karfreitag")
+                                   (holiday-easter-etc 0 "Ostern")
+                                   (holiday-easter-etc 1 "Ostermontag")
+                                   (holiday-fixed 12 24 "Heiligabend")
+                                   (holiday-fixed 12 25 "1. Weihnachtstag")
+                                   (holiday-fixed 12 26 "2. Weihnachtstag"))
+      calendar-holidays (append holiday-general-holidays
+                                holiday-local-holidays
+                                holiday-other-holidays
+                                holiday-christian-holidays
+                                holiday-solar-holidays))
+
+;; ]
+
 ;; [ General Emacs Behaviour
 
 ;; do not show startup screen
@@ -291,7 +372,7 @@ This way region can be inserted into isearch easily with yank command."
   (tooltip-mode -1)
   (scroll-bar-mode -1))
 
-;; mode-line
+(require 'solar)
 
 (defun mp:sunrise-sunset-for-modeline ()
   (let ((calendar-time-display-form '(24-hours ":" minutes))
@@ -300,17 +381,17 @@ This way region can be inserted into isearch easily with yank command."
             (apply 'solar-time-string (car l))
             (apply 'solar-time-string (cadr l)))))
 
-(setq mode-line-format (list
-                        "%e" "[" mode-line-mule-info mode-line-client mode-line-modified "] "
-                        '(:eval
-                          (propertize "[%b] " 'help-echo (buffer-file-name)))
-                        ;; line and column
-                        "[" ;; '%02' to set to 2 chars at least; prevents flickering
-                        (propertize "%03l") ","
-                        (propertize "%03c")
-                        "] "
-                        (mp:sunrise-sunset-for-modeline)
-                        '(vc-mode vc-mode) " " mode-line-misc-info ))
+(setq-default mode-line-format (list
+                                "%e" "[" mode-line-mule-info mode-line-client mode-line-modified "] "
+                                '(:eval
+                                  (propertize "[%b] " 'help-echo (buffer-file-name)))
+                                ;; line and column
+                                "[" ;; '%02' to set to 2 chars at least; prevents flickering
+                                (propertize "%03l") ","
+                                (propertize "%03c")
+                                "] "
+                                (mp:sunrise-sunset-for-modeline)
+                                '(vc-mode vc-mode) " " mode-line-misc-info ))
 
 ;; nice dark theme with a light variante
 
@@ -653,87 +734,6 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; ]
 
-;; [ calendar
-
-;; TODO: Want diary view entries be called after moving date marker in calendar
-;; TODO: Want tab to jump from one entry to the next (shift-tab to jump back)
-
-(global-set-key (kbd "<f4>") #'(lambda () (interactive)
-                                 "Toggle calendar visibility"
-                                 (let ((calendar-window
-                                        (get-buffer-window "*Calendar*")))
-                                   (if calendar-window
-                                       (delete-window calendar-window)
-                                     (calendar) ) ) ) )
-
-(defun mp:calendar-mode-hook ()
-  (interactive)
-  (local-set-key (kbd "<RET>") #'diary-view-entries) )
-
-(add-hook 'diary-display-hook 'fancy-diary-display)
-(add-hook 'today-visible-calendar-hook 'calendar-mark-today)
-(add-hook 'calendar-mode-hook 'mp:calendar-mode-hook)
-
-(setq calendar-longitude 6.116951
-      calendar-latitude 50.840401
-      calendar-mark-holidays-flag t
-      calendar-date-style 'european
-      calendar-view-diary-initially-flag t
-      calendar-mark-diary-entries-flag t
-      number-of-diary-entries 7
-      calendar-day-name-array [ "Sonntag"
-                                "Montag"
-                                "Dienstag"
-                                "Mittwoch"
-                                "Donnerstag"
-                                "Freitag"
-                                "Samstag" ]
-      calendar-month-name-array [ "Januar"
-                                  "Februar"
-                                  "März"
-                                  "April"
-                                  "Mai"
-                                  "Juni"
-                                  "Juli"
-                                  "August"
-                                  "September"
-                                  "Oktober"
-                                  "November"
-                                  "Dezember" ]
-      solar-n-hemi-seasons '( "Frühlingsanfang"
-                              "Sommeranfang"
-                              "Herbstanfang"
-                              "Winteranfang" )
-      holiday-general-holidays '((holiday-fixed 1 1 "Neujahr")
-                                 (holiday-fixed 5 1 "1. Mai")
-                                 (holiday-fixed 10 3 "Tag der Deutschen Einheit"))
-      holiday-christian-holidays '((holiday-float 12 0 -4 "1. Advent")
-                                   (holiday-float 12 0 -3 "2. Advent")
-                                   (holiday-float 12 0 -2 "3. Advent")
-                                   (holiday-float 12 0 -1 "4. Advent")
-                                   (holiday-float 11 4 4 "Thanksgiving")
-                                   (holiday-fixed 12 25 "1. Weihnachtstag")
-                                   (holiday-fixed 12 26 "2. Weihnachtstag")
-                                   (holiday-fixed 1 6 "Heilige Drei Könige")
-                                   (holiday-fixed 8 15 "Mariä Himmelfahrt")
-                                   (holiday-fixed 11 1 "Allerheiligen")
-                                   (holiday-float 11 3 1 "Buß- und Bettag" 16)
-                                   (holiday-float 11 0 1 "Totensonntag" 20)
-                                   (holiday-easter-etc -46 "Aschermittwoch")
-                                   (holiday-easter-etc -2 "Karfreitag")
-                                   (holiday-easter-etc 0 "Ostern")
-                                   (holiday-easter-etc 1 "Ostermontag")
-                                   (holiday-fixed 12 24 "Heiligabend")
-                                   (holiday-fixed 12 25 "1. Weihnachtstag")
-                                   (holiday-fixed 12 26 "2. Weihnachtstag"))
-      calendar-holidays (append holiday-general-holidays
-                                holiday-local-holidays
-                                holiday-other-holidays
-                                holiday-christian-holidays
-                                holiday-solar-holidays))
-
-;; ]
-
 ;; [ session management
 
 ;; save and restore open buffers
@@ -944,12 +944,52 @@ This way region can be inserted into isearch easily with yank command."
   ;; (modify-frame-parameters nil (list '( name . "Emacs" )
 
 (use-package neotree
-  :bind ("C-c n" . neotree)
-  :init
+  :bind ("C-c n" . mp:neotree)
+  :config
+
+  (defun mp:neotree ()
+    (interactive)
+    (if mp:neotree-go-to-dir
+        (progn
+          (neotree-find mp:neotree-go-to-dir)
+          (setq mp:neotree-go-to-dir nil))
+      (neotree)))
 
   (defun mp:neotree-mode-hook-extender ()
     (interactive)
     (hl-line-mode) )
+
+  (add-hook 'neotree-mode-hook 'mp:neotree-mode-hook-extender)
+
+  (defvar mp:neotree-go-to-dir nil)
+
+  (defun mp:neotree-updater ()
+    "Hook run on buffer list update."
+    (interactive)
+    (when (eq 2 (length (window-list)))
+      (let* ((wnd-0 (nth 0 (window-list)))
+             (wnd-1 (nth 1 (window-list)))
+             (buf-0 (window-buffer wnd-0))
+             (buf-1 (window-buffer wnd-1))
+             (neo-buf nil)
+             (other-buf nil)
+             (filename nil))
+        (when (or (eq buf-0 neo-global--buffer)
+                  (eq buf-1 neo-global--buffer))
+          (progn
+            (if (eq buf-0 neo-global--buffer)
+                (setq neo-buf buf-0
+                      other-buf buf-0)
+              (setq neo-buf buf-1
+                    other-buf buf-0))
+            (setq filename (buffer-file-name other-buf))
+            (when filename
+            (progn
+              (when (file-exists-p filename)
+                (setq mp:neotree-go-to-dir filename)))))))))
+ 
+;; (add-hook 'buffer-list-update-hook 'mp:neotree-updater)
+;; (remove-hook 'buffer-list-update-hook 'mp:neotree-updater)
 
   (add-hook 'neotree-mode-hook 'mp:neotree-mode-hook-extender) )
 
@@ -1234,11 +1274,11 @@ and display corresponding buffer in new frame."
   (setq mp:ac-classpath-cache (mp:read-classes-from-jar)))
 
 (defvar ac-source-classpath
-  '((init . mp:ac-classpath-init)
+  '((prefix . "^import \\(.*\\)")
+    (init . mp:ac-classpath-init)
     (candidates . mp:ac-classpath-cache)))
 
 (defun mp:read-classes-from-jar ()
-  
   (with-temp-buffer
     (call-process "/usr/bin/unzip" nil t nil "-l" "/home/map/opt/jdk1.8.0_101/jre/lib/rt.jar")
     (goto-char (point-min))
@@ -1379,6 +1419,7 @@ If so calculate pacakge name from current directory name."
   (setq-local comment-auto-fill-only-comments t)
   (auto-fill-mode 1)
   (auto-complete-mode)
+  (setq ac-sources '(ac-source-classpath))
   (subword-mode)
   (flyspell-prog-mode)
   (linum-mode)
