@@ -220,8 +220,8 @@
 ;; add system clipboard content to kill ring when copying and yanking
 (setq save-interprogram-paste-before-kill t)
 
-;; have to find out what this means :/
 (put 'narrow-to-region 'disabled nil)
+(put 'narrow-to-page 'disabled nil)
 
 ;; do not ask when erasing buffer
 (put 'erase-buffer 'disabled nil)
@@ -394,7 +394,7 @@ This way region can be inserted into isearch easily with yank command."
                                 (propertize "%03c")
                                 "] "
                                 (mp:sunrise-sunset-for-modeline)
-                                '(vc-mode vc-mode) " " mode-line-misc-info ))
+                                " [" '(vc-mode vc-mode) " ] " mode-line-misc-info ))
 
 ;; nice dark theme with a light variante
 
@@ -493,46 +493,31 @@ This way region can be inserted into isearch easily with yank command."
 
   ;; Nice to have: functions that operate on ibuffer-save-filter-group
   ;;               add/replace element, remove element,
+  (defun mp-ibuffer-add-project (groupname projectname directory)
+    (let* ((group (assoc groupname ibuffer-saved-filter-groups))
+           (project (assoc projectname (cdr group))))
+      (if project
+          (setcdr project (list (cons 'filename directory)))
+        (setcdr group (cons (cons 'filename directory) (cdr group))))))
 
   ;; use M-n, M-p to navigate between groups
   (setq ibuffer-saved-filter-groups
-        (quote (("modes+projects"
-                 ("Arithmetik Chef" (filename . "^/home/matthias/public_html/Arithmetik-Chef/.*"))
+        (quote (("Projects"
+                 ("Dired" (mode . dired-mode))
                  ("Emacs" (or
                            (name . "^\\*scratch\\*$")
                            (name . "^\\*Messages\\*$")
                            (filename . "^.*/.emacs.d/.*$")))
-
-                 ("Graph Designer.js" (filename . "^/home/matthias/public_html/graphjs/.*"))
-                 ("JDEE" (or
-                          (name . "^\\*JDEE.*")
-                          (name . "^\\*check style\\*")))
-                 ("Customization" (name . "^\\*Customize.*"))
-                 ("Mailguard Frontend" (filename . "^.*V_6_00_4_cpac.*webmgnt.*"))
-                 ("Mailguard Backend" (filename . "^.*V_6_00_4_cpac.*/src/fw/.*"))
-                 ("OpenGL-Lab" (filename . "^/home/matthias/opengl/lab/.*"))
-                 ("OpenGL-Maze" (filename . "^/home/matthias/opengl/openmaze/.*"))
-                 ("Pocketmine" (filename . "^.*Minecraft/Pocketmine/git/.*"))
-                 ("Snake.js" (filename . "^/home/matthias/public_html/snake/.*"))
-                 ("Timelapse" (filename . "^/home/matthias/timelapse/.*"))
-                 ("Prodigy" (name . "^\\*prodigy.*$"))
-                 ("Organizer" (mode . org-mode))
                  ("Emacs Lisp" (mode . emacs-lisp-mode))
-                 ("Dired" (mode . dired-mode))
-                 ("Perl" (mode . cperl-mode))
-                 ("Python" (mode . python-mode))))))
-
-  ;; want: when opening file (via find-file) there is a check performed whether or not the file is part of
-  ;; some project (Makefile, pom.xml, .git directory). The topmost directory containing any of the mentioned
-  ;; files would be considered the root-directory of the project. And the filename of this directory would
-  ;; be the name of the filter-group.
+                 ("Customization" (name . "^\\*Customize.*"))
+                 ("Organizer" (mode . org-mode))))))
 
   (defun mp:ibuffer-mode-hook-extender ()
     (ibuffer-auto-mode 1) ;; auto updates
     (hl-line-mode)
     (define-key ibuffer-mode-map (kbd "C-p") 'ibuffer-previous-line)
     (define-key ibuffer-mode-map (kbd "C-n") 'ibuffer-next-line)
-    (ibuffer-switch-to-saved-filter-groups "modes+projects"))
+    (ibuffer-switch-to-saved-filter-groups "Projects"))
 
   (add-hook 'ibuffer-mode-hook 'mp:ibuffer-mode-hook-extender))
 
@@ -580,8 +565,8 @@ This way region can be inserted into isearch easily with yank command."
                      ac-source-variables
                      ac-source-symbols))
   (auto-complete-mode 1)
-  ;; (flyspell-prog-mode)
-  )
+  (linum-mode)
+  (flyspell-prog-mode))
 
 (add-hook 'emacs-lisp-mode-hook 'mp:emacs-lisp-mode-hook)
 
@@ -625,8 +610,19 @@ This way region can be inserted into isearch easily with yank command."
 ;; [ yasnippet
 
 (use-package yasnippet
+
   :config
-  (setq yas-snippet-dirs '("~/.emacs.d/snippets/"))
+
+  (defconst mp-snippet-dir "~/.emacs.d/snippets/")
+
+  (setq yas-snippet-dirs (list mp-snippet-dir))
+
+  (dolist (snippet-dir yas-snippet-dirs)
+    (add-to-list 'auto-mode-alist (cons (concat ".*" snippet-dir ".*") 'snippet-mode)))
+
+  ;; do not complain when snippets change buffer contents
+  (add-to-list 'warning-suppress-types '(yasnippet backquote-change))
+
   (yas-global-mode 1) )
 
 ;; ]
@@ -639,7 +635,7 @@ This way region can be inserted into isearch easily with yank command."
 
 (use-package auto-complete
   :defer 1
-  :init
+  :config
 
   (require 'auto-complete)
 
@@ -842,8 +838,6 @@ This way region can be inserted into isearch easily with yank command."
 (use-package prodigy
   :config
 
-  (add-to-list 'display-buffer-alist `( ,(rx bos "*prodigy*" eos) . (display-buffer-same-window . ((window-height . 25)))))
-
   (defvar mp:prodigy-service-root
     "~/.emacs.d/services/"
     "Root directory for various services bundled with init.el." )
@@ -876,6 +870,8 @@ This way region can be inserted into isearch easily with yank command."
                               (minibuffer . t))))
       (select-frame (make-frame frame-parameters))
       (prodigy)))
+  
+  ;;  (advice-add 'prodigy-start-service :after #'prodigy-display-process)
 
   (defun mp:prodigy-next-line ()
     (interactive)
@@ -968,13 +964,13 @@ This way region can be inserted into isearch easily with yank command."
              (buf-1 (window-buffer wnd-1))
              (neo-buf nil)
              (other-buf nil)
-             (filename nil)
              (neo-wnd nil)
              (other-wnd nil)
-             (neotree-buffer (get-buffer neo-buffer-name)))
-        (when (and neotree-buffer
-                   (or (eq buf-0 neotree-buffer)
-                       (eq buf-1 neotree-buffer))
+             (filename nil)
+             (neo-buffer (get-buffer " *NeoTree*")))
+        (when (and neo-buffer
+                   (or (eq buf-0 neo-buffer)
+                       (eq buf-1 neo-buffer)))
           (progn
             (if (eq buf-0 neotree-buffer)
                 (setq neo-buf buf-0
@@ -986,7 +982,8 @@ This way region can be inserted into isearch easily with yank command."
                     neo-wnd wnd-1
                     other-wnd wnd-0))
             (setq filename (buffer-file-name other-buf))
-            (when filename
+            (when (and filename
+                       (file-exists-p filename))
               (progn
                 (when (file-exists-p filename)
                   (progn
@@ -994,11 +991,15 @@ This way region can be inserted into isearch easily with yank command."
                     (setq mp:neotree-go-to-file filename)
                     (run-at-time 1 nil '(lambda () 
                                       (with-current-buffer neo-global--buffer
-                                        (neo-buffer--change-root (file-name-directory mp:neotree-go-to-file)))))))))))))))
+                                        (neo-buffer--change-root (file-name-directory mp:neotree-go-to-file))))))))))))))
+  ;; TODO this code changes neotree buffer, but it looks better if
+  ;; there is a little delay (as with run-at-time above)
   
-  ;; (add-hook 'buffer-list-update-hook 'mp:neotree-updater)
-  ;; (remove-hook 'buffer-list-update-hook 'mp:neotree-updater)
-
+                ;; (setq mp:neotree-go-to-dir filename)
+                ;; (let ((buffer-list-update-hook buffer-list-update-hook))
+                ;;   (neotree-find filename)
+                ;;   (select-window other-wnd)))))))))
+  
   (add-hook 'neotree-mode-hook 'mp:neotree-mode-hook-extender) )
 
 ;; ]
@@ -1307,7 +1308,17 @@ and display corresponding buffer in new frame."
         (beginning-of-line))
       result)))
 
-(benchmark 1 '(progn (mp:read-classes-from-jar)))
+(defun mp-assert-import (name)
+  "Insert import statement for class NAME if it does not yet exist. "
+  (save-excursion
+    (goto-char (point-min))
+    (when (not (re-search-forward (format "^import %s;" name) nil t))
+      (progn
+        (while (re-search-forward "^import.*" nil t))
+        (end-of-line)
+        (newline-and-indent)
+        (newline-and-indent)
+        (insert (format "import %s;" name))))))
 
 (defun mp:start-new-web-application (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
@@ -1530,17 +1541,19 @@ If so calculate pacakge name from current directory name."
 
 ;; ;; [ Where was I [editing text]?
 
-;; (defun mp:store-lot-position ()
-;;   (when (not (string-prefix-p "*" (buffer-name)))
-;;     (point-to-register ?z)))
+(defun mp:store-lot-position ()
+  (when (not (or 
+              (string-prefix-p "*" (buffer-name))
+              (string-prefix-p " " (buffer-name))))
+    (point-to-register ?z)))
 
-;; (defun mp:goto-lot-position ()
-;;   (interactive)
-;;   (jump-to-register ?z))
+(defun mp:goto-lot-position ()
+  (interactive)
+  (jump-to-register ?z))
 
-;; (add-hook 'post-self-insert-hook 'mp:store-lot-position)
+(add-hook 'post-self-insert-hook 'mp:store-lot-position)
 
-;; (global-set-key (kbd "C-c 1") 'mp:goto-lot-position)
+(global-set-key (kbd "C-c 1") 'mp:goto-lot-position)
 
 ;; ]
 
@@ -1890,5 +1903,48 @@ If so calculate pacakge name from current directory name."
 (setq eldoc-echo-area-use-multiline-p t)
 
 (global-eldoc-mode)
+
+;; ]
+
+
+;; [ help mode
+
+(defun mp:display-buffer-in-window-same-window (buffer alist)
+  "Open new window by splitting current window and display BUFFER.
+ALIST may contain window-height parameter and this should be negative."
+  (let ((help-window nil)
+        (help-window-height (assoc 'window-height alist)))
+    (setq help-window-height (if help-window-height
+                                 (cdr help-window-height)
+                               -15))
+    (setq help-window (split-window-below help-window-height))
+    (set-window-buffer help-window buffer)))
+
+(add-to-list 'display-buffer-alist `( ,(rx bos "*Help*" eos) . (mp:display-buffer-in-window-same-window '((window-height . 15)))))
+
+(defun mp:help-mode-setup ()
+  (local-set-key (kbd "q") 'delete-window))
+
+(add-hook 'help-mode-hook 'mp:help-mode-setup)
+
+;; ]
+
+
+;; [ helm
+
+(use-package helm
+  :disabled
+
+  (setq classes-helm-source
+        `((name . "HELM sees this classes")
+          (candidates . mp:read-classes-from-jar)
+          (action . (lambda (candidate) (helm-marked-candidates)))))
+
+  (defun helm-select-and-insert-classname ()
+    (interactive)
+    (let ((class (helm :sources '(classes-helm-source))))
+      (progn
+        (message-box "%s" class)
+        (insert (car class) ";")))))
 
 ;; ]

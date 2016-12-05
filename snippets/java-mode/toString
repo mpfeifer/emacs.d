@@ -1,7 +1,7 @@
 # -*- mode: snippet -*-
 # author: Matthias
-# name: toString
-# key: toString
+# name: toString() method template
+# key: tos
 # --
 public String toString() {
        String result = new StringBuffer();
