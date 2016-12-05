@@ -22,8 +22,8 @@ class Application:
         self.usage_string  = 'Usage: this-script.py [inifile] -h -v -p <numeric> -l <hostname> -r\r\n\r\n'
         self.usage_string+=' [inifile]  if inifile is set it is read before commandline switches\r\n'
         self.usage_string+='    -h      print usage string\r\n'
-        self.usage_string+='    -l      set remote logging host (this enables network logging)\r\n'
-        self.usage_string+='    -p      set remote logging port\r\n'
+        self.usage_string+='    -l      set remote logging host (this enables remote logging)\r\n'
+        self.usage_string+='    -p      set remote logging port (this enables remote logging)\r\n'
         self.usage_string+='    -r      enabled remote logging\r\n'
         self.usage_string+='    -v      be more verbose\r\n'
         self.usage_string+='\r\nIf remote logging is enabled in inifile it cannot be disabled via commandline.\r\n'
@@ -51,7 +51,7 @@ class Application:
     def get_logger(self):
         log = logging.getLogger(self.logdomain)
         formatstring='%(asctime)s %(levelname)-15s %(name)s # %(message)s'
-        formatter = logging.Formatter(fmt=formatstring)
+        formatter = logging.Formatter(fmt=formatstring, datefmt='%d.%m.%y %I:%M:%S')
         handler = None
         if self.remote_logger_enabled:
             handler = logging.handlers.SocketHandler(self.loghost_name, self.loghost_port)

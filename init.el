@@ -394,7 +394,7 @@ This way region can be inserted into isearch easily with yank command."
                                 (propertize "%03c")
                                 "] "
                                 (mp:sunrise-sunset-for-modeline)
-                                '(vc-mode vc-mode) " " mode-line-misc-info ))
+                                " [" '(vc-mode vc-mode) " ] " mode-line-misc-info ))
 
 ;; nice dark theme with a light variante
 
@@ -493,46 +493,31 @@ This way region can be inserted into isearch easily with yank command."
 
   ;; Nice to have: functions that operate on ibuffer-save-filter-group
   ;;               add/replace element, remove element,
+  (defun mp-ibuffer-add-project (groupname projectname directory)
+    (let* ((group (assoc groupname ibuffer-saved-filter-groups))
+           (project (assoc projectname (cdr group))))
+      (if project
+          (setcdr project (list (cons 'filename directory)))
+        (setcdr group (cons (cons 'filename directory) (cdr group))))))
 
   ;; use M-n, M-p to navigate between groups
   (setq ibuffer-saved-filter-groups
-        (quote (("modes+projects"
-                 ("Arithmetik Chef" (filename . "^/home/matthias/public_html/Arithmetik-Chef/.*"))
+        (quote (("Projects"
+                 ("Dired" (mode . dired-mode))
                  ("Emacs" (or
                            (name . "^\\*scratch\\*$")
                            (name . "^\\*Messages\\*$")
                            (filename . "^.*/.emacs.d/.*$")))
-
-                 ("Graph Designer.js" (filename . "^/home/matthias/public_html/graphjs/.*"))
-                 ("JDEE" (or
-                          (name . "^\\*JDEE.*")
-                          (name . "^\\*check style\\*")))
-                 ("Customization" (name . "^\\*Customize.*"))
-                 ("Mailguard Frontend" (filename . "^.*V_6_00_4_cpac.*webmgnt.*"))
-                 ("Mailguard Backend" (filename . "^.*V_6_00_4_cpac.*/src/fw/.*"))
-                 ("OpenGL-Lab" (filename . "^/home/matthias/opengl/lab/.*"))
-                 ("OpenGL-Maze" (filename . "^/home/matthias/opengl/openmaze/.*"))
-                 ("Pocketmine" (filename . "^.*Minecraft/Pocketmine/git/.*"))
-                 ("Snake.js" (filename . "^/home/matthias/public_html/snake/.*"))
-                 ("Timelapse" (filename . "^/home/matthias/timelapse/.*"))
-                 ("Prodigy" (name . "^\\*prodigy.*$"))
-                 ("Organizer" (mode . org-mode))
                  ("Emacs Lisp" (mode . emacs-lisp-mode))
-                 ("Dired" (mode . dired-mode))
-                 ("Perl" (mode . cperl-mode))
-                 ("Python" (mode . python-mode))))))
-
-  ;; want: when opening file (via find-file) there is a check performed whether or not the file is part of
-  ;; some project (Makefile, pom.xml, .git directory). The topmost directory containing any of the mentioned
-  ;; files would be considered the root-directory of the project. And the filename of this directory would
-  ;; be the name of the filter-group.
+                 ("Customization" (name . "^\\*Customize.*"))
+                 ("Organizer" (mode . org-mode))))))
 
   (defun mp:ibuffer-mode-hook-extender ()
     (ibuffer-auto-mode 1) ;; auto updates
     (hl-line-mode)
     (define-key ibuffer-mode-map (kbd "C-p") 'ibuffer-previous-line)
     (define-key ibuffer-mode-map (kbd "C-n") 'ibuffer-next-line)
-    (ibuffer-switch-to-saved-filter-groups "modes+projects"))
+    (ibuffer-switch-to-saved-filter-groups "Projects"))
 
   (add-hook 'ibuffer-mode-hook 'mp:ibuffer-mode-hook-extender))
 
@@ -626,7 +611,17 @@ This way region can be inserted into isearch easily with yank command."
 
 (use-package yasnippet
   :config
-  (setq yas-snippet-dirs '("~/.emacs.d/snippets/"))
+
+  (defconst mp-snippet-dir "~/.emacs.d/snippets/")
+
+  (setq yas-snippet-dirs (list mp-snippet-dir))
+
+  (dolist (snippet-dir yas-snippet-dirs)
+    (add-to-list 'auto-mode-alist (cons (concat ".*" snippet-dir ".*") 'snippet-mode)))
+
+  ;; do not complain when snippets change buffer contents
+  (add-to-list 'warning-suppress-types '(yasnippet backquote-change))
+
   (yas-global-mode 1) )
 
 ;; ]
@@ -1315,7 +1310,17 @@ and display corresponding buffer in new frame."
         (beginning-of-line))
       result)))
 
-(benchmark 1 '(progn (mp:read-classes-from-jar)))
+(defun mp-assert-import (name)
+  "Insert import statement for class NAME if it does not yet exist. "
+  (save-excursion
+    (goto-char (point-min))
+    (when (not (re-search-forward (format "^import %s;" name) nil t))
+      (progn
+        (while (re-search-forward "^import.*" nil t))
+        (end-of-line)
+        (newline-and-indent)
+        (newline-and-indent)
+        (insert (format "import %s;" name))))))
 
 (defun mp:start-new-web-application (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")

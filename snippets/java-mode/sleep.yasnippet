@@ -2,7 +2,11 @@
 # name: Thread.sleep()
 # key: sleep
 # --
+`(save-excursion (mp-assert-import "java.lang.Thread")`
+
 try {
     Thread.sleep(${1:1000});
-} catch (InterruptedException ignore) { }
+} catch (InterruptedException e) {
+  ${2:InterruptHandling}
+}
 $0
