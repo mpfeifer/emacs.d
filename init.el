@@ -951,28 +951,16 @@ This way region can be inserted into isearch easily with yank command."
 ;; (modify-frame-parameters nil (list '( name . "Emacs" )
 
 (use-package neotree
-  :bind ("C-c n" . mp:neotree)
+  :bind ("C-c n" . neotree)
   :config
-
-  (defun mp:neotree ()
-    (interactive)
-    (if mp:neotree-go-to-dir
-        (progn
-          (neotree-find mp:neotree-go-to-dir)
-          (setq mp:neotree-go-to-dir nil))
-      (neotree)))
 
   (defun mp:neotree-mode-hook-extender ()
     (interactive)
     (hl-line-mode) )
 
-  (add-hook 'neotree-mode-hook 'mp:neotree-mode-hook-extender)
-
-  (defvar mp:neotree-go-to-dir nil)
+  (defvar mp:neotree-go-to-file nil)
 
   (defun mp:neotree-updater ()
-    "Hook run on buffer list update."
-    (interactive)
     (when (eq 2 (length (window-list)))
       (let* ((wnd-0 (nth 0 (window-list)))
              (wnd-1 (nth 1 (window-list)))
@@ -980,20 +968,33 @@ This way region can be inserted into isearch easily with yank command."
              (buf-1 (window-buffer wnd-1))
              (neo-buf nil)
              (other-buf nil)
-             (filename nil))
-        (when (or (eq buf-0 neo-global--buffer)
-                  (eq buf-1 neo-global--buffer))
+             (filename nil)
+             (neo-wnd nil)
+             (other-wnd nil)
+             (neotree-buffer (get-buffer neo-buffer-name)))
+        (when (and neotree-buffer
+                   (or (eq buf-0 neotree-buffer)
+                       (eq buf-1 neotree-buffer))
           (progn
-            (if (eq buf-0 neo-global--buffer)
+            (if (eq buf-0 neotree-buffer)
                 (setq neo-buf buf-0
-                      other-buf buf-0)
+                      other-buf buf-1
+                      neo-wnd wnd-0
+                      other-wnd wnd-1)
               (setq neo-buf buf-1
-                    other-buf buf-0))
+                    other-buf buf-0
+                    neo-wnd wnd-1
+                    other-wnd wnd-0))
             (setq filename (buffer-file-name other-buf))
             (when filename
               (progn
                 (when (file-exists-p filename)
-                  (setq mp:neotree-go-to-dir filename)))))))))
+                  (progn
+                    (set-buffer neo-buf)
+                    (setq mp:neotree-go-to-file filename)
+                    (run-at-time 1 nil '(lambda () 
+                                      (with-current-buffer neo-global--buffer
+                                        (neo-buffer--change-root (file-name-directory mp:neotree-go-to-file)))))))))))))))
   
   ;; (add-hook 'buffer-list-update-hook 'mp:neotree-updater)
   ;; (remove-hook 'buffer-list-update-hook 'mp:neotree-updater)
