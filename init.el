@@ -580,8 +580,8 @@ This way region can be inserted into isearch easily with yank command."
                      ac-source-variables
                      ac-source-symbols))
   (auto-complete-mode 1)
-  ;; (flyspell-prog-mode)
-  )
+  (linum-mode)
+  (flyspell-prog-mode))
 
 (add-hook 'emacs-lisp-mode-hook 'mp:emacs-lisp-mode-hook)
 
@@ -842,8 +842,6 @@ This way region can be inserted into isearch easily with yank command."
 (use-package prodigy
   :config
 
-  (add-to-list 'display-buffer-alist `( ,(rx bos "*prodigy*" eos) . (display-buffer-same-window . ((window-height . 25)))))
-
   (defvar mp:prodigy-service-root
     "~/.emacs.d/services/"
     "Root directory for various services bundled with init.el." )
@@ -876,6 +874,8 @@ This way region can be inserted into isearch easily with yank command."
                               (minibuffer . t))))
       (select-frame (make-frame frame-parameters))
       (prodigy)))
+  
+  ;;  (advice-add 'prodigy-start-service :after #'prodigy-display-process)
 
   (defun mp:prodigy-next-line ()
     (interactive)
@@ -971,8 +971,6 @@ This way region can be inserted into isearch easily with yank command."
   (defvar mp:neotree-go-to-dir nil)
 
   (defun mp:neotree-updater ()
-    "Hook run on buffer list update."
-    (interactive)
     (when (eq 2 (length (window-list)))
       (let* ((wnd-0 (nth 0 (window-list)))
              (wnd-1 (nth 1 (window-list)))
@@ -980,20 +978,31 @@ This way region can be inserted into isearch easily with yank command."
              (buf-1 (window-buffer wnd-1))
              (neo-buf nil)
              (other-buf nil)
-             (filename nil))
-        (when (or (eq buf-0 neo-global--buffer)
-                  (eq buf-1 neo-global--buffer))
+             (neo-wnd nil)
+             (other-wnd nil)
+             (filename nil)
+             (neo-buffer (get-buffer " *NeoTree*")))
+        (when (and neo-buffer
+                   (or (eq buf-0 neo-buffer)
+                       (eq buf-1 neo-buffer)))
           (progn
             (if (eq buf-0 neo-global--buffer)
                 (setq neo-buf buf-0
-                      other-buf buf-0)
+                      other-buf buf-1
+                      neo-wnd wnd-0
+                      other-wnd wnd-1)
               (setq neo-buf buf-1
-                    other-buf buf-0))
+                    other-buf buf-0
+                    neo-wnd wnd-1
+                    other-wnd wnd-0))
             (setq filename (buffer-file-name other-buf))
-            (when filename
+            (when (and filename
+                       (file-exists-p filename))
               (progn
-                (when (file-exists-p filename)
-                  (setq mp:neotree-go-to-dir filename)))))))))
+                (setq mp:neotree-go-to-dir filename)
+                (let ((buffer-list-update-hook buffer-list-update-hook))
+                  (neotree-find filename)
+                  (select-window other-wnd)))))))))
   
   ;; (add-hook 'buffer-list-update-hook 'mp:neotree-updater)
   ;; (remove-hook 'buffer-list-update-hook 'mp:neotree-updater)
@@ -1891,3 +1900,47 @@ If so calculate pacakge name from current directory name."
 (global-eldoc-mode)
 
 ;; ]
+
+
+;; [ help mode
+
+(defun mp:display-buffer-in-window-same-window (buffer alist)
+  "Open new window by splitting current window and display BUFFER.
+ALIST may contain window-height parameter and this should be negative."
+  (let ((help-window nil)
+        (help-window-height (assoc 'window-height alist)))
+    (setq help-window-height (if help-window-height
+                                 (cdr help-window-height)
+                               -15))
+    (setq help-window (split-window-below help-window-height))
+    (set-window-buffer help-window buffer)))
+
+(add-to-list 'display-buffer-alist `( ,(rx bos "*Help*" eos) . (mp:display-buffer-in-window-same-window '((window-height . 15)))))
+
+(defun mp:help-mode-setup ()
+  (local-set-key (kbd "q") 'delete-window))
+
+(add-hook 'help-mode-hook 'mp:help-mode-setup)
+
+;; ]
+
+
+;; [ helm
+
+(use-package helm
+  :disabled
+
+  (setq classes-helm-source
+        `((name . "HELM sees this classes")
+          (candidates . mp:read-classes-from-jar)
+          (action . (lambda (candidate) (helm-marked-candidates)))))
+
+  (defun helm-select-and-insert-classname ()
+    (interactive)
+    (let ((class (helm :sources '(classes-helm-source))))
+      (progn
+        (message-box "%s" class)
+        (insert (car class) ";")))))
+
+;; ]
+(put 'narrow-to-page 'disabled nil)
