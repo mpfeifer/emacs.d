@@ -547,7 +547,7 @@ This way region can be inserted into isearch easily with yank command."
   (setq paragraph-start "^;; \\["
         paragraph-separate "^;; ]$")
   (setq-local imenu-create-index-function 'imenu-default-create-index-function)
-  (setq imenu-generic-expression '((nil "^;; \\[ \\(.*\\)" 1))) )
+  (setq imenu-generic-expression '((nil "^;; \\[ \\(.*\\)" 1))))
 
 (defun byte-compile-current-buffer ()
   (interactive)
@@ -565,8 +565,7 @@ This way region can be inserted into isearch easily with yank command."
                      ac-source-variables
                      ac-source-symbols))
   (auto-complete-mode 1)
-  (linum-mode)
-  (flyspell-prog-mode))
+  (linum-mode))
 
 (add-hook 'emacs-lisp-mode-hook 'mp:emacs-lisp-mode-hook)
 
@@ -618,7 +617,8 @@ This way region can be inserted into isearch easily with yank command."
   (setq yas-snippet-dirs (list mp-snippet-dir))
 
   (dolist (snippet-dir yas-snippet-dirs)
-    (add-to-list 'auto-mode-alist (cons (concat ".*" snippet-dir ".*") 'snippet-mode)))
+    (add-to-list 'auto-mode-alist (cons (concat ".*" snippet-dir ".*") 'snippet-mode))
+    (yas-load-directory snippet-dir))
 
   ;; do not complain when snippets change buffer contents
   (add-to-list 'warning-suppress-types '(yasnippet backquote-change))
@@ -629,7 +629,6 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; [ auto complete
 ;;
-;; TODO - want to understand how documentation in auto-complete works
 ;; TODO - want per mode and per file dictionary files
 ;; TODO - want to understand auto-complete-config and how to extend/customize it
 
@@ -641,15 +640,15 @@ This way region can be inserted into isearch easily with yank command."
 
   (setq
    ac-auto-show-menu 2
-   ac-auto-start 3
+   ac-auto-start 0.1
    ac-comphist-file "~/.emacs.d/ac-comphist.dat"
-   ac-dictionary-directories (quote ("~/.emacs.d/dictionaries/"))
-   ac-dictionary-files (quote ("~/.emacs.d/dict"))
-   ac-quick-help-delay 3.0
+   ac-dictionary-directories (quote ("~/.emacs.d/dictionaries/")) ;; mode specific dictionaries
+   ac-dictionary-files (quote ("~/.dict")) ;; personal dictionary
+   ac-quick-help-delay 0.2
    ac-use-fuzzy t
+   ac-dwim t
    ac-use-menu-map t
    ac-use-quick-help t
-   ac-quick-help-delay 1.5
    ac-user-dictionary (quote ("")))
 
   (global-set-key (kbd "C-c C-<SPC>") 'auto-complete)
@@ -657,6 +656,7 @@ This way region can be inserted into isearch easily with yank command."
   (define-key ac-menu-map "\C-n" 'ac-next)
   (define-key ac-menu-map "\C-p" 'ac-previous)
   (define-key ac-menu-map "\C-s" 'ac-isearch)
+  (define-key ac-mode-map (kbd "C-c /") 'ac-complete-filename)
 
   (add-to-list 'ac-modes 'web-mode)
 
@@ -664,8 +664,11 @@ This way region can be inserted into isearch easily with yank command."
                       'emacs-lisp-mode 'java-mode))
     (add-to-list 'ac-modes mode))
 
-  ) ;; end of use-package
+  ;; for major mode specific setup of auto-complete see
+  ;; the according sections. eg for setting up auto-completion
+  ;; for java-mode have a look at java-mode.
 
+  ) ;; end of use-package
 
 ;; ]
 
@@ -764,7 +767,9 @@ This way region can be inserted into isearch easily with yank command."
 
 
 (defun mp:org-mode-hook ()
+
   (interactive)
+
   (flyspell-mode)
 
   (add-to-list 'auto-mode-alist '("organizer\\'" . org-mode))
@@ -906,7 +911,7 @@ This way region can be inserted into isearch easily with yank command."
     :cwd mp:prodigy-wildfly-root-dir)
 
   (prodigy-define-service
-    :name "Date Server (python)"
+    :name "Date Server (14002)"
     :command mp:prodigy-python-interpreter
     :args '("date.py" "14002")
     :stop-signal 'int
@@ -919,7 +924,7 @@ This way region can be inserted into isearch easily with yank command."
     :cwd (concat mp:prodigy-service-root "loghost/"))
 
   (prodigy-define-service
-    :name "Echo Server (python)"
+    :name "Echo Server (14001)"
     :command mp:prodigy-python-interpreter
     :args '("echo.py" "14001")
     :stop-signal 'int
@@ -990,15 +995,15 @@ This way region can be inserted into isearch easily with yank command."
                     (set-buffer neo-buf)
                     (setq mp:neotree-go-to-file filename)
                     (run-at-time 1 nil '(lambda () 
-                                      (with-current-buffer neo-global--buffer
-                                        (neo-buffer--change-root (file-name-directory mp:neotree-go-to-file))))))))))))))
+                                          (with-current-buffer neo-global--buffer
+                                            (neo-buffer--change-root (file-name-directory mp:neotree-go-to-file))))))))))))))
   ;; TODO this code changes neotree buffer, but it looks better if
   ;; there is a little delay (as with run-at-time above)
   
-                ;; (setq mp:neotree-go-to-dir filename)
-                ;; (let ((buffer-list-update-hook buffer-list-update-hook))
-                ;;   (neotree-find filename)
-                ;;   (select-window other-wnd)))))))))
+  ;; (setq mp:neotree-go-to-dir filename)
+  ;; (let ((buffer-list-update-hook buffer-list-update-hook))
+  ;;   (neotree-find filename)
+  ;;   (select-window other-wnd)))))))))
   
   (add-hook 'neotree-mode-hook 'mp:neotree-mode-hook-extender) )
 
@@ -1161,8 +1166,7 @@ This way region can be inserted into isearch easily with yank command."
 
 (defun mp:css-mode-hook ()
   "Personal css mode hook extender."
-  (setq ac-sources '(ac-source-css-property)))
-
+  (setq ac-sources '(ac-source-css-property ac-source-words-in-same-mode-buffers)))
 
 (add-hook 'css-mode-hook' mp:css-mode-hook)
 
@@ -1436,11 +1440,9 @@ If so calculate pacakge name from current directory name."
 
 (defun mp:java-mode-hook()
   (setq-local comment-auto-fill-only-comments t)
-  (auto-fill-mode 1)
   (auto-complete-mode)
-  (setq ac-sources '(ac-source-classpath))
+  (setq ac-sources '(ac-source-classpath ac-source-dictionary))
   (subword-mode)
-  (flyspell-prog-mode)
   (linum-mode)
   (setq-local comment-multi-line t) )
 
@@ -1553,7 +1555,7 @@ If so calculate pacakge name from current directory name."
 
 (add-hook 'post-self-insert-hook 'mp:store-lot-position)
 
-(global-set-key (kbd "C-c 1") 'mp:goto-lot-position)
+(global-set-key (kbd "C-c l") 'mp:goto-lot-position)
 
 ;; ]
 
@@ -1625,6 +1627,25 @@ If so calculate pacakge name from current directory name."
 
 ;; ]
 
+;; [ smarter comments
+
+(defun mp-smart-enter ()
+  (interactive)
+  (let ((in-comment nil))
+    (save-excursion 
+      (backward-char)
+      (when (eq font-lock-comment-face (face-at-point t))
+        (setq in-comment t)))
+    (newline)
+    (when in-comment
+      (progn
+        (insert comment-start)
+        (indent-for-comment)))))
+
+(global-set-key (kbd "<RET>") 'mp-smart-enter)
+
+;; ]
+
 ;; [ python
 
 (use-package elpy)
@@ -1645,7 +1666,6 @@ If so calculate pacakge name from current directory name."
   (setq python-indent-offset 4)
   (local-set-key (kbd "M-;") 'comment-dwim)
   (local-set-key (kbd "=") 'mp:electric-=)
-  ;;  (flyspell-prog-mode)
   )
 
 (add-hook 'python-mode-hook 'mp:python-mode-hook)
@@ -1908,19 +1928,6 @@ If so calculate pacakge name from current directory name."
 
 
 ;; [ help mode
-
-(defun mp:display-buffer-in-window-same-window (buffer alist)
-  "Open new window by splitting current window and display BUFFER.
-ALIST may contain window-height parameter and this should be negative."
-  (let ((help-window nil)
-        (help-window-height (assoc 'window-height alist)))
-    (setq help-window-height (if help-window-height
-                                 (cdr help-window-height)
-                               -15))
-    (setq help-window (split-window-below help-window-height))
-    (set-window-buffer help-window buffer)))
-
-(add-to-list 'display-buffer-alist `( ,(rx bos "*Help*" eos) . (mp:display-buffer-in-window-same-window '((window-height . 15)))))
 
 (defun mp:help-mode-setup ()
   (local-set-key (kbd "q") 'delete-window))
