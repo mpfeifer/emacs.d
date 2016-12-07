@@ -577,7 +577,7 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; [ save history
 
-(setq savehist-file "~/.emacs.d/savehist"
+(setq savehist-file "~/.emacs.d/minibuffer"
       history-length t
       history-delete-duplicates t
       savehist-save-minibuffer-history 1
@@ -620,6 +620,8 @@ This way region can be inserted into isearch easily with yank command."
     (add-to-list 'auto-mode-alist (cons (concat ".*" snippet-dir ".*") 'snippet-mode))
     (yas-load-directory snippet-dir))
 
+  (require 'warnings)
+
   ;; do not complain when snippets change buffer contents
   (add-to-list 'warning-suppress-types '(yasnippet backquote-change))
 
@@ -648,7 +650,7 @@ This way region can be inserted into isearch easily with yank command."
    ac-use-fuzzy t
    ac-dwim t
    ac-use-menu-map t
-   ac-use-quick-help t
+   ac-use-quick-help nil
    ac-user-dictionary (quote ("")))
 
   (global-set-key (kbd "C-c C-<SPC>") 'auto-complete)
@@ -959,8 +961,6 @@ This way region can be inserted into isearch easily with yank command."
     (interactive)
     (hl-line-mode) )
 
-  (defvar mp:neotree-go-to-file nil)
-
   (defun mp:neotree-updater ()
     (when (eq 2 (length (window-list)))
       (let* ((wnd-0 (nth 0 (window-list)))
@@ -977,7 +977,7 @@ This way region can be inserted into isearch easily with yank command."
                    (or (eq buf-0 neo-buffer)
                        (eq buf-1 neo-buffer)))
           (progn
-            (if (eq buf-0 neotree-buffer)
+            (if (eq buf-0 neo-buffer)
                 (setq neo-buf buf-0
                       other-buf buf-1
                       neo-wnd wnd-0
@@ -986,24 +986,19 @@ This way region can be inserted into isearch easily with yank command."
                     other-buf buf-0
                     neo-wnd wnd-1
                     other-wnd wnd-0))
-            (setq filename (buffer-file-name other-buf))
-            (when (and filename
-                       (file-exists-p filename))
+            (when (not (eq wnd-0 neo-wnd))
               (progn
-                (when (file-exists-p filename)
+                (setq filename (buffer-file-name other-buf))
+                (when (and filename
+                           (file-exists-p filename))
                   (progn
-                    (set-buffer neo-buf)
-                    (setq mp:neotree-go-to-file filename)
-                    (run-at-time 1 nil '(lambda () 
-                                          (with-current-buffer neo-global--buffer
-                                            (neo-buffer--change-root (file-name-directory mp:neotree-go-to-file))))))))))))))
-  ;; TODO this code changes neotree buffer, but it looks better if
-  ;; there is a little delay (as with run-at-time above)
-  
-  ;; (setq mp:neotree-go-to-dir filename)
-  ;; (let ((buffer-list-update-hook buffer-list-update-hook))
-  ;;   (neotree-find filename)
-  ;;   (select-window other-wnd)))))))))
+                    (let ((buffer-list-update-hook nil))
+                      (neotree-find filename)
+                      (select-window other-wnd)))))))))))
+
+  (add-hook 'buffer-list-update-hook 'mp:neotree-updater)
+
+  ;;  (remove-hook 'buffer-list-update-hook 'mp:neotree-updater)
   
   (add-hook 'neotree-mode-hook 'mp:neotree-mode-hook-extender) )
 
@@ -1109,66 +1104,6 @@ This way region can be inserted into isearch easily with yank command."
   (local-set-key (kbd "C-c C-c") 'compile))
 
 (add-hook 'c++-mode-hook 'mp:c-mode-hook)
-
-;; ]
-
-;; [ web mode
-
-(defun mp:web-mode-extension ()
-  (setq indent-tabs-mode nil)
-  (setq web-mode-markup-indent-offset 4))
-
-(use-package web-mode
-  :init
-  (add-hook 'web-mode-hook 'mp:web-mode-extension)  )
-
-;; ]
-
-;; [ web development
-
-(defun mp:html-project-post-processing (name)
-  "This method looks for strings %CSSFILE% and %TITLE% and replaces them with some meaningful values ."
-  (save-excursion
-    (goto-char (point-min))
-    (when (re-search-forward "%TITLE%" nil t)
-      (replace-match name))
-    (goto-char (point-min))
-    (when (re-search-forward "%CSSFILE%" nil t)
-      (replace-match (replace-regexp-in-string (regexp-quote ".html") ".css" (buffer-name) 'fixedcase) 'fixedcase))))
-
-(defun mp:start-web-project (name)
-  "Create a new web project with NAME.  Create initial html, js, css file."
-  (interactive "MProjectname? ")
-  (let ((projectroot (concat web-project-root name)))
-    (unless (file-exists-p projectroot)
-      (mkdir projectroot))
-    (select-frame (make-frame))
-    (split-window-vertically)
-    (find-file (concat projectroot "/" name ".html"))
-    (save-buffer)
-    (other-window 1)
-    (find-file (concat projectroot "/" name ".js"))
-    (save-buffer)
-    (split-window-horizontally)
-    (find-file (concat projectroot "/" name ".css"))
-    (save-buffer)
-    (other-window -1)
-    (copy-file "~/.emacs.d/templates/jquery-3.1.0.js" (concat projectroot "/"))
-    (copy-file "~/.emacs.d/templates/jquery-ui-1.12.0.css" (concat projectroot "/"))
-    (copy-file "~/.emacs.d/templates/jquery-ui-1.12.0.js" (concat projectroot "/"))
-    (copy-file "~/.emacs.d/templates/jquery.mobile-1.4.5.js" (concat projectroot "/"))
-    (copy-file "~/.emacs.d/templates/qunit-2.0.1.js" (concat projectroot "/"))
-    (copy-file "~/.emacs.d/templates/qunit-2.0.1.css" (concat projectroot "/"))
-    (switch-to-buffer (concat name ".html"))
-    (mp:html-project-post-processing name)))
-
-(global-set-key (kbd "C-c 4") #'mp:start-web-project)
-
-(defun mp:css-mode-hook ()
-  "Personal css mode hook extender."
-  (setq ac-sources '(ac-source-css-property ac-source-words-in-same-mode-buffers)))
-
-(add-hook 'css-mode-hook' mp:css-mode-hook)
 
 ;; ]
 
@@ -1697,34 +1632,39 @@ If so calculate pacakge name from current directory name."
 (setq ispell-program-name "aspell"
       ispell-personal-dictionary "~/.emacs.d/dict")
 
-(ispell-change-dictionary "english")
-
 ;; ]
 
-;; [ html editing
+;; [ html editing web mode
 
-;; see http://web-mode.org
+(use-package web-mode
+  :config
+  (add-hook 'web-mode-hook 'mp:web-mode-extension)
+  (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode)))
 
-(add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
+(use-package ac-html
+  :after web-mode)
+
+(defun mp:web-mode-extension ()
+  (interactive)
+  (make-local-variable 'ac-use-quick-help)  
+  (setq indent-tabs-mode nil
+        web-mode-markup-indent-offset 4
+        ac-use-quick-help t
+        ac-sources '(ac-source-html))
+  (hs-minor-mode))
 
 (require 'hideshow)
 (require 'sgml-mode)
 
 (add-to-list 'hs-special-modes-alist
-             '(html-mode
+             '(web-mode
                "<!--\\|<[^/>]*[^/]>"
                "-->\\|</[^/>]*[^/]>"
                "<!--"
                sgml-skip-tag-forward
                nil))
 
-(add-hook 'html-mode-hook 'hs-minor-mode)
-
-;; optional key bindings, easier than hide-show defaults
-(define-key html-mode-map (kbd "C--") 'hs-toggle-hiding)
-
-(defun mp:html-mode-setup ()
-  (interactive))
+(define-key web-mode-map (kbd "C--") 'hs-toggle-hiding)
 
 (defun mp:html-post-processing ()
   "This method looks for a couple of key-strings and replaces them with some meaningful values."
@@ -1779,7 +1719,49 @@ If so calculate pacakge name from current directory name."
     indent-buffer 
     mp:html-post-processing ] )
 
-(add-hook 'html-mode-hook 'mp:html-mode-setup)
+(defun mp:html-project-post-processing (name)
+  "This method looks for strings %CSSFILE% and %TITLE% and replaces them with some meaningful values ."
+  (save-excursion
+    (goto-char (point-min))
+    (when (re-search-forward "%TITLE%" nil t)
+      (replace-match name))
+    (goto-char (point-min))
+    (when (re-search-forward "%CSSFILE%" nil t)
+      (replace-match (replace-regexp-in-string (regexp-quote ".html") ".css" (buffer-name) 'fixedcase) 'fixedcase))))
+
+(defun mp:start-web-project (name)
+  "Create a new web project with NAME.  Create initial html, js, css file."
+  (interactive "MProjectname? ")
+  (let ((projectroot (concat web-project-root name)))
+    (unless (file-exists-p projectroot)
+      (mkdir projectroot))
+    (select-frame (make-frame))
+    (split-window-vertically)
+    (find-file (concat projectroot "/" name ".html"))
+    (save-buffer)
+    (other-window 1)
+    (find-file (concat projectroot "/" name ".js"))
+    (save-buffer)
+    (split-window-horizontally)
+    (find-file (concat projectroot "/" name ".css"))
+    (save-buffer)
+    (other-window -1)
+    (copy-file "~/.emacs.d/templates/jquery-3.1.0.js" (concat projectroot "/"))
+    (copy-file "~/.emacs.d/templates/jquery-ui-1.12.0.css" (concat projectroot "/"))
+    (copy-file "~/.emacs.d/templates/jquery-ui-1.12.0.js" (concat projectroot "/"))
+    (copy-file "~/.emacs.d/templates/jquery.mobile-1.4.5.js" (concat projectroot "/"))
+    (copy-file "~/.emacs.d/templates/qunit-2.0.1.js" (concat projectroot "/"))
+    (copy-file "~/.emacs.d/templates/qunit-2.0.1.css" (concat projectroot "/"))
+    (switch-to-buffer (concat name ".html"))
+    (mp:html-project-post-processing name)))
+
+(global-set-key (kbd "C-c 4") #'mp:start-web-project)
+
+(defun mp:css-mode-hook ()
+  "Personal css mode hook extender."
+  (setq ac-sources '(ac-source-css-property ac-source-words-in-same-mode-buffers)))
+
+(add-hook 'css-mode-hook' mp:css-mode-hook)
 
 ;; ]
 
@@ -1939,19 +1921,20 @@ If so calculate pacakge name from current directory name."
 
 ;; [ helm
 
-(use-package helm
-  :disabled
+;; (use-package helm
 
-  (setq classes-helm-source
-        `((name . "HELM sees this classes")
-          (candidates . mp:read-classes-from-jar)
-          (action . (lambda (candidate) (helm-marked-candidates)))))
+;;   :disabled
 
-  (defun helm-select-and-insert-classname ()
-    (interactive)
-    (let ((class (helm :sources '(classes-helm-source))))
-      (progn
-        (message-box "%s" class)
-        (insert (car class) ";")))))
+;;   (setq classes-helm-source
+;;         `((name . "HELM sees this classes")
+;;           (candidates . mp:read-classes-from-jar)
+;;           (action . (lambda (candidate) (helm-marked-candidates)))))
+
+;;   (defun helm-select-and-insert-classname ()
+;;     (interactive)
+;;     (let ((class (helm :sources '(classes-helm-source))))
+;;       (progn
+;;         (message-box "%s" class)
+;;         (insert (car class) ";")))))
 
 ;; ]

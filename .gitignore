@@ -21,4 +21,5 @@ org-clock-save.el
 lastdir
 session.*
 ac-comphist.dat
+minibuffer
 
