@@ -493,12 +493,13 @@ This way region can be inserted into isearch easily with yank command."
 
   ;; Nice to have: functions that operate on ibuffer-save-filter-group
   ;;               add/replace element, remove element,
+
   (defun mp-ibuffer-add-project (groupname projectname directory)
     (let* ((group (assoc groupname ibuffer-saved-filter-groups))
            (project (assoc projectname (cdr group))))
       (if project
           (setcdr project (list (cons 'filename directory)))
-        (setcdr group (cons (cons 'filename directory) (cdr group))))))
+        (setcdr group (cons (list projectname (cons 'filename directory)) (cdr group))))))
 
   ;; use M-n, M-p to navigate between groups
   (setq ibuffer-saved-filter-groups
@@ -571,6 +572,7 @@ This way region can be inserted into isearch easily with yank command."
 
 (use-package elisp-slime-nav
   :config
+
   (add-hook 'emacs-lisp-mode-hook 'turn-on-elisp-slime-nav-mode))
 
 ;; ]
@@ -998,7 +1000,7 @@ This way region can be inserted into isearch easily with yank command."
 
   ;; (add-hook 'buffer-list-update-hook 'mp:neotree-updater)
 
-  ;;  (remove-hook 'buffer-list-update-hook 'mp:neotree-updater)
+  ;; (remove-hook 'buffer-list-update-hook 'mp:neotree-updater)
   
   (add-hook 'neotree-mode-hook 'mp:neotree-mode-hook-extender) )
 
@@ -1100,7 +1102,7 @@ This way region can be inserted into isearch easily with yank command."
 (defun mp:c-mode-hook ()
   "Personal c mode hook extender."
   (auto-complete-mode)
-  (setq ac-sources  '(ac-etags))
+  (setq ac-sources  '(ac-source-etags))
   (local-set-key (kbd "C-c C-c") 'compile))
 
 (add-hook 'c++-mode-hook 'mp:c-mode-hook)
