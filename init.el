@@ -996,7 +996,7 @@ This way region can be inserted into isearch easily with yank command."
                       (neotree-find filename)
                       (select-window other-wnd)))))))))))
 
-  (add-hook 'buffer-list-update-hook 'mp:neotree-updater)
+  ;; (add-hook 'buffer-list-update-hook 'mp:neotree-updater)
 
   ;;  (remove-hook 'buffer-list-update-hook 'mp:neotree-updater)
   
