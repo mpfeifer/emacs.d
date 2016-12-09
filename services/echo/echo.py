@@ -96,7 +96,8 @@ class Application:
             data = conn.recv(1000)  # Should be ready
             if data:
                 self.log.info('echoing %d bytes to %s' % (sys.getsizeof(data), conn.getpeername()))
-                conn.send(data)  # Hope it won't block
+                conn.send(bytes("#", 'utf-8'))
+                conn.send(data)
             else:
                 self.log.info('closing connection to ' + str(conn.getpeername()))
                 self.sel.unregister(conn)

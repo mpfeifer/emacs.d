@@ -129,6 +129,8 @@
 
 (defcustom java-project-root "~/src/" "New java projects are stored in this directory." :group 'mp:java)
 
+(defcustom mp-jdk-location "/home/map/opt/jdk1.8.0_101/" "Location of JDK" :group 'mp:java)
+
 ;; ]
 
 ;; [ calendar
@@ -885,14 +887,19 @@ This way region can be inserted into isearch easily with yank command."
   (defun mp:prodigy-next-line ()
     (interactive)
     (next-line)
-    (prodigy-display-process)
-    (other-frame 1))
+    (when (looking-at ".*Running.*")
+      (progn
+        (prodigy-display-process)
+        (select-window (get-buffer-window "*prodigy*")))))
+
 
   (defun mp:prodigy-previous-line ()
     (interactive)
     (previous-line)
-    (prodigy-display-process)
-    (other-frame 1))
+    (when (looking-at ".*Running.*")
+      (progn
+        (prodigy-display-process)
+        (select-window (get-buffer-window "*prodigy*")))))
 
   (defun mp:prodigy-mode-extender ()
     (local-set-key (kbd "C-n") 'mp:prodigy-next-line)
@@ -1099,10 +1106,14 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; [ C/C++
 
+(use-package ac-etags
+  :config
+  (ac-etags-setup) )
+
 (defun mp:c-mode-hook ()
   "Personal c mode hook extender."
-  (auto-complete-mode)
-  (setq ac-sources  '(ac-source-etags))
+  (auto-complete-mode 1)
+  (setq ac-sources  (list 'ac-source-etags))
   (local-set-key (kbd "C-c C-c") 'compile))
 
 (add-hook 'c++-mode-hook 'mp:c-mode-hook)
@@ -1220,6 +1231,8 @@ and display corresponding buffer in new frame."
 
 (defvar mp:ac-classpath-cache nil)
 
+(use-package javadoc-lookup)
+
 (defun mp:ac-classpath-init ()
   (setq mp:ac-classpath-cache (mp:read-classes-from-jar)))
 
@@ -1230,7 +1243,7 @@ and display corresponding buffer in new frame."
 
 (defun mp:read-classes-from-jar ()
   (with-temp-buffer
-    (call-process "/usr/bin/unzip" nil t nil "-l" "/home/map/opt/jdk1.8.0_101/jre/lib/rt.jar")
+    (call-process "/usr/bin/unzip" nil t nil "-l" (concat mp-jdk-location "jre/lib/rt.jar")
     (goto-char (point-min))
     (let ((end 0)
           (result '())
@@ -1247,7 +1260,7 @@ and display corresponding buffer in new frame."
         (setq result (cons classname result))
         (forward-line 1)
         (beginning-of-line))
-      result)))
+      result))))
 
 (defun mp-assert-import (name)
   "Insert import statement for class NAME if it does not yet exist. "
@@ -1271,31 +1284,22 @@ and display corresponding buffer in new frame."
          (this-window-x-min (nth 0 win-edges))
          (this-window-x-max (nth 2 win-edges))
          (ww (- this-window-x-max this-window-x-min)))
-
     (progn
-
       (when (not (file-exists-p project-path))
         (make-directory project-path t))
-
       (switch-to-buffer live-buffer)
-
       (when (string= (buffer-name) live-buffer-name)
         (erase-buffer))
-
       (cd project-path)
-
       (call-process "mvn" nil live-buffer-name t "archetype:generate"
                     (format "-DgroupId=%s" group-id)
                     (format "-DartifactId=%s" artifact-id)
                     (format "-Dversion=%s" version-number)
                     (format "-DarchetypeArtifactId=%s" "maven-archetype-webapp")
                     (format "-DinteractiveMode=%s" "false") ) 
-
       (when (file-exists-p artifact-id)
         (cd artifact-id))
-
       (goto-char (point-min))
-
       (when (search-forward "BUILD SUCCESS")
         (progn
           (neotree-dir project-path)
@@ -1313,13 +1317,20 @@ and display corresponding buffer in new frame."
 If so calculate pacakge name from current directory name."
   (let* ((dirname (file-name-directory (buffer-file-name)))
          (indicator "/src/main/java/")
-         (package-name "undefined"))
+         (package-name "undefined")
+         (matched-string nil))
     (progn
       (string-match (concat ".*" indicator "\\(.*\\)") dirname)
-      (setq package-name (match-string 1 dirname))
+      (setq matched-string (match-string 1 dirname))
+      (unless matched-string ;; if indicator is not found just take
+        (setq matched-string dirname)) ;; whole path for the package-name
+      (setq package-name matched-string)
       (when (string-suffix-p "/" package-name)
         (setq package-name (substring package-name 0 -1)))
+      (when (string-prefix-p "/" package-name)
+        (setq package-name (substring package-name 1)))
       (setq package-name (replace-regexp-in-string "/" "." package-name))
+      (setq package-name (replace-regexp-in-string "\\.\\." "." package-name))
       package-name)))
 
 (defun mp:java-preprocessor()
@@ -1381,6 +1392,7 @@ If so calculate pacakge name from current directory name."
   (setq ac-sources '(ac-source-classpath ac-source-dictionary))
   (subword-mode)
   (linum-mode)
+  (local-set-key (kbd "C-h j") 'javadoc-lookup)
   (setq-local comment-multi-line t) )
 
 (add-hook 'java-mode-hook 'mp:java-mode-hook)
