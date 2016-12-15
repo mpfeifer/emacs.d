@@ -1826,6 +1826,11 @@ If so calculate pacakge name from current directory name."
 (add-to-list 'auto-insert-alist
              '(".*\\.sh$" . [ "template.sh" mp:elisp-post-processor] ) )
 
+(defun mp:shell-mode-extender ()
+  (interactive)
+  (define-key ac-mode-map (kbd "C-c /") 'ac-complete-filename) )
+
+(add-hook 'shell-mode-hook 'mp:shell-mode-extender)
 ;; ]
 
 ;; [ openssl
