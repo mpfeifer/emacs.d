@@ -222,8 +222,10 @@
 ;; add system clipboard content to kill ring when copying and yanking
 (setq save-interprogram-paste-before-kill t)
 
-(put 'narrow-to-region 'disabled nil)
-(put 'narrow-to-page 'disabled nil)
+;; enable disabled commands
+(put 'narrow-to-region 'disabled nil) ;; C-x n n
+(put 'narrow-to-page 'disabled nil) ;; C-x n p
+(put 'scroll-left 'disabled nil) ;; C-<PgDown>, C-<PgUp>
 
 ;; do not ask when erasing buffer
 (put 'erase-buffer 'disabled nil)
@@ -396,7 +398,7 @@ This way region can be inserted into isearch easily with yank command."
                                 (propertize "%03c")
                                 "] "
                                 (mp:sunrise-sunset-for-modeline)
-                                " [" '(vc-mode vc-mode) " ] " mode-line-misc-info ))
+                                " [" '(vc-mode vc-mode) " ] " mode-line-misc-info))
 
 ;; nice dark theme with a light variante
 
@@ -538,6 +540,13 @@ This way region can be inserted into isearch easily with yank command."
                                   cl-functions
                                   interactive-only))
 
+(defun mp:mark-init.el-paragraph ()
+  "Mark the entire paragraph around point."
+  (interactive)
+  (re-search-forward paragraph-separate nil t)
+  (set-mark (point))
+  (re-search-backward paragraph-start nil t))
+
 (defun mp:dotemacs-mode-hook ()
   (local-set-key (kbd "C-S-n") 'forward-paragraph)
   (local-set-key (kbd "C-S-p") 'backward-paragraph)
@@ -549,6 +558,7 @@ This way region can be inserted into isearch easily with yank command."
   (make-local-variable 'paragraph-separate)
   (setq paragraph-start "^;; \\["
         paragraph-separate "^;; ]$")
+  (add-to-list 'er/try-expand-list 'mp:mark-init.el-paragraph)
   (setq-local imenu-create-index-function 'imenu-default-create-index-function)
   (setq imenu-generic-expression '((nil "^;; \\[ \\(.*\\)" 1))))
 
@@ -1952,3 +1962,4 @@ If so calculate pacakge name from current directory name."
 ;;         (insert (car class) ";")))))
 
 ;; ]
+
