@@ -1253,7 +1253,7 @@ and display corresponding buffer in new frame."
 
 (defun mp:read-classes-from-jar ()
   (with-temp-buffer
-    (call-process "/usr/bin/unzip" nil t nil "-l" (concat mp-jdk-location "jre/lib/rt.jar")
+    (call-process "/usr/bin/unzip" nil t nil "-l" (concat mp-jdk-location "jre/lib/rt.jar"))
     (goto-char (point-min))
     (let ((end 0)
           (result '())
@@ -1270,7 +1270,7 @@ and display corresponding buffer in new frame."
         (setq result (cons classname result))
         (forward-line 1)
         (beginning-of-line))
-      result))))
+      result)))
 
 (defun mp-assert-import (name)
   "Insert import statement for class NAME if it does not yet exist. "
@@ -1399,7 +1399,7 @@ If so calculate pacakge name from current directory name."
 (defun mp:java-mode-hook()
   (setq-local comment-auto-fill-only-comments t)
   (auto-complete-mode)
-  (setq ac-sources '(ac-source-classpath ac-source-dictionary))
+  (setq ac-sources '(ac-source-classpath ac-source-dictionary ac-source-words-in-same-mode-buffers))
   (subword-mode)
   (linum-mode)
   (local-set-key (kbd "C-h j") 'javadoc-lookup)
