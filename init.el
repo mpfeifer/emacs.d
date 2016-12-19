@@ -1071,10 +1071,20 @@ This way region can be inserted into isearch easily with yank command."
   :config
   (ac-etags-setup) )
 
+(defun mp:mark-def-undef-block ()
+  "Mark block from #define to #undef."
+  (interactive)
+  (let ((tagname nil))
+    (re-search-forward "^#undef \\(.*\\)" nil t)
+    (setq tagname (match-string 1))
+    (set-mark (point))
+    (re-search-backward (concat "^#define " tagname) nil t)))
+
 (defun mp:c-mode-hook ()
   "Personal c mode hook extender."
   (auto-complete-mode 1)
   (setq ac-sources  (list 'ac-source-etags))
+  (add-to-list 'er/try-expand-list 'mp:mark-def-undef-block)
   (local-set-key (kbd "C-c C-c") 'compile))
 
 (add-hook 'c++-mode-hook 'mp:c-mode-hook)
