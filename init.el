@@ -1088,6 +1088,7 @@ This way region can be inserted into isearch easily with yank command."
   (local-set-key (kbd "C-c C-c") 'compile))
 
 (add-hook 'c++-mode-hook 'mp:c-mode-hook)
+(add-hook 'c-mode-hook 'mp:c-mode-hook)
 
 ;; ]
 
@@ -1858,24 +1859,11 @@ If so calculate pacakge name from current directory name."
 
 ;; ]
 
+;; [ magit
 
-;; [ helm
-
-;; (use-package helm
-
-;;   :disabled
-
-;;   (setq classes-helm-source
-;;         `((name . "HELM sees this classes")
-;;           (candidates . mp:read-classes-from-jar)
-;;           (action . (lambda (candidate) (helm-marked-candidates)))))
-
-;;   (defun helm-select-and-insert-classname ()
-;;     (interactive)
-;;     (let ((class (helm :sources '(classes-helm-source))))
-;;       (progn
-;;         (message-box "%s" class)
-;;         (insert (car class) ";")))))
+(use-package magit
+  :config
+  (global-set-key (kbd "C-<f12>") 'magit-status))
 
 ;; ]
 
