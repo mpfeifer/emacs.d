@@ -1430,6 +1430,9 @@ If so calculate pacakge name from current directory name."
 (ido-mode t)
 (ido-everywhere) ;; ido for all buffer/file reading
 
+(define-key ido-common-completion-map (kbd "C-n") 'ido-next-match)
+(define-key ido-common-completion-map (kbd "C-p") 'ido-prev-match)
+
 (use-package smex
   ;; https://github.com/nonsequitur/smex
   :config
