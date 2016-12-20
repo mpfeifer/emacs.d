@@ -1043,8 +1043,7 @@ This way region can be inserted into isearch easily with yank command."
   (interactive)
   (setq ac-sources '(ac-source-filename ac-source-files-in-current-dir))
   (auto-complete-mode t)
-  (local-set-key (kbd "C-c C-c") 'mp:eshell)
-  )
+  (local-set-key (kbd "C-c C-c") 'mp:eshell) )
 
 (add-hook 'eshell-mode-hook 'mp:eshell-mode-hook)
 
@@ -1085,6 +1084,15 @@ This way region can be inserted into isearch easily with yank command."
   :config
   (ac-etags-setup) )
 
+(defgroup mp:c++
+  nil "All things related to C++ development"
+  :group 'development)
+
+(defcustom openssl-dictionary-location
+  "~/.emacs.d/dictionaries/openssl.txt"
+  "Location of a file with openssl function names."
+  :group 'mp:c++)
+
 (defun mp:mark-def-undef-block ()
   "Mark block from #define to #undef."
   (interactive)
@@ -1094,12 +1102,37 @@ This way region can be inserted into isearch easily with yank command."
     (set-mark (point))
     (re-search-backward (concat "^#define " tagname) nil t)))
 
+(defun mp:openssl-help ()
+  (interactive)
+  (browse-url-firefox (concat 
+                       "https://www.openssl.org/docs/manmaster/man3/"
+                       (thing-at-point 'symbol))
+                      t))
+
 (defun mp:c-mode-hook ()
+
   "Personal c mode hook extender."
+
   (auto-complete-mode 1)
-  (setq ac-sources  (list 'ac-source-etags))
+
+  (setq ac-sources  (list
+                     'ac-source-etags
+                     'ac-source-dictionary
+                     'ac-source-words-in-same-mode-buffers))
+
+  (local-set-key (kbd "C-h o") 'mp:openssl-help)
+
+  (let ((add-openssl-dict nil))
+    (save-excursion 
+      (goto-char (point-min))
+      (when (re-search-forward "^#include ?<openssl/.*" nil t)
+        (setq add-openssl-dict t)))
+    (when add-openssl-dict
+      (add-to-list 'ac-user-dictionary 'openssl-dictionary-location)))
+
   (add-to-list 'er/try-expand-list 'mp:mark-def-undef-block)
-  (local-set-key (kbd "C-c C-c") 'compile))
+
+  (local-set-key (kbd "C-c C-c") 'compile) )
 
 (add-hook 'c++-mode-hook 'mp:c-mode-hook)
 (add-hook 'c-mode-hook 'mp:c-mode-hook)
@@ -1195,7 +1228,11 @@ and display corresponding buffer in new frame."
 
 ;; ]
 
-;; [ Man mode
+;; [ man woman help mode
+
+(setq 
+ woman-use-own-frame t
+ woman-use-topic-at-point-default t)
 
 (defsubst scroll-up-one-line ()
   (interactive)
@@ -1210,6 +1247,11 @@ and display corresponding buffer in new frame."
   (define-key Man-mode-map (kbd "C-p") 'scroll-down-one-line) )
 
 (add-hook 'Man-mode-hook 'mp:man-mode-hook)
+
+(defun mp:help-mode-setup ()
+  (local-set-key (kbd "q") 'delete-window))
+
+(add-hook 'help-mode-hook 'mp:help-mode-setup)
 
 ;; ]
 
@@ -1860,16 +1902,6 @@ If so calculate pacakge name from current directory name."
 (setq eldoc-echo-area-use-multiline-p t)
 
 (global-eldoc-mode)
-
-;; ]
-
-
-;; [ help mode
-
-(defun mp:help-mode-setup ()
-  (local-set-key (kbd "q") 'delete-window))
-
-(add-hook 'help-mode-hook 'mp:help-mode-setup)
 
 ;; ]
 
