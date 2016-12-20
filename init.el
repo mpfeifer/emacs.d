@@ -806,7 +806,6 @@ This way region can be inserted into isearch easily with yank command."
 
   (local-set-key (kbd "<return>") 'org-return-indent)
   (local-set-key (kbd "C-x n c") 'mp:org-clone-and-narrow-to-block)
-  (local-set-key (kbd "C-x b") 'org-iswitchb)
 
   (setenv "GRAPHVIZ_DOT" "dot")
 
@@ -1102,6 +1101,14 @@ This way region can be inserted into isearch easily with yank command."
     (set-mark (point))
     (re-search-backward (concat "^#define " tagname) nil t)))
 
+(defun mp:mark-if-endif-block ()
+  "Mark block from #define to #undef."
+  (interactive)
+  (let ((tagname nil))
+    (re-search-forward "^#endif.*" nil t)
+    (set-mark (point))
+    (re-search-backward (concat "^#ifdef " tagname) nil t)))
+
 (defun mp:openssl-help ()
   (interactive)
   (browse-url-firefox (concat 
@@ -1131,6 +1138,7 @@ This way region can be inserted into isearch easily with yank command."
       (add-to-list 'ac-user-dictionary 'openssl-dictionary-location)))
 
   (add-to-list 'er/try-expand-list 'mp:mark-def-undef-block)
+  (add-to-list 'er/try-expand-list 'mp:mark-if-endif-block)
 
   (local-set-key (kbd "C-c C-c") 'compile) )
 
@@ -1201,8 +1209,8 @@ and display corresponding buffer in new frame."
 (global-set-key (kbd "<f3>") #'delete-frame)
 (global-set-key (kbd "C-x 2") #'split-window-below-select)
 (global-set-key (kbd "C-x 3") #'split-window-right-select)
-(global-set-key (kbd "<f9>") #'swap-buffers)
 (global-set-key (kbd "<f8>") #'rotate-windows)
+(global-set-key (kbd "<f9>") #'swap-buffers)
 
 ;; ]
 
