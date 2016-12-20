@@ -1909,7 +1909,14 @@ If so calculate pacakge name from current directory name."
 
 (use-package magit
   :config
-  (global-set-key (kbd "C-<f12>") 'magit-status))
+
+  (defun mp:magit-status-own-frame ()
+    (interactive)
+    (select-frame (make-frame '((name . "Magit"))))
+    (magit-status)
+    (delete-other-windows) )
+
+  (global-set-key (kbd "<f12>") 'mp:magit-status-own-frame) )
 
 ;; ]
 
