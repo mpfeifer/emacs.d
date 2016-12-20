@@ -964,13 +964,27 @@ This way region can be inserted into isearch easily with yank command."
 ;; (modify-frame-parameters nil (list '( name . "Emacs" )
 
 (use-package neotree
-  :bind ("C-c n" . neotree)
+
   :config
 
   (defun mp:neotree-mode-hook-extender ()
-    (hl-line-mode) )
+    (hl-line-mode))
 
-  (add-hook 'neotree-mode-hook 'mp:neotree-mode-hook-extender) )
+  (add-hook 'neotree-mode-hook 'mp:neotree-mode-hook-extender)
+
+  (defun mp:neotree-update ()
+    (interactive)
+    (let ((neo-buffer (get-buffer " *NeoTree*"))
+          (filename (buffer-file-name))
+          (other-buffer (current-buffer)))
+      (when (and filename
+                 (file-exists-p filename))
+        (progn
+          (neotree-find filename)
+          (select-buffer other-buffer)))))
+
+  (global-set-key (kbd "C-c C-n g") 'neotree)
+  (global-set-key (kbd "C-c C-n u") 'neotree-update) )
 
 ;; ]
 
