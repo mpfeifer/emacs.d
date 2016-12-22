@@ -214,6 +214,9 @@
 
 ;; [ General Emacs Behaviour
 
+;; Show keystrokes immediatly
+(setq echo-keystrokes 0.01)
+
 ;; do not show startup screen
 (setq inhibit-startup-screen t)
 
