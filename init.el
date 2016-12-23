@@ -810,7 +810,7 @@ This way region can be inserted into isearch easily with yank command."
   (local-set-key (kbd "<return>") 'org-return-indent)
   (local-set-key (kbd "C-x n c") 'mp:org-clone-and-narrow-to-block)
 
-  (setenv "GRAPHVIZ_DOT" "dot")
+  (setenv "GRAPHVIZ_DOT" "/usr/bin/dot")
 
   (org-babel-do-load-languages
    'org-babel-load-languages
@@ -883,7 +883,8 @@ This way region can be inserted into isearch easily with yank command."
                               (width . 80)
                               (minibuffer . t))))
       (select-frame (make-frame frame-parameters))
-      (prodigy)))
+      (prodigy)
+      (delete-other-windows)))
   
   ;;  (advice-add 'prodigy-start-service :after #'prodigy-display-process)
 
@@ -1921,11 +1922,13 @@ If so calculate pacakge name from current directory name."
 (use-package magit
   :config
 
-  (defun mp:magit-status-own-frame ()
-    (interactive)
-    (select-frame (make-frame '((name . "Magit"))))
+  (defun mp:magit-status-own-frame (arg)
+    (interactive "P")
+    (when arg
+      (select-frame (make-frame '((name . "Magit")))))
     (magit-status)
-    (delete-other-windows) )
+    (when arg
+      (delete-other-windows) ) )
 
   (global-set-key (kbd "<f12>") 'mp:magit-status-own-frame) )
 
