@@ -993,30 +993,15 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; ]
 
-;; [ xref
+;; [ xref and tags
 
-(setq tags-revert-without-query t)
+(setq tags-file-name nil
+      tags-table-list nil
+      tags-revert-without-query t)
 
 (defvar mp:xref-window nil)
 
-;; these do not seem to be available prior to emacs 24.5
-(when (and (fboundp 'advice-add)
-           (fboundp 'xref-goto-xref))
-  (progn
-    (defvar mp:xref-window nil)
-
-    (defun ad-xref-goto-xref-save-window ()
-      (when (string= (buffer-name) "*xref*")
-        (setq mp:xref-window (get-buffer-window))))
-
-    (defun ad-xref-goto-xref-delete-window ()
-      (when (windowp mp:xref-window)
-        (delete-window mp:xref-window)))
-    
-    (advice-add 'xref-goto-xref :before #'ad-xref-goto-xref-save-window)
-    (advice-add 'xref-goto-xref :after #'ad-xref-goto-xref-delete-window)
-
-    (global-set-key (kbd "M-*") #'xref-pop-marker-stack)))
+(global-set-key (kbd "M-*") #'xref-pop-marker-stack)
 
 ;; ]
 
@@ -1527,21 +1512,17 @@ If so calculate pacakge name from current directory name."
   (global-set-key (kbd "M-x") #'smex))
 
 (use-package ido-vertical-mode
+  :disabled
   :config
   (ido-vertical-mode))
 
-(use-package ido-ubiquitous
+(use-package ido-ubiquitous ;; have ido not only for buffer/file reading
   :config
   (ido-ubiquitous-mode) )
 
-;; [ tags
+(use-package ido-grid-mode)
 
-(setq tags-file-name nil
-      tags-table-list nil)
-
-;; ]
-
-;; ;; [ Where was I [editing text]?
+;; [ Where was I [editing text]?
 
 (defun mp:store-lot-position ()
   (when (not (or 
