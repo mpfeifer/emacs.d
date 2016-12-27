@@ -1153,6 +1153,12 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; [ frame+window handling
 
+(use-package windmove
+  :config
+  ;; use command key on Mac
+  (windmove-default-keybindings 'ctrl)
+  (setq windmove-wrap-around t) )
+
 (winner-mode)
 
 (defun mp:detach-window ()
