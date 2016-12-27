@@ -760,8 +760,6 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; [ org mode
 
-(add-hook 'kill-emacs-hook 'org-clock-out)
-
 (global-set-key (kbd "C-c c") #'org-capture)
 
 (require 'ob-plantuml)
