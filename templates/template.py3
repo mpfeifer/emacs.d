@@ -5,110 +5,72 @@ import logging.handlers
 import signal
 import sys
 import os
-import configparser
-import getopt
 import time
+import argparse
 
 # Author     : Matthias
 # Description: Python script template
 
 class Application:
-    name               = 'template'
-    version            = '0.1'
+
+    name               = ''
+    version            = ''
+    log                = None
+    properties         = None
+    parser             = None
+    args               = None
+
     def __init__(self):
-        self.loghost_port  = logging.handlers.DEFAULT_TCP_LOGGING_PORT
-        self.loghost_name  = 'localhost'
-        self.logdomain     = 'template.py'
-        self.usage_string  = 'Usage: this-script.py [inifile] -h -v -p <numeric> -l <hostname> -r\r\n\r\n'
-        self.usage_string+=' [inifile]  if inifile is set it is read before commandline switches\r\n'
-        self.usage_string+='    -h      print usage string\r\n'
-        self.usage_string+='    -l      set remote logging host (this enables remote logging)\r\n'
-        self.usage_string+='    -p      set remote logging port (this enables remote logging)\r\n'
-        self.usage_string+='    -r      enabled remote logging\r\n'
-        self.usage_string+='    -v      be more verbose\r\n'
-        self.usage_string+='\r\nIf remote logging is enabled in inifile it cannot be disabled via commandline.\r\n'
-        self.usage_string+='{} version {}'.format(Application.name, Application.version)
-        self.inifile       = None
-        self.inifile_name  = 'undefined'
-        self.remote_logger_enabled = False
-        self.log_verbose = False
-        self.gather_parameter()
-        self.log           = self.get_logger()
-        self.log_configuration()
         signal.signal(signal.SIGINT, Application.signal_int_handler)        
-
-
-    def log_configuration(self):
-        self.log.debug("%28s = %s", "Application.name", Application.name)
-        self.log.debug("%28s = %s", "version", Application.version)
-        self.log.debug("%28s = %s", "inifile_name", self.inifile_name)
-        self.log.debug("%28s = %s", "log", self.log)
-        self.log.debug("%28s = %s", "remote_logger_enabled", self.remote_logger_enabled)
-        self.log.debug("%28s = %s", "loghost_port", self.loghost_port)
-        self.log.debug("%28s = %s", "loghost_name", self.loghost_name)
-
+        parser = argparse.ArgumentParser(description="", epilog="")
+        parser.add_argument("-v", "--verbose", help="Be more verbose when logging", action="store_true")
+        parser.add_argument("-P", "--properties", help="A properties file for use by the application", type=str)
+        parser.add_argument("-l", "--loghost", help="Name of host to receive log messages", default="127.0.0.1")
+        parser.add_argument("-p", "--logport", help="Port of service to receive log messages", type=int, default=logging.handlers.DEFAULT_TCP_LOGGING_PORT)
+        parser.add_argument("-d", "--logdomain", help="Domain for logging", default="this-script")
+        parser.add_argument("-r", "--remotelog", help="Enable remote logging with default host and port", action="store_true")
+        self.args = parser.parse_args()
+        self.parser = parser
+        self.setup_logging()
+        self.read_properties(self.args.properties)
         
-    def get_logger(self):
-        log = logging.getLogger(self.logdomain)
+    def setup_logging(self):
+        """ Setup logging so that a root logger is configured with formatter and handler
+        according to configuration. Additional loggers should just propagate to the root
+        logger. """
+        self.log = logging.getLogger(self.args.logdomain)
+        rootlogger = logging.getLogger()
         formatstring='%(asctime)s %(levelname)-15s %(name)s # %(message)s'
         formatter = logging.Formatter(fmt=formatstring, datefmt='%d.%m.%y %I:%M:%S')
         handler = None
-        if self.remote_logger_enabled:
+        if self.args.remotelog:
             handler = logging.handlers.SocketHandler(self.loghost_name, self.loghost_port)
         else:
             handler = logging.StreamHandler(sys.stderr)
         handler.setFormatter(formatter)
-        log.addHandler(handler)
+        rootlogger.addHandler(handler)
         level = logging.INFO
-        if self.log_verbose:
+        if self.args.verbose:
             level = logging.DEBUG
-        log.setLevel(level)
-        log.propagate=0
-        return log
-
+        self.log.setLevel(level)
+        rootlogger.setLevel(level)
+        self.log.propagate=1
         
-    def gather_parameter(self):
-        '''Collect parameters from inifile (first) and then from commandline.'''
-
-        first_getopt_index=1
-
-        if len(sys.argv)> 1 and not sys.argv[1].startswith('-'):
-            self.inifile_name=sys.argv[1]
-            first_getopt_index=2
-
-        if os.path.isfile(self.inifile_name):
-            self.inifile=configparser.ConfigParser()
-            self.inifile.read(self.inifile_name)
-
-        if self.inifile:
-            self.loghost_name=self.inifile.get('logging', 'hostname') # , fallback=self.loghost_name)
-            self.loghost_port=self.inifile.get('logging', 'port', fallback=self.loghost_port)
-            if (self.inifile.getboolean('logging', 'remote_logging', fallback=False)):
-                self.remote_logger_enabled=True
-
-        try:
-            opts, args = getopt.getopt(sys.argv[first_getopt_index:], 'vhp:l:r', 'help')
-        except getop.GetoptError as err:
-            print(err)
-            self.usage()
-
-        for option, arg in opts:
-            if option == '-h':
-                self.usage();
-            elif option == '-p':
-                self.loghost_port=int(arg)
-                self.remote_logger_enabled = True
-            elif option == '-l':
-                self.loghost_name=argument
-                self.remote_logger_enabled = True
-            elif option == '-r':
-                self.remote_logger_enabled = True
-            elif option == '-v':
-                self.log_verbose = True
-
-    def usage(self):
-        print(self.usage_string)
-        exit(-1)
+    def read_properties(self, filename):
+        """ Treat the file with given filename as a properties file. """
+        if filename:
+            properties = {}
+            comment_char = "#"
+            seperator = ":"
+            with open(filename, "rt") as f:
+                for line in f:
+                    l = line.strip()
+                    if l and not l.startswith(comment_char):
+                        key_value = l.split(seperator)
+                        key = key_value[0].strip()
+                        value = seperator.join(key_value[1:]).strip()
+                        properties[key] = value 
+            self.properties = properties
 
     @staticmethod
     def signal_int_handler(signal, frame):
@@ -117,11 +79,11 @@ class Application:
         exit(0)
 
     def run(self):
-        time.sleep(10) # <-- Application logic goes here
+        pass
 
 def main():
     app = Application()
-    app.log.info('{} {} will be instantiated'.format(app.name, app.version))
+    app.log.info('{} {} is starting'.format(app.name, app.version))
     app.run()
     app.log.info('{} {} is done'.format(app.name, app.version))
 
