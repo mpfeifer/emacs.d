@@ -103,9 +103,11 @@
 
 ;; [ compilation
 
-(add-hook 'compilation-mode-hook '(lambda ()
-                                    (next-error-follow-minor-mode)
-                                    (local-set-key (kbd "q") 'quit-window)))
+(defun mp-compilation-mode-hook-extender ()
+  ;; (next-error-follow-minor-mode)
+  (local-set-key (kbd "q") 'quit-window))
+
+(add-hook 'compilation-mode-hook 'mp-compilation-mode-hook-extender)
 
 (use-package auto-compile
   :config
@@ -118,19 +120,45 @@
 
 ;; customization
 
-(defgroup mp nil "All things related to my customization" :group 'Emacs)
+(defgroup mp 
+  nil "All things related to my customization"
+  :group 'Emacs)
 
-(defgroup development nil "All things related to development" :group 'mp)
+(defgroup development
+  nil "All things related to development"
+ :group 'mp)
 
-(defgroup web nil "All things related to web development" :group 'development)
+(defgroup web
+  nil "All things related to web development"
+  :group 'development)
 
-(defcustom web-project-root "~/public_html/" "New web projects are stored in this directory." :group 'web)
+(defgroup c++
+  nil "All things related to C++ development"
+  :group 'development)
 
-(defgroup mp-java nil "All things related to web development" :group 'development)
+(defgroup java
+  nil "All things related to web development"
+  :group 'development)
 
-(defcustom java-project-root "~/src/" "New java projects are stored in this directory." :group 'mp-java)
+(defcustom web-project-root
+  "~/public_html/"
+  "New web projects are stored in this directory."
+  :group 'web)
 
-(defcustom mp-jdk-location "/home/map/opt/jdk1.8.0_101/" "Location of JDK" :group 'mp-java)
+(defcustom java-project-root
+  "~/src/"
+  "New java projects are stored in this directory."
+  :group 'mp-java)
+
+(defcustom jdk-location
+  "/home/map/opt/jdk1.8.0_101/"
+  "Location of JDK"
+  :group 'mp-java)
+
+(defcustom openssl-dictionary-location
+  "~/.emacs.d/dictionaries/openssl.txt"
+  "Location of a file with openssl function names."
+  :group 'c++)
 
 ;; ]
 
@@ -215,6 +243,9 @@
 ;; ]
 
 ;; [ General Emacs Behaviour
+
+(defun mp-notify (message)
+  (start-process "notify-send" nil "notify-send" "-t" "3000" message))
 
 ;; Show keystrokes immediatly
 (setq echo-keystrokes 0.01)
@@ -370,7 +401,6 @@ This way region can be inserted into isearch easily with yank command."
       (let ((recenter-position 0.3))
         (recenter '(4)))))
 
-
 ;; ]
 
 ;; [ s
@@ -397,9 +427,7 @@ This way region can be inserted into isearch easily with yank command."
   (scroll-bar-mode -1))
 
 (require 'solar)
-
 (require 'calendar)
-(require 'solar)
 
 (defun mp-sunrise-sunset-for-modeline ()
   (let ((calendar-time-display-form '(24-hours ":" minutes))
@@ -777,7 +805,7 @@ This way region can be inserted into isearch easily with yank command."
 
 (defun mp-org-clone-and-narrow-to-block ()
   (interactive)
-  (if (eq 1 (length (window-list)))
+  (if (one-window-p)
       (progn
         (clone-indirect-buffer-other-window nil t)
         (org-narrow-to-block) )
@@ -1068,15 +1096,6 @@ This way region can be inserted into isearch easily with yank command."
 (use-package ac-etags
   :config
   (ac-etags-setup) )
-
-(defgroup mp-c++
-  nil "All things related to C++ development"
-  :group 'development)
-
-(defcustom openssl-dictionary-location
-  "~/.emacs.d/dictionaries/openssl.txt"
-  "Location of a file with openssl function names."
-  :group 'mp-c++)
 
 (defun mp-mark-def-undef-block ()
   "Mark block from #define to #undef."
