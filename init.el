@@ -1,10 +1,12 @@
 ;;; init.el --- Emacs initialization file
+
 ;;
 ;;
 ;;; Commentary:
 ;;  This is the Emacs initialization file.  Emacs reads it when
 ;;  starting up.  It takes care for loading the users' preferences.
 ;;
+
 ;; [ header
 
 ;; Info  : Emacs initialization file
@@ -787,7 +789,7 @@ This way region can be inserted into isearch easily with yank command."
   (setq org-agenda-span 7
         org-agenda-comact-blocks t
         org-agenda-show-all-dates t
-        org-agenda-files '("~/org/organizer")
+        org-agenda-files '("~/org/organizer" "~/org/family.org")
         org-babel-python-command "python"
         org-clock-into-drawer t
         org-clock-persist 'history
@@ -797,15 +799,10 @@ This way region can be inserted into isearch easily with yank command."
         org-ellipsis "…"
         org-log-done (quote note)
         org-log-into-drawer t
-        org-mobile-directory "~/org/MobileOrg/"
-        org-mobile-files (quote ("finanzen.org" org-agenda-files))
         org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
         org-special-ctrl-a/e t
         org-special-ctrl-k t
         org-todo-keywords (quote ((sequence "TODO(t)" "DONE(d)" ))))
-
-  ;; paths relative to org-directory
-  (add-to-list 'org-mobile-files "mobile.org")
 
   (local-set-key (kbd "<return>") 'org-return-indent)
   (local-set-key (kbd "C-x n c") 'mp-org-clone-and-narrow-to-block)
@@ -1152,7 +1149,7 @@ This way region can be inserted into isearch easily with yank command."
   (define-key mp-windmove-keymap (kbd "f") 'windmove-left)
   (define-key mp-windmove-keymap (kbd "b") 'windmove-right)
 
-  (global-set-key (kbd "C-x w") 'mp-windmove-keymap) )
+  (global-set-key (kbd "C-x w") mp-windmove-keymap) )
 
 (winner-mode)
 
@@ -1662,9 +1659,9 @@ If so calculate pacakge name from current directory name."
 
 (add-hook 'python-mode-hook 'mp-python-mode-hook)
 
-(add-to-list 'auto-mode-alist '("\\.py\\'" . elpy-mode))
-(add-to-list 'auto-mode-alist '("\\.py2\\'" . elpy-mode))
-(add-to-list 'auto-mode-alist '("\\.py3\\'" . elpy-mode))
+(add-to-list 'auto-mode-alist '("\\.py\\'" . python-mode))
+(add-to-list 'auto-mode-alist '("\\.py2\\'" . python-mode))
+(add-to-list 'auto-mode-alist '("\\.py3\\'" . python-mode))
 
 (add-to-list 'auto-insert-alist '(".*\\.py3?$" . [ "template.py3" ] ) )
 (add-to-list 'auto-insert-alist '(".*\\.py2$" . [ "template.py" ] ) )
