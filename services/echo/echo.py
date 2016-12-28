@@ -1,103 +1,114 @@
-import selectors
-import logging
-import logging.handlers
-import signal
-import sys
-import os
+#!/usr/bin/python3
+
+import argparse
 import configparser
 import getopt
-import time
+import logging
+import logging.handlers
+import os
+import selectors
+import signal
 import socket
+import sys
+import time
 
 # Author     : Matthias
-# Description: Echo Service in Python
+# Description: Python script template
 
 class Application:
 
+    name               = 'Echo client'
+    version            = '1.0'
+    log                = None
+    properties         = None
+    parser             = None
+    args               = None
+    sel                = selectors.DefaultSelector()
+    server_port        = 14001
+    server_iface       = "127.0.0.1"
+    logdomain          = "mp.services.echo"
+    backlog            = 10
+    quit               = None
+ 
     def __init__(self):
-        self.name          = 'echo'
-        self.version       = '1.0'
-        self.loghost_port  = logging.handlers.DEFAULT_TCP_LOGGING_PORT
-        self.loghost_name  = 'localhost'
-        self.server_port   = 14001
-        self.server_name   = 'localhost'
-        self.logdomain     = 'mp.services.echo'
-        self.usage_string  = 'Usage: echo.py -h'
-        self.inifile       = None
-        self.inifile_name  = 'undefined'
-        self.log           = self.get_logger()
-        self.sel           = selectors.DefaultSelector()
-        self.setup_network_logger()
-        self.gather_parameter()
+        signal.signal(signal.SIGINT, Application.signal_int_handler)
+        parser = argparse.ArgumentParser(description="", epilog="")
+        parser.add_argument("-v", "--verbose", help="Be more verbose when logging", action="store_true")
+        parser.add_argument("-P", "--properties", help="A properties file for use by the application", type=str)
+        parser.add_argument("-l", "--loghost", help="Name of host to receive log messages", default="127.0.0.1")
+        parser.add_argument("-o", "--logport", help="Port of service to receive log messages", type=int, default=logging.handlers.DEFAULT_TCP_LOGGING_PORT)
+        parser.add_argument("-d", "--logdomain", help="Domain for logging", default=self.logdomain)
+        parser.add_argument("-r", "--remotelog", help="Enable remote logging with default host and port", action="store_true")
+        parser.add_argument("-p", "--port", help = "Server port number", default = self.server_port, type = int)
+        parser.add_argument("-b", "--backlog", help = "Size of backlog", default = self.backlog)
+        parser.add_argument("-i", "--interface", help = "Interface for server", default = self.server_iface)
+        self.args = parser.parse_args()
+        self.parser = parser
+        self.setup_logging()
+        self.read_properties(self.args.properties)
+        self.log.info('{} {} is starting'.format(self.name, self.version))
         
-    def get_logger(self):
-        log = logging.getLogger(self.logdomain)
-        formatstring='%(asctime)s %(name)s %(levelname)s %(message)s'
-        formatter = logging.Formatter(formatstring)
-        handler = logging.StreamHandler(sys.stderr)
+    def setup_logging(self):
+        """ Setup logging so that a root logger is configured with formatter and handler
+        according to configuration. Additional loggers should just propagate to the root
+        logger. """
+        self.log = logging.getLogger(self.args.logdomain)
+        rootlogger = logging.getLogger()
+        formatstring='%(asctime)s %(levelname)-15s %(name)s # %(message)s'
+        formatter = logging.Formatter(fmt=formatstring, datefmt='%d.%m.%y %I:%M:%S')
+        handler = None
+        if self.args.remotelog:
+            handler = logging.handlers.SocketHandler(self.loghost_name, self.loghost_port)
+        else:
+            handler = logging.StreamHandler(sys.stderr)
         handler.setFormatter(formatter)
-        log.addHandler(handler)
-        log.setLevel(logging.DEBUG)    
-        log.propagate=1
-        return log
+        rootlogger.addHandler(handler)
+        level = logging.INFO
+        if self.args.verbose:
+            level = logging.DEBUG
+        self.log.setLevel(level)
+        rootlogger.setLevel(level)
+        self.log.propagate=1
+        
+    def read_properties(self, filename):
+        """ Treat the file with given filename as a properties file. """
+        if filename:
+            properties = {}
+            comment_char = "#"
+            seperator = ":"
+            with open(filename, "rt") as f:
+                for line in f:
+                    l = line.strip()
+                    if l and not l.startswith(comment_char):
+                        key_value = l.split(seperator)
+                        key = key_value[0].strip()
+                        value = seperator.join(key_value[1:]).strip()
+                        properties[key] = value 
+            self.properties = properties
 
-    def gather_parameter(self):
-
-        '''Collect parameters from inifile (first) and then from commandline.'''
-
-        first_getopt_index=1
-
-        if len(sys.argv)> 1 and not sys.argv[1].startswith('-'):
-            self.inifile_name=sys.argv[1]
-            first_parameter_index=2
-
-        if os.path.isfile(self.inifile_name):
-            self.inifile=configparser.ConfigParser()
-
-        if self.inifile:
-            self.loghost_name=inifile.get('[logging]', 'hostname', fallback=self.loghost_name)
-            self.loghost_port=inifile.get('[logging]', 'port', fallback=self.loghost_port)
-
-        try:
-            opts, args = getopt.getopt(sys.argv[first_getopt_index:], 'hp:l:', 'help')
-        except getop.GetoptError as err:
-            print(err)
-            self.usage()
-
-        output = None
-        verbose = False
-
-        for option, arg in opts:
-            if option == '-h':
-                self.usage();
-            elif option == '-p':
-                self.loghost_port=int(argument)
-            elif option == '-l':
-                self.loghost_name=argument
-
-    def usage(self):
-        print(self.usage_string)
-        exit(-1)
-
-    def setup_network_logger(self):
-        rootLogger = logging.getLogger('')
-        rootLogger.setLevel(logging.DEBUG)
-        socketHandler = logging.handlers.SocketHandler(self.loghost_name,
-                                                       self.loghost_port)
-        rootLogger.addHandler(socketHandler)
+    @staticmethod
+    def signal_int_handler(signal, frame):
+        interrupt_msg = '\r\n\r\n{} {} terminated by keyboard interrupt'.format(Application.name, Application.version)
+        print(interrupt_msg)
+        exit(0)
 
     def run(self):
+        args =  self.args
+
         sock = socket.socket()
         sock.setblocking(False)
-        sock.bind((self.server_name, self.server_port))
-        sock.listen(10)
+        sock.bind((args.interface, args.port))
+        sock.listen(args.backlog)
 
         def read(conn, mask):
             data = conn.recv(1000)  # Should be ready
             if data:
-                self.log.info('echoing %d bytes to %s' % (sys.getsizeof(data), conn.getpeername()))
-                conn.send(bytes("#", 'utf-8'))
+                self.log.info('echoing %d bytes to %s' % (len(data), conn.getpeername()))
                 conn.send(data)
+                strdata =  data.decode('utf-8')
+                if (strdata == "QUIT\r\n"):
+                    self.quit =  True
+                    
             else:
                 self.log.info('closing connection to ' + str(conn.getpeername()))
                 self.sel.unregister(conn)
@@ -111,30 +122,25 @@ class Application:
 
         self.sel.register(sock, selectors.EVENT_READ, accept)
 
-        self.log.info('echo server up on %s:%d' % (self.server_name, self.server_port))
+        self.log.info('Echo server is up and ready to serv clients on %s:%d' % (args.interface, args.port))
 
-        while True:
+        while not self.quit:
             events = self.sel.select()
             for key, mask in events:
                 callback = key.data
                 callback(key.fileobj, mask)
 
-#
-# End of application class
-# # #
-
-app = None
+        self.sel.close()
+        self.log.info('{} {} was quit by client'.format(self.name, self.version))
+            
+def main():
+    app = Application()
+    app.run()
 
 if __name__ == '__main__':
-
-    app = Application()
-    app.log.info('Script is starting')
-
-    app.run()
-    app.log.info('Script is done')
+    main()
 
 #
-#     Done
+# Done
 #
 # # # end of script
-
