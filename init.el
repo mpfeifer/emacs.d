@@ -244,6 +244,10 @@
 
 ;; [ General Emacs Behaviour
 
+(defvar mp-keymap 
+  (make-sparse-keymap)
+  "General purpose keymap.")
+
 (defun mp-notify (message)
   (start-process "notify-send" nil "notify-send" "-t" "3000" message))
 
@@ -615,17 +619,31 @@ This way region can be inserted into isearch easily with yank command."
   (byte-compile-file (buffer-file-name)))
 
 (defun mp-emacs-lisp-mode-hook ()
+
   (when (string= (buffer-name) "init.el")
     (mp-dotemacs-mode-hook))
+
   (local-set-key (kbd "C-/") 'comment-dwim)
   (local-set-key (kbd "C-c C-c") 'byte-compile-current-buffer)
+
+  (hs-minor-mode)
+
+  (define-key mp-keymap (kbd "s") 'hs-show-block)
+  (define-key mp-keymap (kbd "h") 'hs-hide-block)
+  (define-key mp-keymap (kbd "S") 'hs-show-all)
+  (define-key mp-keymap (kbd "H") 'hs-hide-all)
+
+  (local-set-key (kbd "C-x g") mp-keymap)
+
   (electric-pair-mode)
+
   (setq ac-sources '(ac-source-words-in-same-mode-buffers
                      ac-source-features
                      ac-source-functions
                      ac-source-variables
                      ac-source-symbols))
   (auto-complete-mode 1)
+
   (linum-mode))
 
 (add-hook 'emacs-lisp-mode-hook 'mp-emacs-lisp-mode-hook)
@@ -972,7 +990,7 @@ This way region can be inserted into isearch easily with yank command."
 
 ;; ]
 
-;; [ neotree & speedbar
+;; [ speedbar
 
 (use-package sr-speedbar
   :bind ("<f6>" . sr-speedbar-toggle)
@@ -992,7 +1010,7 @@ This way region can be inserted into isearch easily with yank command."
 ;; (modify-frame-parameters nil (list '( name . "Emacs" )
 
 (use-package neotree
-
+  :disabled
   :config
 
   (defun mp-neotree-mode-hook-extender ()
