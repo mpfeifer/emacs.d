@@ -100,7 +100,6 @@
 
 ;; ]
 
-
 ;; [ compilation
 
 (defun mp-compilation-mode-hook-extender ()
@@ -244,7 +243,7 @@
 
 ;; [ General Emacs Behaviour
 
-(defvar mp-keymap 
+(defvar mp-general-keymap 
   (make-sparse-keymap)
   "General purpose keymap.")
 
@@ -318,6 +317,19 @@
 ;; use C-u C-SPC to pop mark positions
 ;; and C-x C-SPC to pop global mark position
 (setq set-mark-command-repeat-pop t)
+
+;; ]
+
+;; [ hide show minor mode
+
+(add-hook 'c-mode-common-hook 'hs-minor-mode)
+(add-hook 'emacs-lisp-mode-hook 'hs-minor-mode)
+(add-hook 'python-mode-hook 'hs-minor-mode)
+
+(define-key mp-general-keymap (kbd "s") 'hs-show-block)
+(define-key mp-general-keymap (kbd "h") 'hs-hide-block)
+(define-key mp-general-keymap (kbd "S") 'hs-show-all)
+(define-key mp-general-keymap (kbd "H") 'hs-hide-all)
 
 ;; ]
 
@@ -625,15 +637,6 @@ This way region can be inserted into isearch easily with yank command."
 
   (local-set-key (kbd "C-/") 'comment-dwim)
   (local-set-key (kbd "C-c C-c") 'byte-compile-current-buffer)
-
-  (hs-minor-mode)
-
-  (define-key mp-keymap (kbd "s") 'hs-show-block)
-  (define-key mp-keymap (kbd "h") 'hs-hide-block)
-  (define-key mp-keymap (kbd "S") 'hs-show-all)
-  (define-key mp-keymap (kbd "H") 'hs-hide-all)
-
-  (local-set-key (kbd "C-x g") mp-keymap)
 
   (electric-pair-mode)
 
@@ -1000,7 +1003,8 @@ This way region can be inserted into isearch easily with yank command."
         speedbar-ag-hierarchy-method (quote (speedbar-sort-tag-hierarchy))
         speedbar-use-imenu-flag nil
         speedbar-verbosity-level 2
-        sr-speedbar-right-side nil)
+        sr-speedbar-right-side nil
+        speedbar-show-unknown-files t)
   (define-key speedbar-file-key-map (kbd "C-j") 'speedbar-expand-line)
   (define-key speedbar-file-key-map (kbd "C-k") 'speedbar-contract-line)
   (defadvice sr-speedbar-toggle (after select-speedbar activate)
@@ -1008,29 +1012,6 @@ This way region can be inserted into isearch easily with yank command."
       (when window (select-window window)))))
 
 ;; (modify-frame-parameters nil (list '( name . "Emacs" )
-
-(use-package neotree
-  :disabled
-  :config
-
-  (defun mp-neotree-mode-hook-extender ()
-    (hl-line-mode))
-
-  (add-hook 'neotree-mode-hook 'mp-neotree-mode-hook-extender)
-
-  (defun mp-neotree-update ()
-    (interactive)
-    (let ((neo-buffer (get-buffer " *NeoTree*"))
-          (filename (buffer-file-name))
-          (other-buffer (current-buffer)))
-      (when (and filename
-                 (file-exists-p filename))
-        (progn
-          (neotree-find filename)
-          (select-buffer other-buffer)))))
-
-  (global-set-key (kbd "C-c C-n g") 'neotree)
-  (global-set-key (kbd "C-c C-n u") 'neotree-update) )
 
 ;; ]
 
