@@ -1165,8 +1165,8 @@ This way region can be inserted into isearch easily with yank command."
 
   (define-key mp-windmove-keymap (kbd "p") 'windmove-up)
   (define-key mp-windmove-keymap (kbd "n") 'windmove-down)
-  (define-key mp-windmove-keymap (kbd "f") 'windmove-left)
-  (define-key mp-windmove-keymap (kbd "b") 'windmove-right)
+  (define-key mp-windmove-keymap (kbd "f") 'windmove-right)
+  (define-key mp-windmove-keymap (kbd "b") 'windmove-left)
 
   (global-set-key (kbd "C-x w") mp-windmove-keymap) )
 
