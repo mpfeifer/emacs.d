@@ -1229,8 +1229,8 @@ and display corresponding buffer in new frame."
 (global-set-key (kbd "<f1>") #'mp-detach-window)
 (global-set-key (kbd "<f2>") #'make-frame)
 (global-set-key (kbd "<f3>") #'delete-frame)
-(global-set-key (kbd "C-x 2") #'split-window-below-select)
-(global-set-key (kbd "C-x 3") #'split-window-right-select)
+(global-set-key (kbd "C-x 2") #'split-window-below)
+(global-set-key (kbd "C-x 3") #'split-window-right)
 (global-set-key (kbd "<f8>") #'rotate-windows)
 (global-set-key (kbd "<f9>") #'swap-buffers)
 
