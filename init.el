@@ -1172,14 +1172,15 @@ This way region can be inserted into isearch easily with yank command."
 
 (winner-mode)
 
-(defun mp-detach-window ()
+(defun mp-detach-window (arg)
   "Iff current frame hosts at least two windows, close current window
 and display corresponding buffer in new frame."
-  (interactive)
+  (interactive "P")
   (if (not (one-window-p))
       (let ((buffer (current-buffer)))
-        (delete-window)
-        (display-buffer-pop-up-frame buffer nil))
+        (when (not arg)
+          (delete-window) )
+        (display-buffer-pop-up-frame buffer nil) ) 
     (message "Refusing to detach window when one-window-p is true.")))
 
 (defun split-window-below-select ()
