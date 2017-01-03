@@ -316,20 +316,26 @@
 
 ;; use C-u C-SPC to pop mark positions
 ;; and C-x C-SPC to pop global mark position
+
 (setq set-mark-command-repeat-pop t)
 
 ;; ]
 
-;; [ hide show minor mode
+;; [ hideshow minor mode
 
-(add-hook 'c-mode-common-hook 'hs-minor-mode)
-(add-hook 'emacs-lisp-mode-hook 'hs-minor-mode)
-(add-hook 'python-mode-hook 'hs-minor-mode)
+;; Restrict visible portion of buffer to certain blocks
+;; Contract anything between start/end to '...'
 
-(define-key mp-general-keymap (kbd "s") 'hs-show-block)
-(define-key mp-general-keymap (kbd "h") 'hs-hide-block)
-(define-key mp-general-keymap (kbd "S") 'hs-show-all)
-(define-key mp-general-keymap (kbd "H") 'hs-hide-all)
+(use-package hideshow
+  :config
+  (add-hook 'c-mode-common-hook 'hs-minor-mode)
+  (add-hook 'emacs-lisp-mode-hook 'hs-minor-mode)
+  (add-hook 'python-mode-hook 'hs-minor-mode)
+
+  (global-set-key (kbd "C--") 'hs-hide-block)
+  (global-set-key (kbd "C-+") 'hs-show-block)
+  (global-set-key (kbd "C-M--") 'hs-hide-all)
+  (global-set-key (kbd "C-M-+") 'hs-show-all) )
 
 ;; ]
 
@@ -340,8 +346,6 @@
 ;; buffer. Incrementally largens the part of the buffer a defun
 ;; operats on. The next larger marked part is then set to the region.
 ;; To customize add defun to er/try-expand-list in any mode hook.
-;;
-;;
 
 (use-package expand-region
   :config
@@ -623,8 +627,7 @@ This way region can be inserted into isearch easily with yank command."
   (setq paragraph-start "^;; \\["
         paragraph-separate "^;; ]$")
   (add-to-list 'er/try-expand-list 'mp-mark-init.el-paragraph)
-  (setq-local imenu-create-index-function 'imenu-default-create-index-function)
-  (setq imenu-generic-expression '((nil "^;; \\[ \\(.*\\)" 1))))
+  (setq-local imenu-create-index-function 'imenu-default-create-index-function) )
 
 (defun byte-compile-current-buffer ()
   (interactive)
@@ -869,7 +872,7 @@ This way region can be inserted into isearch easily with yank command."
      (gnuplot . t)
      (java . t)
      (perl . t)
-     (sh . t) ) ) )
+     (shell . t) ) ) )
 
 (org-clock-persistence-insinuate)
 
@@ -1020,8 +1023,6 @@ This way region can be inserted into isearch easily with yank command."
 (setq tags-file-name nil
       tags-table-list nil
       tags-revert-without-query t)
-
-(defvar mp-xref-window nil)
 
 (global-set-key (kbd "M-*") #'xref-pop-marker-stack)
 
