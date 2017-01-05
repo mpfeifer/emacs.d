@@ -6,6 +6,7 @@
  ;; If there is more than one, they won't work right.
  '(Info-additional-directory-list (quote ("~/.emacs.d/info/")))
  '(auto-save-list-file-prefix "~/.emacs.d/auto-save/saved-")
+ '(bmkp-last-as-first-bookmark-file "~/.emacs.d/bookmarks")
  '(c-basic-offset 4)
  '(calendar-mark-diary-entries-flag t)
  '(calendar-view-diary-initially-flag t)
@@ -26,6 +27,7 @@
  '(elpy-rpc-error-timeout 30)
  '(elpy-rpc-timeout 2)
  '(eshell-directory-name "~/.emacs.d/")
+ '(fit-window-to-buffer-horizontally t)
  '(global-linum-mode nil)
  '(help-window-select t)
  '(ibuffer-default-sorting-mode (quote alphabetic))
@@ -65,7 +67,7 @@
       ("help-mode"
        (mode . help-mode))
       ("elisp-byte-code-mode"
-       (mode . elisp-byte-code-mode))))) t)
+       (mode . elisp-byte-code-mode))))))
  '(ibuffer-saved-filters
    (quote
     (("gnus"
@@ -85,6 +87,10 @@
         (mode . lisp-mode)))))))
  '(ido-cr+-max-items nil)
  '(ido-cr+-replace-completely t)
+ '(ido-create-new-buffer (quote always))
+ '(ido-default-buffer-method (quote selected-window))
+ '(ido-grid-mode t)
+ '(ido-grid-mode-padding "|")
  '(ido-ubiquitous-function-overrides
    (quote
     ((disable exact "read-file-name")
@@ -104,6 +110,9 @@
      (enable exact "imenu--completion-buffer")
      (enable-old exact "auto-insert")
      (enable exact "completing-read"))))
+ '(ido-use-url-at-point t)
+ '(ido-use-virtual-buffers (quote auto))
+ '(ido-vertical-pad-list nil)
  '(ido-vertical-show-count t)
  '(ispell-complete-word-dict "~/.emacs.d/ispell-completion.dict")
  '(ispell-personal-dictionary "~/.emacs.d/ispell.dict")
@@ -115,10 +124,12 @@
  '(neo-smart-open t)
  '(neo-theme (quote classic))
  '(neo-window-width 30)
+ '(next-error-recenter (quote (4)))
  '(nxml-slash-auto-complete-flag t)
+ '(org-clock-mode-line-total (quote today))
  '(package-selected-packages
    (quote
-    (javadoc-lookup helm help material ac-etags theme-changer gnuplot-mode zerodark-theme org-mobile-sync ldap-mode magit sunny-day-theme sunshine elf-mode volatile-highlights ac-slime ac-php web-mode auto-complete yatemplate aggressive-indent ac-ispell yaml-mode org-bullets ibuffer-git ibuffer-projectile projectile projectile-speedbar htmlize paredit edit-server auto-compile neotree elpy material-theme log4e company-jedi autumn-light-theme paper-theme soft-morning-theme restclient org-ac foggy-night-theme yasnippet use-package sr-speedbar solarized-theme smex prodigy php-mode js2-mode jedi-direx ido-vertical-mode ido-ubiquitous hungry-delete expand-region elisp-slime-nav dracula-theme color-theme-solarized avy aurora-theme anti-zenburn-theme ample-zen-theme ample-theme airline-themes ahungry-theme afternoon-theme)))
+    (hs-minor-mode ido-grid-mode wndmove bookmark+ adoc-mode restclient ac-html fuzzy javadoc-lookup helm help material ac-etags theme-changer gnuplot-mode zerodark-theme org-mobile-sync ldap-mode magit sunny-day-theme sunshine elf-mode volatile-highlights ac-slime ac-php web-mode auto-complete yatemplate aggressive-indent ac-ispell yaml-mode org-bullets ibuffer-git ibuffer-projectile projectile projectile-speedbar htmlize paredit edit-server auto-compile neotree elpy material-theme log4e company-jedi autumn-light-theme paper-theme soft-morning-theme org-ac foggy-night-theme yasnippet use-package sr-speedbar solarized-theme smex prodigy php-mode js2-mode jedi-direx ido-vertical-mode ido-ubiquitous hungry-delete expand-region elisp-slime-nav dracula-theme color-theme-solarized avy aurora-theme anti-zenburn-theme ample-zen-theme ample-theme airline-themes ahungry-theme afternoon-theme)))
  '(projectile-cache-file "~/.emacs.d/projectile.cache")
  '(projectile-known-projects-file "~/.emacs.d/projectile-bookmarks.eld")
  '(python-environment-directory "~/.emacs.d/python-environments")
@@ -136,9 +147,14 @@
  '(speedbar-use-imenu-flag nil)
  '(speedbar-verbosity-level 2)
  '(sr-speedbar-right-side t)
+ '(temp-buffer-max-height (lambda (buffer) (min 12 (- (frame-height) 10))))
+ '(temp-buffer-max-width (lambda (buffer) (min 75 (- (frame-width) 10))))
+ '(temp-buffer-resize-mode t)
  '(truncate-lines t)
  '(url-cookie-file "~/.emacs.d/cookies")
- '(visible-bell nil))
+ '(visible-bell nil)
+ '(woman-use-own-frame t)
+ '(woman-use-topic-at-point-default t))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
