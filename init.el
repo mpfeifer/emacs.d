@@ -123,6 +123,10 @@
   nil "All things related to my customization"
   :group 'Emacs)
 
+(defgroup ibuffer
+  nil "All things related to ibuffer"
+  :group 'mp)
+
 (defgroup development
   nil "All things related to development"
  :group 'mp)
@@ -138,6 +142,11 @@
 (defgroup java
   nil "All things related to web development"
   :group 'development)
+
+(defcustom ibuffer-project-file
+  "~/.emacs.d/ibuffer-projects"
+  "A file describing a list of project directories for ibuffer."
+  :group 'ibuffer)
 
 (defcustom web-project-root
   "~/public_html/"
@@ -266,7 +275,7 @@
 (defun mp-notify (msg)
   (if mp-notify-available-p
       (start-process "notify-send" nil "notify-send" "-t" "3000" msg)
-    (message msg) )
+    (message msg) ) )
 
 ;; Show keystrokes immediatly
 (setq echo-keystrokes 0.01)
@@ -572,9 +581,6 @@
                                 (name 16 -1)
                                 " " filename)))
 
-  ;; Nice to have: functions that operate on ibuffer-save-filter-group
-  ;;               add/replace element, remove element,
-
   (defun mp-ibuffer-add-project (groupname projectname directory)
     (let* ((group (assoc groupname ibuffer-saved-filter-groups))
            (project (assoc projectname (cdr group))))
@@ -594,13 +600,28 @@
                  ("Customization" (name . "^\\*Customize.*"))
                  ("Organizer" (mode . org-mode))))))
 
+  ;; load list of project directories from ibuffer-project-file into
+  ;; saved filter-group named "Projects"
+  (when (file-exists-p ibuffer-project-file)
+    (with-temp-buffer
+      (insert-file-contents ibuffer-project-file)
+      (dolist (line (split-string (buffer-string) "\n" t " "))
+        (let ((project (split-string line "," t " "))
+              (projectname nil)
+              (projectdir nil) )
+          (when (eq (length project) 2)
+            (progn
+              (setq projectname (car project)
+                    projectdir (car (cdr project)))
+              (mp-ibuffer-add-project "Projects" projectname projectdir)))))))
+
   (defun mp-ibuffer-mode-hook-extender ()
     (ibuffer-auto-mode 1) ;; auto updates
     (hl-line-mode)
     (define-key ibuffer-mode-map (kbd "C-p") 'ibuffer-previous-line)
     (define-key ibuffer-mode-map (kbd "C-n") 'ibuffer-next-line)
     (ibuffer-switch-to-saved-filter-groups "Projects"))
-
+  
   (add-hook 'ibuffer-mode-hook 'mp-ibuffer-mode-hook-extender))
 
 ;; ]
