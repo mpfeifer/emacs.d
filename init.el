@@ -247,8 +247,26 @@
   (make-sparse-keymap)
   "General purpose keymap.")
 
-(defun mp-notify (message)
-  (start-process "notify-send" nil "notify-send" "-t" "3000" message))
+(defsubst mp-notify-available-p ()
+  "Return true if notify-send is available in PATH. "
+  (mp-exists-in-path "notify-send") )
+
+(defun mp-exists-in-path (file)
+  "Search for FILE in PATH. t if file exists. nil otherwise. "
+  (let ((available nil)
+        (pathelems (split-string (getenv "PATH") ":"))
+        (pathelem nil))
+    (while (and (not available)
+                pathelems)
+      (setq pathelem (car pathelems)
+            pathelems (cdr pathelems))
+      (setq available (file-exists-p (concat pathelem "/" file))) )
+    available ) )
+
+(defun mp-notify (msg)
+  (if mp-notify-available-p
+      (start-process "notify-send" nil "notify-send" "-t" "3000" msg)
+    (message msg) )
 
 ;; Show keystrokes immediatly
 (setq echo-keystrokes 0.01)
@@ -391,20 +409,10 @@
 ;; 'M-s h u' - Unhighlight regular expression
 ;; 'M-s o'   - call ‘occur’ with the current search term
 ;; 'C-M-s'   - isearch-forward-regexp
+;; 'M-e'     - edit search string
+;; C-s C-h b - show all isearch key bindings
 
-(defadvice isearch-forward-regexp (before kill-ring-save-before-search activate)
-  "Save region (if active) to \"kill-ring\" before starting isearch.
-This way region can be inserted into isearch easily with yank command."
-  (when (region-active-p)
-    (kill-ring-save (region-beginning) (region-end))))
-
-(defadvice isearch-forward (before kill-ring-save-before-search activate)
-  "Save region (if active) to \"kill-ring\" before starting isearch.
-This way region can be inserted into isearch easily with yank command."
-  (when (region-active-p)
-    (kill-ring-save (region-beginning) (region-end))))
-
-;; shamelessly stolen from http://goo.gl/JFRl1k
+;; shamelessly stolen from http://goo.gl/JFRl1k to keep found string centered
 (defadvice isearch-update (before my-isearch-update activate)
   (sit-for 0)
   (if (and
@@ -467,6 +475,7 @@ This way region can be inserted into isearch easily with yank command."
                                 "] "
                                 (mp-sunrise-sunset-for-modeline)
                                 " [" '(vc-mode vc-mode) " ] " mode-line-misc-info))
+
 
 ;; nice dark theme with a light variante
 
