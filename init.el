@@ -600,8 +600,9 @@
                  ("Customization" (name . "^\\*Customize.*"))
                  ("Organizer" (mode . org-mode))))))
 
-  ;; load list of project directories from ibuffer-project-file into
-  ;; saved filter-group named "Projects"
+  ;; Load list of project directories from ibuffer-project-file into
+  ;; saved filter-group named "Projects". Note that a buffer goes to 
+  ;; first matching group.
   (when (file-exists-p ibuffer-project-file)
     (with-temp-buffer
       (insert-file-contents ibuffer-project-file)
@@ -673,7 +674,8 @@
 
   (electric-pair-mode)
 
-  (setq ac-sources '(ac-source-words-in-same-mode-buffers
+  (setq ac-sources '(ac-source-yasnippet
+                     ac-source-words-in-same-mode-buffers
                      ac-source-features
                      ac-source-functions
                      ac-source-variables
@@ -737,6 +739,7 @@
   :config
 
   (require 'auto-complete)
+  (require 'auto-complete-config)
 
   (setq
    ac-auto-show-menu 2
@@ -884,7 +887,7 @@
         org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
         org-special-ctrl-a/e t
         org-special-ctrl-k t
-        org-todo-keywords (quote ((sequence "TODO(t)" "DONE(d)" ))))
+        org-todo-keywords (quote ((sequence "TODO(t)" "WAIT(w)" "DONE(d)" "CANCEL(c)"))))
 
   (local-set-key (kbd "<return>") 'org-return-indent)
   (local-set-key (kbd "C-x n c") 'mp-org-clone-and-narrow-to-block)
@@ -1084,7 +1087,7 @@
 (defun mp-eshell-mode-hook ()
   "Personal eshell mode hook."
   (interactive)
-  (setq ac-sources '(ac-source-filename ac-source-files-in-current-dir))
+  (setq ac-sources '(ac-source-yasnippet ac-source-filename ac-source-files-in-current-dir))
   (auto-complete-mode t)
   (local-set-key (kbd "C-c C-c") 'mp-eshell) )
 
@@ -1158,6 +1161,7 @@
   (auto-complete-mode 1)
 
   (setq ac-sources  (list
+                     'ac-source-yasnippet
                      'ac-source-etags
                      'ac-source-dictionary
                      'ac-source-words-in-same-mode-buffers))
@@ -1477,7 +1481,7 @@ If so calculate pacakge name from current directory name."
 (defun mp-java-mode-hook()
   (setq-local comment-auto-fill-only-comments t)
   (auto-complete-mode)
-  (setq ac-sources '(ac-source-classpath ac-source-dictionary ac-source-words-in-same-mode-buffers))
+  (setq ac-sources '(ac-source-yasnippet ac-source-classpath ac-source-dictionary ac-source-words-in-same-mode-buffers))
   (subword-mode)
   (linum-mode)
   (local-set-key (kbd "C-h j") 'javadoc-lookup)
@@ -1754,7 +1758,7 @@ If so calculate pacakge name from current directory name."
   (setq indent-tabs-mode nil
         web-mode-markup-indent-offset 4
         ac-use-quick-help t
-        ac-sources '(ac-source-html))
+        ac-sources '(ac-source-yasnippet ac-source-html))
   (hs-minor-mode))
 
 (require 'hideshow)
@@ -1863,7 +1867,7 @@ If so calculate pacakge name from current directory name."
 
 (defun mp-css-mode-hook ()
   "Personal css mode hook extender."
-  (setq ac-sources '(ac-source-css-property ac-source-words-in-same-mode-buffers)))
+  (setq ac-sources '(ac-source-yasnippet ac-source-css-property ac-source-words-in-same-mode-buffers)))
 
 (add-hook 'css-mode-hook' mp-css-mode-hook)
 
@@ -1882,7 +1886,7 @@ If so calculate pacakge name from current directory name."
 (defun mp-setup-ac-php ()
   "Turn on auto-complete mode and set ac-sources for ac-php."
   (auto-complete-mode)
-  (setq ac-sources  '(ac-source-php) )
+  (setq ac-sources  '(ac-source-yasnippet ac-source-php) )
   (require 'ac-php) )
 
 (add-hook 'php-mode-hook 'mp-setup-ac-php)
@@ -1967,9 +1971,11 @@ If so calculate pacakge name from current directory name."
 ;; [ magit
 
 (use-package magit
+
   :config
 
-  (defun mp-magit-status-own-frame (arg)
+  (defun mp-magit-status (arg)
+    "Start magit. With prefix argument start magit in new frame."
     (interactive "P")
     (when arg
       (select-frame (make-frame '((name . "Magit")))))
@@ -1977,7 +1983,7 @@ If so calculate pacakge name from current directory name."
     (when arg
       (delete-other-windows) ) )
 
-  (global-set-key (kbd "<f12>") 'mp-magit-status-own-frame) )
+  (global-set-key (kbd "<f12>") 'mp-magit-status) )
 
 ;; ]
 

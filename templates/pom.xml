@@ -51,12 +51,12 @@
         <configuration>
           <executable>java</executable>
           <arguments>
-            <argument>-Ddont.log4j.configurationFile=undefined</argument>
-            <argument>-classpath</argument>
+            <!-- argument>-Ddont.log4j.configurationFile=undefined</argument>
+            <argument>-classpath</argument -->
             <!-- automatically creates the classpath using all project dependencies,
                  also adding the project build directory -->
             <classpath/>
-            <argument>mp.demo.Logtest</argument>
+            <argument>GROUP-ID.ARTIFACT-ID</argument>
           </arguments>
         </configuration>
       </plugin>
