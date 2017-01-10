@@ -473,19 +473,6 @@
             (apply 'solar-time-string (car l))
             (apply 'solar-time-string (cadr l)))))
 
-(setq-default mode-line-format (list
-                                "%e" "[" mode-line-mule-info mode-line-client mode-line-modified "] "
-                                '(:eval
-                                  (propertize "[%b] " 'help-echo (buffer-file-name)))
-                                ;; line and column
-                                "[" ;; '%02' to set to 2 chars at least; prevents flickering
-                                (propertize "%03l") ","
-                                (propertize "%03c")
-                                "] "
-                                (mp-sunrise-sunset-for-modeline)
-                                " [" '(vc-mode vc-mode) " ] " mode-line-misc-info))
-
-
 ;; nice dark theme with a light variante
 
 (use-package material-theme)
@@ -1987,3 +1974,21 @@ If so calculate pacakge name from current directory name."
 
 ;; ]
 
+;; [ all things mode-line
+
+(use-package powerline
+  :disabled)
+
+(setq-default mode-line-format (list
+                                "%e" "[" mode-line-mule-info mode-line-client mode-line-modified "] "
+                                '(:eval
+                                  (propertize "[%b] " 'help-echo (buffer-file-name)))
+                                ;; line and column
+                                "[" ;; '%02' to set to 2 chars at least; prevents flickering
+                                (propertize "%03l") ","
+                                (propertize "%03c")
+                                "] "
+                                (mp-sunrise-sunset-for-modeline)
+                                " [" '(vc-mode vc-mode) " ] " mode-line-misc-info))
+
+;; ]
