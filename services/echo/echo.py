@@ -15,6 +15,8 @@ import time
 # Author     : Matthias
 # Description: Python script template
 
+quit =  False
+
 class Application:
 
     name               = 'Echo client'
@@ -28,7 +30,7 @@ class Application:
     server_iface       = "127.0.0.1"
     logdomain          = "mp.services.echo"
     backlog            = 10
-    quit               = None
+    quit               = False
  
     def __init__(self):
         signal.signal(signal.SIGINT, Application.signal_int_handler)
@@ -88,9 +90,12 @@ class Application:
 
     @staticmethod
     def signal_int_handler(signal, frame):
-        interrupt_msg = '\r\n\r\n{} {} terminated by keyboard interrupt'.format(Application.name, Application.version)
-        print(interrupt_msg)
-        exit(0)
+        global quit
+        quit = True
+        log = logging.getLogger("signalhandler")
+        log.propagate = 1
+        interrupt_msg = 'Termination requested by keyboard interrupt'
+        log.info(interrupt_msg)
 
     def run(self):
         args =  self.args
@@ -103,11 +108,13 @@ class Application:
         def read(conn, mask):
             data = conn.recv(1000)  # Should be ready
             if data:
-                self.log.info('echoing %d bytes to %s' % (len(data), conn.getpeername()))
-                conn.send(data)
-                strdata =  data.decode('utf-8')
+                strdata =  data[0:20].decode('utf-8', 'replace')
                 if (strdata == "QUIT\r\n"):
+                    self.log.info( 'Termination requested by keyboard interrupt' )
                     self.quit =  True
+                else:
+                    self.log.info('echoing {} bytes to client {}'.format(len(data), conn.getpeername()))
+                    conn.send(data)
                     
             else:
                 self.log.info('closing connection to ' + str(conn.getpeername()))
@@ -122,16 +129,18 @@ class Application:
 
         self.sel.register(sock, selectors.EVENT_READ, accept)
 
-        self.log.info('Echo server is up and ready to serv clients on %s:%d' % (args.interface, args.port))
+        self.log.info('Script is up and ready to serv clients on {}:{}'.format(args.interface, args.port))
 
-        while not self.quit:
+        global quit
+        while (not self.quit) and (not quit):
+            self.log.debug('Main loop goes into New iteration')
             events = self.sel.select()
             for key, mask in events:
                 callback = key.data
                 callback(key.fileobj, mask)
 
         self.sel.close()
-        self.log.info('{} {} was quit by client'.format(self.name, self.version))
+        self.log.info('Script terminated')
             
 def main():
     app = Application()
