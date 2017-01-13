@@ -667,9 +667,7 @@
                      ac-source-functions
                      ac-source-variables
                      ac-source-symbols))
-  (auto-complete-mode 1)
-
-  (linum-mode))
+  (auto-complete-mode 1) )
 
 (add-hook 'emacs-lisp-mode-hook 'mp-emacs-lisp-mode-hook)
 
@@ -1142,30 +1140,25 @@
                       t))
 
 (defun mp-c-mode-hook ()
-
   "Personal c mode hook extender."
-
   (auto-complete-mode 1)
-
+  (linum-mode)
   (setq ac-sources  (list
                      'ac-source-yasnippet
                      'ac-source-etags
                      'ac-source-dictionary
                      'ac-source-words-in-same-mode-buffers))
-
-  (local-set-key (kbd "C-h o") 'mp-openssl-help)
-
   (let ((add-openssl-dict nil))
     (save-excursion 
       (goto-char (point-min))
       (when (re-search-forward "^#include ?<openssl/.*" nil t)
         (setq add-openssl-dict t)))
     (when add-openssl-dict
-      (add-to-list 'ac-user-dictionary 'openssl-dictionary-location)))
-
+      (progn
+        (local-set-key (kbd "C-h o") 'mp-openssl-help)
+        (add-to-list 'ac-user-dictionary 'openssl-dictionary-location))))
   (add-to-list 'er/try-expand-list 'mp-mark-def-undef-block)
   (add-to-list 'er/try-expand-list 'mp-mark-if-endif-block)
-
   (local-set-key (kbd "C-c C-c") 'compile) )
 
 (add-hook 'c++-mode-hook 'mp-c-mode-hook)
@@ -1322,7 +1315,7 @@ and display corresponding buffer in new frame."
 
 (defun mp-read-classes-from-jar ()
   (with-temp-buffer
-    (call-process "/usr/bin/unzip" nil t nil "-l" (concat mp-jdk-location "jre/lib/rt.jar"))
+    (call-process "/usr/bin/unzip" nil t nil "-l" (concat jdk-location "jre/lib/rt.jar"))
     (goto-char (point-min))
     (let ((end 0)
           (result '())
