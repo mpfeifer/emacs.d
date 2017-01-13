@@ -110,7 +110,7 @@ class Application:
             if data:
                 strdata =  data[0:20].decode('utf-8', 'replace')
                 if (strdata == "QUIT\r\n"):
-                    self.log.info( 'Termination requested by keyboard interrupt' )
+                    self.log.info( 'Termination requested by client' )
                     self.quit =  True
                 else:
                     self.log.info('echoing {} bytes to client {}'.format(len(data), conn.getpeername()))
