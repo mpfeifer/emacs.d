@@ -455,6 +455,10 @@
 
 ;; [ global appearence
 
+(setq frame-title-format "%b")
+
+(global-hl-line-mode)
+
 (when window-system
   (when (eq system-type 'windows-nt)
     (horizontal-scroll-bar-mode -1))
