@@ -252,6 +252,8 @@
 
 ;; [ General Emacs Behaviour
 
+
+
 (defvar mp-general-keymap 
   (make-sparse-keymap)
   "General purpose keymap.")
@@ -642,12 +644,15 @@
   (local-set-key (kbd "C-S-p") 'backward-paragraph)
   (local-set-key (kbd "C-#") 'imenu)
   (auto-fill-mode 1)
+  (setq imenu-prev-index-position-function nil)
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
   (make-local-variable 'paragraph-start)
   (make-local-variable 'paragraph-separate)
-  (setq paragraph-start "^;; \\["
-        paragraph-separate "^;; ]$")
+  (setq paragraph-start ";; ["
+        paragraph-separate ";; ]$")
+  (setq imenu-generic-expression 
+        (list '(nil "^;; \\[ \\(.+\\)$" 1)))
   (add-to-list 'er/try-expand-list 'mp-mark-init.el-paragraph)
   (setq-local imenu-create-index-function 'imenu-default-create-index-function) )
 
