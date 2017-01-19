@@ -252,8 +252,6 @@
 
 ;; [ General Emacs Behaviour
 
-
-
 (defvar mp-general-keymap 
   (make-sparse-keymap)
   "General purpose keymap.")
@@ -1905,5 +1903,26 @@ If so calculate pacakge name from current directory name."
                                 "] "
                                 (mp-sunrise-sunset-for-modeline)
                                 " [" '(vc-mode vc-mode) " ] " mode-line-misc-info))
+
+;; ]
+
+;; [ messages mode
+
+(with-current-buffer "*Messages*"
+  (linum-mode)
+  (visual-line-mode)
+  t)
+
+(defun message-with-timestamp (orig-fun &rest args)
+  (let* ((msg (car args))
+         (rst (cdr args))
+         (result (apply
+                  orig-fun
+                  (concat (format-time-string "%Y-%m-%d %H:%M,%3N")
+                          " " msg)
+                  rst)))
+    result))
+
+(advice-add 'message :around #'message-with-timestamp)
 
 ;; ]
