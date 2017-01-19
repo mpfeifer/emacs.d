@@ -759,6 +759,8 @@
                       'emacs-lisp-mode 'java-mode))
     (add-to-list 'ac-modes mode))
 
+  (ac-linum-workaround)
+
   ;; for major mode specific setup of auto-complete see
   ;; the according sections. eg for setting up auto-completion
   ;; for java-mode have a look at java-mode.
