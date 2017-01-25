@@ -769,13 +769,6 @@
 
 ;; ]
 
-;; [ avy-mode
-
-(use-package avy
-  :bind ("C-S-j" . avy-goto-word-or-subword-1) )
-
-;; ]
-
 ;; [ javascript
 
 (defun mp-js2-mode-hook ()
@@ -1148,6 +1141,13 @@
                        (thing-at-point 'symbol))
                       t))
 
+(defun mp-c++-help ()
+  (interactive)
+  (browse-url-firefox (concat 
+                       "https://www.cplusplus.com/reference/"
+                       (thing-at-point 'symbol))
+                      t) )
+
 (defun mp-c-mode-hook ()
   "Personal c mode hook extender."
   (auto-complete-mode 1)
@@ -1166,6 +1166,7 @@
       (progn
         (local-set-key (kbd "C-h o") 'mp-openssl-help)
         (add-to-list 'ac-user-dictionary 'openssl-dictionary-location))))
+  (local-set-key (kbd "C-h c") 'mp-c++-help)
   (add-to-list 'er/try-expand-list 'mp-mark-def-undef-block)
   (add-to-list 'er/try-expand-list 'mp-mark-if-endif-block)
   (local-set-key (kbd "C-c C-c") 'compile) )
@@ -1542,35 +1543,49 @@ If so calculate pacakge name from current directory name."
 
 ;; ]
 
-;; [ ido & co
+;; [ ivy, avy, ido & co
 
-(setq ido-enable-flex-matching t
-      ido-use-filename-at-point 'guess)
-
-(ido-mode t)
-(ido-everywhere) ;; ido for all buffer/file reading
-
-(define-key ido-common-completion-map (kbd "C-n") 'ido-next-match)
-(define-key ido-common-completion-map (kbd "C-p") 'ido-prev-match)
-
-(use-package smex
-  ;; https://github.com/nonsequitur/smex
+(use-package ivy
+  :defer 1
   :config
-  (smex-initialize)
-  (global-set-key (kbd "M-x") #'smex))
+  (setq ivy-fixed-height-minibuffer t
+        ivy-mode t
+        ivy-use-virtual-buffers t) )
 
-(use-package ido-vertical-mode
-  :disabled
-  :config
-  (ido-vertical-mode))
+(use-package avy
+  :bind ("C-S-j" . avy-goto-word-or-subword-1) )
 
-(use-package ido-grid-mode
-  :config
-  (ido-grid-mode) )
+;; ]
 
-(use-package ido-ubiquitous ;; have ido not only for buffer/file reading
-  :config
-  (ido-ubiquitous-mode) )
+
+
+;; (setq ido-enable-flex-matching t
+;;       ido-use-filename-at-point 'guess)
+
+;; (ido-mode t)
+;; (ido-everywhere) ;; ido for all buffer/file reading
+
+;; (define-key ido-common-completion-map (kbd "C-n") 'ido-next-match)
+;; (define-key ido-common-completion-map (kbd "C-p") 'ido-prev-match)
+
+;; (use-package smex
+;;   ;; https://github.com/nonsequitur/smex
+;;   :config
+;;   (smex-initialize)
+;;   (global-set-key (kbd "M-x") #'smex))
+
+;; (use-package ido-vertical-mode
+;;   :disabled
+;;   :config
+;;   (ido-vertical-mode))
+
+;; (use-package ido-grid-mode
+;;   :config
+;;   (ido-grid-mode) )
+
+;; (use-package ido-ubiquitous ;; have ido not only for buffer/file reading
+;;   :config
+;;   (ido-ubiquitous-mode) )
 
 
 
@@ -1810,13 +1825,15 @@ If so calculate pacakge name from current directory name."
         (replace-match "") ) ) ) )
 
 (add-to-list 'auto-insert-alist
-             '(".*\\.sh$" . [ "template.sh" mp-elisp-post-processor] ) )
+             '(".*\\.sh$" . [ "template.sh" mp-elisp-post-processor ] ) )
 
 (defun mp-shell-mode-extender ()
   (interactive)
-  (define-key ac-mode-map (kbd "C-c /") 'ac-complete-filename) )
+  (define-key ac-mode-map (kbd "C-c /") 'ac-complete-filename) 
+  (auto-complete-mode) )
 
 (add-hook 'shell-mode-hook 'mp-shell-mode-extender)
+
 ;; ]
 
 ;; [ tramp
@@ -1915,16 +1932,16 @@ If so calculate pacakge name from current directory name."
   (visual-line-mode)
   t)
 
-(defun message-with-timestamp (orig-fun &rest args)
-  (let* ((msg (car args))
-         (rst (cdr args))
-         (result (apply
-                  orig-fun
-                  (concat (format-time-string "%Y-%m-%d %H:%M,%3N")
-                          " " msg)
-                  rst)))
-    result))
+;; (defun message-with-timestamp (orig-fun &rest args)
+;;   (let* ((msg (car args))
+;;          (rst (cdr args))
+;;          (result (apply
+;;                   orig-fun
+;;                   (concat (format-time-string "%Y-%m-%d %H:%M,%3N")
+;;                           " " msg)
+;;                   rst)))
+;;     result))
 
-(advice-add 'message :around #'message-with-timestamp)
+;; (advice-add 'message :around #'message-with-timestamp)
 
 ;; ]
