@@ -129,7 +129,7 @@
 
 (defgroup development
   nil "All things related to development"
- :group 'mp)
+  :group 'mp)
 
 (defgroup web
   nil "All things related to web development"
@@ -648,7 +648,7 @@
   (make-local-variable 'paragraph-start)
   (make-local-variable 'paragraph-separate)
   (setq paragraph-start ";; ["
-        paragraph-separate ";; ]$")
+        paragraph-separate ";; ]")
   (setq imenu-generic-expression 
         (list '(nil "^;; \\[ \\(.+\\)$" 1)))
   (add-to-list 'er/try-expand-list 'mp-mark-init.el-paragraph)
@@ -1945,3 +1945,11 @@ If so calculate pacakge name from current directory name."
 ;; (advice-add 'message :around #'message-with-timestamp)
 
 ;; ]
+
+;; [ view x.509 certificates
+
+(require 'x509-certificate-mode)
+
+;; ]
+
+
