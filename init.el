@@ -391,12 +391,9 @@
 (if (file-exists-p abbrev-file-name)
     (quietly-read-abbrev-file))
 
-(add-hook 'post-self-insert-hook 'expand-abbrev)
+;; (remove-hook 'post-self-insert-hook 'expand-abbrev)
 
 ;; ]
-
-
-
 
 ;; [ server mode
 
@@ -751,7 +748,7 @@
   (define-key ac-menu-map "\C-n" 'ac-next)
   (define-key ac-menu-map "\C-p" 'ac-previous)
   (define-key ac-menu-map "\C-s" 'ac-isearch)
-  (define-key ac-mode-map (kbd "C-c /") 'ac-complete-filename)
+  (define-key ac-mode-map (kbd "C-x /") 'ac-complete-filename)
 
   (add-to-list 'ac-modes 'web-mode)
 
@@ -1906,7 +1903,7 @@ If so calculate pacakge name from current directory name."
 
 ;; ]
 
-;; [ all things mode-line
+;; [ the mode line
 
 (use-package powerline
   :disabled)
@@ -1925,24 +1922,12 @@ If so calculate pacakge name from current directory name."
 
 ;; ]
 
-;; [ messages mode
+;; [ messages mode buffer
 
 (with-current-buffer "*Messages*"
   (linum-mode)
   (visual-line-mode)
   t)
-
-;; (defun message-with-timestamp (orig-fun &rest args)
-;;   (let* ((msg (car args))
-;;          (rst (cdr args))
-;;          (result (apply
-;;                   orig-fun
-;;                   (concat (format-time-string "%Y-%m-%d %H:%M,%3N")
-;;                           " " msg)
-;;                   rst)))
-;;     result))
-
-;; (advice-add 'message :around #'message-with-timestamp)
 
 ;; ]
 
@@ -1951,5 +1936,3 @@ If so calculate pacakge name from current directory name."
 (require 'x509-certificate-mode)
 
 ;; ]
-
-
