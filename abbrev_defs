@@ -45,15 +45,7 @@
 
 (define-abbrev-table 'fundamental-mode-abbrev-table '())
 
-(define-abbrev-table 'global-abbrev-table
-  '(
-    ("ue" "ü" nil 0)
-    ("ae" "ä" nil 0)
-    ("sz" "ß" nil 0)
-    ("`e" "è" nil 0)
-    ("'e" "é" nil 0)
-    ("`a" "à" nil 0)
-    ("'a" "á" nil 0)))
+(define-abbrev-table 'global-abbrev-table '())
 
 (define-abbrev-table 'grep-mode-abbrev-table '())
 
