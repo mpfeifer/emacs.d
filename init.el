@@ -529,6 +529,18 @@
 
 ;; [ ibuffer
 
+(defadvice ibuffer (around ibuffer-point-to-most-recent) ()
+           "Open ibuffer with cursor pointed to most recent (non-minibuffer) buffer name"
+           (let ((recent-buffer-name
+                  (if (minibufferp (buffer-name))
+                      (buffer-name
+                       (window-buffer (minibuffer-selected-window)))
+                    (buffer-name (other-buffer)))))
+             ad-do-it
+             (ibuffer-jump-to-buffer recent-buffer-name)))
+
+(ad-activate 'ibuffer)
+
 (defun ibuffer-previous-line ()
   "Move point to last buffer when going before first buffer."
   (interactive)
@@ -1164,6 +1176,7 @@
         (local-set-key (kbd "C-h o") 'mp-openssl-help)
         (add-to-list 'ac-user-dictionary 'openssl-dictionary-location))))
   (local-set-key (kbd "C-h c") 'mp-c++-help)
+  (local-set-key (kbd "C-c a") 'align-regexp)
   (add-to-list 'er/try-expand-list 'mp-mark-def-undef-block)
   (add-to-list 'er/try-expand-list 'mp-mark-if-endif-block)
   (local-set-key (kbd "C-c C-c") 'compile) )
@@ -1553,38 +1566,6 @@ If so calculate pacakge name from current directory name."
   :bind ("C-S-j" . avy-goto-word-or-subword-1) )
 
 ;; ]
-
-
-
-;; (setq ido-enable-flex-matching t
-;;       ido-use-filename-at-point 'guess)
-
-;; (ido-mode t)
-;; (ido-everywhere) ;; ido for all buffer/file reading
-
-;; (define-key ido-common-completion-map (kbd "C-n") 'ido-next-match)
-;; (define-key ido-common-completion-map (kbd "C-p") 'ido-prev-match)
-
-;; (use-package smex
-;;   ;; https://github.com/nonsequitur/smex
-;;   :config
-;;   (smex-initialize)
-;;   (global-set-key (kbd "M-x") #'smex))
-
-;; (use-package ido-vertical-mode
-;;   :disabled
-;;   :config
-;;   (ido-vertical-mode))
-
-;; (use-package ido-grid-mode
-;;   :config
-;;   (ido-grid-mode) )
-
-;; (use-package ido-ubiquitous ;; have ido not only for buffer/file reading
-;;   :config
-;;   (ido-ubiquitous-mode) )
-
-
 
 ;; [ Where was I [editing text]?
 

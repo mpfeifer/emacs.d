@@ -129,7 +129,7 @@
  '(org-clock-mode-line-total (quote today))
  '(package-selected-packages
    (quote
-    (hs-minor-mode ido-grid-mode wndmove bookmark+ adoc-mode restclient ac-html fuzzy javadoc-lookup helm help material ac-etags theme-changer gnuplot-mode zerodark-theme org-mobile-sync ldap-mode magit sunny-day-theme sunshine elf-mode volatile-highlights ac-slime ac-php web-mode auto-complete yatemplate aggressive-indent ac-ispell yaml-mode org-bullets ibuffer-git ibuffer-projectile projectile projectile-speedbar htmlize paredit edit-server auto-compile neotree elpy material-theme log4e company-jedi autumn-light-theme paper-theme soft-morning-theme org-ac foggy-night-theme yasnippet use-package sr-speedbar solarized-theme smex prodigy php-mode js2-mode jedi-direx ido-vertical-mode ido-ubiquitous hungry-delete expand-region elisp-slime-nav dracula-theme color-theme-solarized avy aurora-theme anti-zenburn-theme ample-zen-theme ample-theme airline-themes ahungry-theme afternoon-theme)))
+    (powerline hs-minor-mode ido-grid-mode wndmove bookmark+ adoc-mode restclient ac-html fuzzy javadoc-lookup helm help material ac-etags theme-changer gnuplot-mode zerodark-theme org-mobile-sync ldap-mode magit sunny-day-theme sunshine elf-mode volatile-highlights ac-slime ac-php web-mode auto-complete yatemplate aggressive-indent ac-ispell yaml-mode org-bullets ibuffer-git ibuffer-projectile projectile projectile-speedbar htmlize paredit edit-server auto-compile neotree elpy material-theme log4e company-jedi autumn-light-theme paper-theme soft-morning-theme org-ac foggy-night-theme yasnippet use-package sr-speedbar solarized-theme smex prodigy php-mode js2-mode jedi-direx ido-vertical-mode ido-ubiquitous hungry-delete expand-region elisp-slime-nav dracula-theme color-theme-solarized avy aurora-theme anti-zenburn-theme ample-zen-theme ample-theme airline-themes ahungry-theme afternoon-theme)))
  '(projectile-cache-file "~/.emacs.d/projectile.cache")
  '(projectile-known-projects-file "~/.emacs.d/projectile-bookmarks.eld")
  '(python-environment-directory "~/.emacs.d/python-environments")
@@ -153,8 +153,8 @@
  '(truncate-lines t)
  '(url-cookie-file "~/.emacs.d/cookies")
  '(visible-bell nil)
- '(woman-use-own-frame t)
- '(woman-use-topic-at-point-default t))
+ '(woman-use-own-frame t t)
+ '(woman-use-topic-at-point-default t t))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
