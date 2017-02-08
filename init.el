@@ -1321,6 +1321,16 @@ and display corresponding buffer in new frame."
 
 ;; [ java mode
 
+(use-package jtags
+  :config
+  (add-hook 'java-mode-hook 'jtags-mode))
+
+(setq tags-table-list (list
+                       (concat jdk-location "src/")
+                       "/home/map/java/Graph/src/main/java/"))
+
+;; (setq tags-revert-without-query 't)
+
 (defvar mp-ac-classpath-cache nil)
 
 (use-package javadoc-lookup)
@@ -1480,8 +1490,12 @@ If so calculate pacakge name from current directory name."
 
 (defun mp-java-mode-hook()
   (setq-local comment-auto-fill-only-comments t)
-  (auto-complete-mode)
-  (setq ac-sources '(ac-source-yasnippet ac-source-classpath ac-source-dictionary ac-source-words-in-same-mode-buffers))
+  (auto-complete-mode 1)
+  (setq ac-sources '(ac-source-etags
+                     ac-source-yasnippet
+                     ac-source-classpath
+                     ac-source-dictionary
+                     ac-source-words-in-same-mode-buffers))
   (subword-mode)
   (linum-mode)
   (local-set-key (kbd "C-h j") 'javadoc-lookup)
