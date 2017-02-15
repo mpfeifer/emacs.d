@@ -32,7 +32,7 @@
 
 ;; ]
 
-;; [ packaging
+;; [ packages
 
 (require 'package)
 
@@ -251,6 +251,10 @@
 ;; ]
 
 ;; [ General Emacs Behaviour
+
+;; (toggle-debug-on-error)
+
+(setq stack-trace-on-error '(buffer-read-only))
 
 (defvar mp-general-keymap 
   (make-sparse-keymap)
@@ -1848,8 +1852,8 @@ If so calculate pacakge name from current directory name."
 
 (when (eq system-type 'gnu/linux)
   (use-package elf-mode
-    :init
-    (add-to-list 'auto-mode-alist '("\\(\\.\\(?:o\\|so\\.\\(?:[0-9]\\.[0-9]\\.[0-9]\\|[0-9]\\.[0-9]\\|[0-9]\\)\\)\\)\\'" . elf-mode))))
+    :config
+    (elf-setup-default) ) )
 
 (add-to-list 'auto-mode-alist '("\.dll\\'" . hexl-mode))
 (add-to-list 'auto-mode-alist '("\.exe\\'" . hexl-mode))
