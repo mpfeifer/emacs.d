@@ -1,4 +1,5 @@
 <locatingRules xmlns="http://thaiopensource.com/ns/locating-rules/1.0">
+  <uri resource="../../build/nightly-build-32bit/V_6_00_4_cpac/Bastion/src/fw/libsrc/libgsoapxmlparser/swisssign_pki/swisssign_pki.xsd" typeId="XSD"/>
   <!-- Extend to support W3C XML Schema Definition Language, which as
        of 1.1 are known as "XSD" rather than "XML Schema" to avoid
        confusion with other XML schema languages such as RelaxNG. -->

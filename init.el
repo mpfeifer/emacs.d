@@ -633,15 +633,43 @@
 
 ;; [ emacs lisp mode
 
-;; ignore byte-compile warnings
+(defun mp-elisp-preprocessor()
+  "Process emacs lisp template file and replace place holder."
+  (let* ((filename (buffer-name))
+         (description (read-from-minibuffer "Description: "))
+         (maintainer (format "%s (%s)" user-full-name user-mail-address))
+         (author user-full-name)
+         (version (read-from-minibuffer "Version: "))
+         (url (read-from-minibuffer "Url: "))
+         (keywords (read-from-minibuffer "Keywords: "))
+         (timestamp (current-time-string)))
+    (progn 
+      (goto-char (point-min))
+      (while (search-forward "FILENAME" nil t)
+        (replace-match filename t))
+      (goto-char (point-min))
+      (while (search-forward "DESCRIPTION" nil t)
+        (replace-match description t) )
+      (goto-char (point-min))
+      (while (search-forward "AUTHOR" nil t)
+        (replace-match author t) )
+      (goto-char (point-min))
+      (while (search-forward "MAINTAINER" nil t)
+        (replace-match maintainer t) )
+      (goto-char (point-min))
+      (while (search-forward "TIMESTAMP" nil t)
+        (replace-match timestamp t) )
+      (goto-char (point-min))
+      (while (search-forward "VERSION" nil t)
+        (replace-match version t) )
+      (goto-char (point-min))
+      (while (search-forward "URL" nil t)
+        (replace-match url t) )
+      (goto-char (point-min))
+      (while (search-forward "KEYWORDS" nil t)
+        (replace-match keywords t) ) ) ) )
 
-(setq byte-compile-warnings '(not nresolved
-                                  free-vars
-                                  callargs
-                                  redefine
-                                  noruntime
-                                  cl-functions
-                                  interactive-only))
+(add-to-list 'auto-insert-alist '(".*\\.el$" . [ "template.el" mp-elisp-preprocessor] ) )
 
 (defun mp-mark-init.el-paragraph ()
   "Mark the entire paragraph around point."
@@ -1932,6 +1960,6 @@ If so calculate pacakge name from current directory name."
 
 ;; [ view x.509 certificates
 
-(require 'x509-certificate-mode)
+;; (require 'x509-certificate-mode)
 
 ;; ]
