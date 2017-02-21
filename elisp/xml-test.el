@@ -51,82 +51,123 @@
 ;;; Code:
 
 (setq xml "<post time=\"20050716234509\" id=\"010101\"><login><id>123</id></login><msg>Here is the message</msg><info>My UA</info></post>")
+(setq xml-2 "<post><login><id>123</id></login><msg>Here is the message</msg><info>My UA</info></post>")
+(setq xml-3 "<id>123</id>")
 
 (setq root (with-temp-buffer
              (insert xml)
              (xml-parse-region (point-min) (point-max))))
 
+(setq root-2 (with-temp-buffer
+               (insert xml-2)
+               (xml-parse-region (point-min) (point-max))))
+
+(setq root-3 (with-temp-buffer
+               (insert xml-3)
+               (xml-parse-region (point-min) (point-max))))
+
+(setq root-4 (with-current-buffer "pom.xml"
+               (xml-parse-region (point-min) (point-max))))
+
+(xml-node-children (car root-3))
 
 (cdr (car (car (nthcdr 1 (car root)))))
 
-  ;;      (post (car root))
-  ;;      (attrs (xml-node-attributes post))
-  ;;      (time (cdr (assq 'time attrs)))
-  ;;      (msg (car (xml-get-children post 'msg)))
-  ;;      (text (car (xml-node-children msg))))
-  ;; (message "time: %s, message '%s'" time text))
+(let* (
+       (post (car root))
+       (attrs (xml-node-attributes post)))
+  attrs)
+
+
+;;      (time (cdr (assq 'time attrs)))
+;;      (msg (car (xml-get-children post 'msg)))
+;;      (text (car (xml-node-children msg))))
+;; (message "time: %s, message '%s'" time text))
 
 (require 'tree-widget)
 
-
-
-(defun widgets (xml)
+(defun xml-to-tree-widget (xml)
   (interactive)
-  (if (listp xml)
-      (let ((properties (car (nthcdr 1 xml)))
-            (propwidgets nil))
-        (when properties
-          (setq propwidgets (mapcar (lambda (prop)
-                                      (widget-convert 'item
-                                                      :tag (format "%s=%s" (symbol-to-string (car prop)) (cdr prop))))
-                                    properties)))
-        (setq node_children (xml-node-children xml))
-        (when node_children
-          (widget-convert 'tree-widget 
-                          :tag (symbol-to-string (car xml)) 
-                          :args (add-to-list propwidgets (mapcar (lambda (node)
-                                                                   (widgets node))
-                                                                 node_children)))))
-    (widget-convert 'item :tag xml)))
+  (cond 
+   ((stringp xml)
+    (widget-convert 'item :tag xml))
+   ((listp xml)
+    (let ((attributes (xml-node-attributes xml))
+          (attrib-widgets nil)
+          (children (xml-node-children xml))
+          (current-node))
+      (progn
+        (when attributes
+          (setq attrib-widgets (mapcar (lambda (prop)
+                                         (widget-convert 'item
+                                                         :tag (format "%s=%s" (symbol-to-string (car prop)) (cdr prop))))
+                                       attributes)))
+        (setq current-node (widget-convert 'tree-widget 
+                                           :tag (symbol-to-string (car xml))
+                                           :args (append (if children 
+                                                     (mapcar (lambda (node)
+                                                               (xml-to-tree-widget node))
+                                                             children)
+                                                   nil)
+                                                         attrib-widgets)))
+        current-node ) ) ) ) )
 
-(widgets (car root))
 
-(defun test-tree-widget ()
-  (interactive)
-  (with-current-buffer (get-buffer-create "*tree-widget-test*")
-    (erase-buffer)
-    (setq-local my-tree-widget
-                (widget-create
-                 'tree-widget
-                 :open t
-                 :tag "Root"
-                 :args (widgets nil)))
-    (switch-to-buffer (current-buffer))))
 
-(test-tree-widget)
+       (xml-to-tree-widget (car root))
 
-(defun my-create-tree-widget ()
-  (interactive)
-  (with-current-buffer (get-buffer-create "*tree-widget-test*")
-    (setq-local my-tree-widget
-                (widget-create
-                 'tree-widget
-                 :open t
-                 :tag "Root"
-                 :args (list (widget-convert
-                              'tree-widget
-                              :tag "two")
-                             (widget-convert
-                              'item
-                              :tag "three")
-                             (widget-convert
-                              'tree-widget
-                              :tag "four"
-                              :args (mapcar (apply-partially #'widget-convert 'item)
-                                     '("five" "six"))))))
-    (switch-to-buffer (current-buffer))))
+;; (tree-widget :args
+;;              (
+;;               (tree-widget :args (...) :expander nil :tag "login")
+;;               (tree-widget :args (...) :expander nil :tag "msg")
+;;               (tree-widget :args (...) :expander nil :tag "info")
+;;               (item :tag "time=20050716234509")
+;;               (item :tag "id=010101"))
+;;              :expander nil
+;;              :tag "post")
 
-(my-create-tree-widget)
+       (xml-to-tree-widget (car root-3))
+
+       (xml-to-tree-widget "text")
+
+       (let ((ml (list 1 2 3)))
+         (setq ml (cons 4 ml ))
+         (setq ml (cons 5 ml ))
+         (setq ml (cons 6 ml ))
+         ml )
+
+
+       (defun test-tree-widget ()
+         (interactive)
+         (with-current-buffer (get-buffer-create "*tree-widget-test*")
+           (erase-buffer)
+           (setq-local my-tree-widget (widget-create (xml-to-tree-widget (car root-4))))
+           (switch-to-buffer (current-buffer))))
+
+       (test-tree-widget)
+
+       (defun my-create-tree-widget ()
+         (interactive)
+         (with-current-buffer (get-buffer-create "*tree-widget-test*")
+           (setq-local my-tree-widget
+                       (widget-create
+                        'tree-widget
+                        :open t
+                        :tag "Root"
+                        :args (list (widget-convert
+                                     'tree-widget
+                                     :tag "two")
+                                    (widget-convert
+                                     'item
+                                     :tag "three")
+                                    (widget-convert
+                                     'tree-widget
+                                     :tag "four"
+                                     :args (mapcar (apply-partially #'widget-convert 'item)
+                                                   '("five" "six"))))))
+           (switch-to-buffer (current-buffer))))
+
+       (my-create-tree-widget)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; xml-test.el ends here
