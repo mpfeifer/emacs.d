@@ -53,6 +53,8 @@
 (setq xml "<post time=\"20050716234509\" id=\"010101\"><login><id>123</id></login><msg>Here is the message</msg><info>My UA</info></post>")
 (setq xml-2 "<post><login><id>123</id></login><msg>Here is the message</msg><info>My UA</info></post>")
 (setq xml-3 "<id>123</id>")
+(setq xml-5 "<sect2 id=\"GUI.General.New\"><title lang=\"en\">Create new</title><title lang=\"de\">Neu erstellen</title><para lang=\"en\">Here you can create a new E-mail CA. First you have to select thePKI type you want to create. If you click then the button <guibutton>Create new</guibutton>,the browser opens an <guimenu>Edit</guimenu> page for a new<guibutton><link linkend=\"GUI_Email_CA.SMIME.PKI_types.Internal_PKI\"xrefstyle =\"select:nopage\">Internal PKI</link></guibutton>,<guibutton><link linkend=\"GUI_Email_CA.SMIME.PKI_types.TC_TrustCenter\"xrefstyle =\"select:nopage\">TC TrustCenter PKI</link></guibutton>,<guibutton><link linkend=\"GUI_Email_CA.SMIME.PKI_types.Comodo\"xrefstyle =\"select:nopage\">Comodo PKI</link></guibutton> or<guibutton><link linkend=\"GUI_Email_CA.SMIME.PKI_types.Verisign\"xrefstyle =\"select:nopage\">Verisign PKI</link></guibutton> or<guibutton><link linkend=\"GUI_Email_CA.SMIME.PKI_types.SwissSign\"xrefstyle =\"select:nopage\">SwissSign PKI</link></guibutton>.</para><para lang=\"de\">Hier können Sie eine neue E-Mail-CA erstellen, wobei Sie dafür zuerstden PKI-Typ auswählen müssen. Wenn Sie anschließend auf den Button <guibutton>Neu erstellen</guibutton>klicken, öffnet sich die <guimenu>Bearbeiten</guimenu>-Seite für eine neue E-Mail-CA vom Typ<guibutton><link linkend=\"GUI_Email_CA.SMIME.PKI_types.Internal_PKI\"xrefstyle =\"select:nopage\">Interne PKI</link></guibutton>,<guibutton><link linkend=\"GUI_Email_CA.SMIME.PKI_types.TC_TrustCenter\"xrefstyle =\"select:nopage\">TC TrustCenter PKI</link></guibutton>,<guibutton><link linkend=\"GUI_Email_CA.SMIME.PKI_types.Comodo\"xrefstyle =\"select:nopage\">Comodo PKI</link></guibutton> oder<guibutton><link linkend=\"GUI_Email_CA.SMIME.PKI_types.Verisign\"xrefstyle =\"select:nopage\">Verisign PKI</link></guibutton><guibutton><link linkend=\"GUI_Email_CA.SMIME.PKI_types.SwissSign\"xrefstyle =\"select:nopage\">SwissSign PKI</link></guibutton>.</para></sect2>")
+
 
 (setq root (with-temp-buffer
              (insert xml)
@@ -67,6 +69,10 @@
                (xml-parse-region (point-min) (point-max))))
 
 (setq root-4 (with-current-buffer "pom.xml"
+               (xml-parse-region (point-min) (point-max))))
+
+(setq root-5 (with-temp-buffer
+               (insert xml-5)
                (xml-parse-region (point-min) (point-max))))
 
 (xml-node-children (car root-3))
