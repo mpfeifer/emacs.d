@@ -1572,7 +1572,30 @@ If so calculate pacakge name from current directory name."
 ;; optional key bindings, easier than hs defaults
 (define-key nxml-mode-map (kbd "C--") 'hs-toggle-hiding)
 
-(defun mp-nxml-mode-setup ())
+(defun mp-nxml-tab-handler ()
+  "Try to be smart about hs-toggle-hiding. When appropriate move point into space between
+ opening and closing tag. Then call hs-toggle-hiding."
+  (interactive)
+  (if buffer-read-only
+      (if (eq 'nxml-text (face-at-point t))
+          (hs-toggle-hiding)
+        (cond
+         ((and (looking-at ".*>.*") ;; in a closing tag
+               (looking-back ".*</.*"))
+          (progn
+            (search-backward "</" nil t)
+            (backward-char 1)
+            (hs-toggle-hiding) ) )
+         ((and (looking-back "<[^/]*")) ;; in a opening tag
+          (progn
+            (search-forward ">" nil t)
+            (forward-char 1)
+            (hs-toggle-hiding) ) ) ) )
+    (indent-for-tab-command) ) )
+
+(defun mp-nxml-mode-setup ()
+  (local-set-key (kbd "<tab>") 'mp-nxml-tab-handler)
+)
 
 (add-hook 'nxml-mode-hook 'mp-nxml-mode-setup)
 
