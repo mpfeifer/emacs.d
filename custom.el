@@ -114,6 +114,7 @@
  '(ido-use-virtual-buffers (quote auto))
  '(ido-vertical-pad-list nil)
  '(ido-vertical-show-count t)
+ '(imenu-level-separator "::")
  '(ispell-complete-word-dict "~/.emacs.d/ispell-completion.dict")
  '(ispell-personal-dictionary "~/.emacs.d/ispell.dict")
  '(ispell-silently-savep t)

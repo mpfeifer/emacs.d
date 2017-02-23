@@ -104,7 +104,7 @@
 
 (defun mp-compilation-mode-hook-extender ()
   ;; (next-error-follow-minor-mode)
-  (local-set-key (kbd "q") 'quit-window))
+  (local-set-key (kbd "q") 'winner-undo))
 
 (add-hook 'compilation-mode-hook 'mp-compilation-mode-hook-extender)
 
@@ -688,7 +688,7 @@
   (setq-local comment-multi-line t)
   (make-local-variable 'paragraph-start)
   (make-local-variable 'paragraph-separate)
-  (setq paragraph-start ";; ["
+  (setq paragraph-start ";; [ "
         paragraph-separate ";; ]")
   (setq imenu-generic-expression 
         (list '(nil "^;; \\[ \\(.+\\)$" 1)))
@@ -1345,7 +1345,7 @@ and display corresponding buffer in new frame."
 (add-hook 'Man-mode-hook 'mp-man-mode-hook)
 
 (defun mp-help-mode-setup ()
-  (local-set-key (kbd "q") 'delete-window))
+  (local-set-key (kbd "q") 'winner-undo))
 
 (add-hook 'help-mode-hook 'mp-help-mode-setup)
 
@@ -1541,6 +1541,11 @@ If so calculate pacakge name from current directory name."
 ;; ]
 
 ;; [ dired
+
+;; [[ usefull keybindings
+;;
+;; C-x d <regexp>   -   to show only files matching regexp
+;; ]]
 
 (add-hook 'dired-mode-hook
           (lambda ()
