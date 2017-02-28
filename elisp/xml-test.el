@@ -92,6 +92,31 @@
 
 (require 'tree-widget)
 
+(defconst testlist (list (list 1 2) 3 4))
+
+(defun any-to-tree-widget (any)
+  (interactive)
+  (cond 
+   ((stringp any)
+    (widget-convert 'item :tag any))
+   ((listp any)
+    (widget-convert 'tree-widget 
+                    :tag "List"
+                    :args (mapcar (lambda (node)
+                                    (any-to-tree-widget node)) 
+                                  any) ) ) ) )
+
+(defun test-any-to-tree-widget ()
+  (interactive)
+  (with-current-buffer (get-buffer-create "*tree-widget-test*")
+    (erase-buffer)
+    (setq-local my-tree-widget (widget-create (any-to-tree-widget testlist)))
+    (switch-to-buffer (current-buffer))))
+
+(test-any-to-tree-widget)
+
+
+
 (defun xml-to-tree-widget (xml)
   (interactive)
   (cond 
@@ -121,6 +146,9 @@
 
 
        (xml-to-tree-widget (car root))
+
+
+
 
 ;; (tree-widget :args
 ;;              (

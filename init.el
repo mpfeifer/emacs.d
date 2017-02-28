@@ -562,6 +562,19 @@
 
 (use-package ibuffer-git)
 
+(defun mp-ibuffer-show-filename ()
+  (interactive)
+  (let ((buf (ibuffer-current-buffer))
+        (lsoutput nil))
+    (when (file-exists-p (buffer-file-name buf))
+      (with-temp-buffer
+        (let* ((filename (buffer-file-name buf))
+               (default-directory (file-name-directory filename))
+               (just-filename (file-name-nondirectory filename)))
+          (call-process "/usr/bin/ls" nil t nil "-l" just-filename)
+          (setq lsoutput (buffer-substring-no-properties (point-min) (- (point-max) 1))))))
+    (message lsoutput)))
+
 (use-package ibuffer
   :bind ("C-x C-b" . ibuffer)
   :init
@@ -577,7 +590,7 @@
 
   (setq ibuffer-show-empty-filter-groups nil
         ibuffer-formats '(( mark (git-status-mini) modified read-only "|"
-                                 (name 26 26 :left :elide)
+                                 (name 36 36 :left :elide)
                                  "|"
                                  (size 9 -1 :left)
                                  "|" dirname) ;; filename-and-process)
@@ -595,7 +608,6 @@
   ;; use M-n, M-p to navigate between groups
   (setq ibuffer-saved-filter-groups
         (quote (("Projects"
-                 ("Dired" (mode . dired-mode))
                  ("Emacs" (or
                            (name . "^\\*scratch\\*$")
                            (name . "^\\*Messages\\*$")
@@ -625,6 +637,7 @@
     (hl-line-mode)
     (define-key ibuffer-mode-map (kbd "C-p") 'ibuffer-previous-line)
     (define-key ibuffer-mode-map (kbd "C-n") 'ibuffer-next-line)
+    (define-key ibuffer-mode-map (kbd "f") 'mp-ibuffer-show-filename)
     (ibuffer-switch-to-saved-filter-groups "Projects"))
   
   (add-hook 'ibuffer-mode-hook 'mp-ibuffer-mode-hook-extender))
@@ -1855,7 +1868,7 @@ If so calculate pacakge name from current directory name."
 (defun mp-setup-ac-php ()
   "Turn on auto-complete mode and set ac-sources for ac-php."
   (auto-complete-mode)
-  (setq ac-sources  '(ac-source-yasnippet ac-source-php) )
+  (setq ac-sources  '(ac-source-yasnippet ac-source-php ac-source-words-in-same-mode-buffers) )
   (require 'ac-php) )
 
 (add-hook 'php-mode-hook 'mp-setup-ac-php)
