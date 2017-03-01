@@ -1977,13 +1977,22 @@ If so calculate pacakge name from current directory name."
   :disabled)
 
 (setq-default mode-line-format (list
+                                ;; These setting provide four characters:
+                                ;; [encoding line-endings read/write modified]
+                                ;; eg [U:**] 
+                                ;; - unicode encoding (U)
+                                ;; with unix line endings (:)
+                                ;; read-write (*)
+                                ;; modified (*)
                                 "%e" "[" mode-line-mule-info mode-line-client mode-line-modified "] "
                                 '(:eval
                                   (propertize "[%b] " 'help-echo (buffer-file-name)))
                                 ;; line and column
                                 "[" ;; '%02' to set to 2 chars at least; prevents flickering
                                 (propertize "%03l") ","
-                                (propertize "%03c")
+                                (propertize "%c")
+                                "] ["
+                                mode-name
                                 "] "
                                 (mp-sunrise-sunset-for-modeline)
                                 " [" '(vc-mode vc-mode) " ] " mode-line-misc-info))
