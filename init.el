@@ -1999,6 +1999,12 @@ If so calculate pacakge name from current directory name."
 
 ;; ]
 
+;; [ version control
+
+;; interface to version control is under keymap C-x v (C-x v C-h for help)
+
+;; ]
+
 ;; [ messages mode buffer
 
 (with-current-buffer "*Messages*"
