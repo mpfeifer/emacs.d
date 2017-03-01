@@ -57,8 +57,11 @@
 (defun mp-package-refresh-necessary-p ()
   (if (file-exists-p mp-fn-package-guard)
       (progn
-        (let* ((mtime (mp-timeval-to-seconds (nth 5 (file-attributes mp-fn-package-guard))))
-               (ctime (mp-timeval-to-seconds (current-time))))
+        (let* ((mtime (mp-timeval-to-seconds
+                       (nth 5
+                            (file-attributes mp-fn-package-guard))))
+               (ctime (mp-timeval-to-seconds
+                       (current-time))))
           (< (+ mtime mp-package-guard-renewal) ctime )))
     t))
 
@@ -2001,7 +2004,13 @@ If so calculate pacakge name from current directory name."
 
 ;; [ version control
 
-;; interface to version control is under keymap C-x v (C-x v C-h for help)
+;; Emacs interface to version control is under keymap C-x v (C-x v C-h for help)
+
+;; some eye-candy:
+
+(use-package git-gutter
+  :config
+  (setq git-gutter:update-interval 5) )
 
 ;; ]
 
