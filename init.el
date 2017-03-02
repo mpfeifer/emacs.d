@@ -586,9 +586,31 @@
     (:name "Directory" :inline nil)
     (let ((result (buffer-name))
           (buf-file-name (buffer-file-name buffer)))
-      (and buf-file-name
-           (file-exists-p buf-file-name)
-           (setq result (file-name-directory buf-file-name)))
+      (when (and buf-file-name
+                 (file-exists-p buf-file-name))
+        (setq result (file-name-directory buf-file-name))
+        result)))
+
+  (define-ibuffer-column last5levels
+    (:name "Directory" :inline nil)
+    (let* ((result "")
+           (buf-file-name (buffer-file-name buffer))
+           (dircomponents nil))
+      (when (and buf-file-name
+                 (file-exists-p buf-file-name))
+        (setq dirname (file-name-directory buf-file-name))
+        (when (stringp dirname)
+          (progn
+            ;; there should be to empty strings at the begining
+            ;; and the end of the dirparts
+            (setq dirparts (reverse (split-string dirname "/")))
+            (setq result (if (> (length dirparts) 6)
+                             (concat "…/"
+                                     (nth 4 dirparts) "/"
+                                     (nth 3 dirparts) "/"
+                                     (nth 2 dirparts) "/"
+                                     (nth 1 dirparts) "/")
+                           (file-name-directory buf-file-name))))))
       result))
 
   (setq ibuffer-show-empty-filter-groups nil
@@ -596,7 +618,7 @@
                                  (name 36 36 :left :elide)
                                  "|"
                                  (size 9 -1 :left)
-                                 "|" dirname) ;; filename-and-process)
+                                 "|" last5levels) ;; filename-and-process)
                           (mark " "
                                 (name 16 -1)
                                 " " filename)))
@@ -606,7 +628,10 @@
            (project (assoc projectname (cdr group))))
       (if project
           (setcdr project (list (cons 'filename directory)))
-        (setcdr group (cons (list projectname (cons 'filename directory)) (cdr group))))))
+        (setcdr group (cons (list
+                             projectname ;; might as well be directory
+                             (cons 'filename directory))
+                            (cdr group))))))
 
   ;; use M-n, M-p to navigate between groups
   (setq ibuffer-saved-filter-groups
@@ -1563,10 +1588,25 @@ If so calculate pacakge name from current directory name."
 ;; C-x d <regexp>   -   to show only files matching regexp
 ;; ]]
 
+(defun mp-dired-2pane-copy-over ()
+  (interactive)
+    (when (eq 2 (length (window-list)))
+      (let ((other-directory nil)
+            (file-to-copy (dired-get-filename)))
+        (progn
+          (other-window 1)
+          (setq other-directory (dired-current-directory))
+          (other-window 1)
+          (copy-file file-to-copy other-directory)
+          (other-window 1)
+          (revert-buffer)
+          (other-window 1)))))
+
 (add-hook 'dired-mode-hook
           (lambda ()
             (define-key dired-mode-map (kbd "<backspace>")
-              (lambda () (interactive) (find-alternate-file "..")))))
+              (lambda () (interactive) (find-alternate-file "..")))
+            (define-key dired-mode-map (kbd "c") 'mp-dired-2pane-copy-over)))
 
 (put 'dired-find-alternate-file 'disabled nil)
 
