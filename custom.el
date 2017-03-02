@@ -33,6 +33,7 @@
  '(global-linum-mode nil)
  '(help-window-select t)
  '(ibuffer-default-sorting-mode (quote alphabetic))
+ '(ibuffer-eliding-string "…")
  '(ibuffer-saved-filter-groups
    (quote
     (("groupmode"
