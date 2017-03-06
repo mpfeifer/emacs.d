@@ -591,9 +591,11 @@
         (setq result (file-name-directory buf-file-name))
         result)))
 
-  (define-ibuffer-column last5levels
-    (:name "Directory" :inline nil)
-    (let* ((result "")
+  (define-ibuffer-column additional-info
+    (:name "Description" :inline nil)
+    (let* ((result nil)
+           (buffer-mode (symbol-to-string (with-current-buffer buffer
+                                            major-mode)))
            (buf-file-name (buffer-file-name buffer))
            (dircomponents nil))
       (when (and buf-file-name
@@ -611,14 +613,16 @@
                                      (nth 2 dirparts) "/"
                                      (nth 1 dirparts) "/")
                            (file-name-directory buf-file-name))))))
-      result))
+      (if result
+          (concat "" result)
+        (concat "" buffer-mode))))
 
   (setq ibuffer-show-empty-filter-groups nil
         ibuffer-formats '(( mark (git-status-mini) modified read-only "|"
                                  (name 36 36 :left :elide)
                                  "|"
                                  (size 9 -1 :left)
-                                 "|" last5levels) ;; filename-and-process)
+                                 "|" additional-info) ;; filename-and-process)
                           (mark " "
                                 (name 16 -1)
                                 " " filename)))
