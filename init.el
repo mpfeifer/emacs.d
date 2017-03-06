@@ -1905,6 +1905,12 @@ If so calculate pacakge name from current directory name."
 
 ;; [ php mode
 
+(defun mp-php-preprocessor ()
+  ;; does nothing yet
+  t)
+
+(add-to-list 'auto-insert-alist '(".*\\.php$" . [ "template.php" mp-php-preprocessor ] ) )
+
 (defun mp-php-mode-extension ()
   (setq indent-tabs-mode nil
         c-basic-offset 4
