@@ -1606,7 +1606,8 @@ If so calculate pacakge name from current directory name."
           (lambda ()
             (define-key dired-mode-map (kbd "<backspace>")
               (lambda () (interactive) (find-alternate-file "..")))
-            (define-key dired-mode-map (kbd "c") 'mp-dired-2pane-copy-over)))
+            (define-key dired-mode-map (kbd "c") 'mp-dired-2pane-copy-over)
+            (define-key dired-mode-map (kbd "TAB") 'other-window)))
 
 (put 'dired-find-alternate-file 'disabled nil)
 
