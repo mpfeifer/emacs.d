@@ -752,15 +752,7 @@
   (local-set-key (kbd "C-/") 'comment-dwim)
   (local-set-key (kbd "C-c C-c") 'byte-compile-current-buffer)
 
-  (electric-pair-mode)
-
-  (setq ac-sources '(ac-source-yasnippet
-                     ac-source-words-in-same-mode-buffers
-                     ac-source-features
-                     ac-source-functions
-                     ac-source-variables
-                     ac-source-symbols))
-  (auto-complete-mode 1) )
+  (electric-pair-mode) )
 
 (add-hook 'emacs-lisp-mode-hook 'mp-emacs-lisp-mode-hook)
 
@@ -804,54 +796,6 @@
   (add-to-list 'warning-suppress-types '(yasnippet backquote-change))
 
   (yas-global-mode 1) )
-
-;; ]
-
-;; [ auto complete
-;;
-;; TODO - want per mode and per file dictionary files
-;; TODO - want to understand auto-complete-config and how to extend/customize it
-
-(use-package auto-complete
-  :defer 1
-  :config
-
-  (require 'auto-complete)
-  (require 'auto-complete-config)
-
-  (setq
-   ac-auto-show-menu 2
-   ac-auto-start 0.1
-   ac-comphist-file "~/.emacs.d/ac-comphist.dat"
-   ac-dictionary-directories (quote ("~/.emacs.d/dictionaries/")) ;; mode specific dictionaries
-   ac-dictionary-files (quote ("~/.dict")) ;; personal dictionary
-   ac-quick-help-delay 0.2
-   ac-use-fuzzy t
-   ac-dwim t
-   ac-use-menu-map t
-   ac-use-quick-help nil
-   ac-user-dictionary (quote ("")))
-
-  (global-set-key (kbd "C-c C-<SPC>") 'auto-complete)
-
-  (define-key ac-menu-map "\C-n" 'ac-next)
-  (define-key ac-menu-map "\C-p" 'ac-previous)
-  (define-key ac-menu-map "\C-s" 'ac-isearch)
-  (define-key ac-mode-map (kbd "C-x /") 'ac-complete-filename)
-
-  (add-to-list 'ac-modes 'web-mode)
-
-  (dolist (mode (list 'xml-mode 'web-mode 'sh-mode
-                      'emacs-lisp-mode 'java-mode))
-    (add-to-list 'ac-modes mode))
-
-  (ac-linum-workaround)
-
-  ;; for major mode specific setup of auto-complete see
-  ;; the according sections. eg for setting up auto-completion
-  ;; for java-mode have a look at java-mode.
-
-  ) ;; end of use-package
 
 ;; ]
 
@@ -1160,8 +1104,6 @@
 (defun mp-eshell-mode-hook ()
   "Personal eshell mode hook."
   (interactive)
-  (setq ac-sources '(ac-source-yasnippet ac-source-filename ac-source-files-in-current-dir))
-  (auto-complete-mode t)
   (local-set-key (kbd "C-c C-c") 'mp-eshell) )
 
 (add-hook 'eshell-mode-hook 'mp-eshell-mode-hook)
@@ -1199,10 +1141,6 @@
 
 ;; [ C/C++
 
-(use-package ac-etags
-  :config
-  (ac-etags-setup) )
-
 (defun mp-mark-def-undef-block ()
   "Mark block from #define to #undef."
   (interactive)
@@ -1236,13 +1174,7 @@
 
 (defun mp-c-mode-hook ()
   "Personal c mode hook extender."
-  (auto-complete-mode 1)
   (linum-mode)
-  (setq ac-sources  (list
-                     'ac-source-yasnippet
-                     'ac-source-etags
-                     'ac-source-dictionary
-                     'ac-source-words-in-same-mode-buffers))
   (let ((add-openssl-dict nil))
     (save-excursion 
       (goto-char (point-min))
@@ -1250,8 +1182,7 @@
         (setq add-openssl-dict t)))
     (when add-openssl-dict
       (progn
-        (local-set-key (kbd "C-h o") 'mp-openssl-help)
-        (add-to-list 'ac-user-dictionary 'openssl-dictionary-location))))
+        (local-set-key (kbd "C-h o") 'mp-openssl-help))))
   (local-set-key (kbd "C-h c") 'mp-c++-help)
   (local-set-key (kbd "C-c a") 'align-regexp)
   (add-to-list 'er/try-expand-list 'mp-mark-def-undef-block)
@@ -1394,6 +1325,11 @@ and display corresponding buffer in new frame."
 
 (add-hook 'help-mode-hook 'mp-help-mode-setup)
 
+(require 'man)
+
+(set-face-attribute 'Man-overstrike nil :inherit font-lock-type-face :bold t)
+(set-face-attribute 'Man-underline nil :inherit font-lock-keyword-face :underline t)
+
 ;; ]
 
 ;; [ java mode
@@ -1408,17 +1344,7 @@ and display corresponding buffer in new frame."
 
 ;; (setq tags-revert-without-query 't)
 
-(defvar mp-ac-classpath-cache nil)
-
 (use-package javadoc-lookup)
-
-(defun mp-ac-classpath-init ()
-  (setq mp-ac-classpath-cache (mp-read-classes-from-jar)))
-
-(defvar ac-source-classpath
-  '((prefix . "^import \\(.*\\)")
-    (init . mp-ac-classpath-init)
-    (candidates . mp-ac-classpath-cache)))
 
 (defun mp-read-classes-from-jar ()
   (with-temp-buffer
@@ -1449,7 +1375,6 @@ and display corresponding buffer in new frame."
       (progn
         (while (re-search-forward "^import.*" nil t))
         (end-of-line)
-        (newline-and-indent)
         (newline-and-indent)
         (insert (format "import %s;" name))))))
 
@@ -1567,12 +1492,6 @@ If so calculate pacakge name from current directory name."
 
 (defun mp-java-mode-hook()
   (setq-local comment-auto-fill-only-comments t)
-  (auto-complete-mode 1)
-  (setq ac-sources '(ac-source-etags
-                     ac-source-yasnippet
-                     ac-source-classpath
-                     ac-source-dictionary
-                     ac-source-words-in-same-mode-buffers))
   (subword-mode)
   (linum-mode)
   (local-set-key (kbd "C-h j") 'javadoc-lookup)
@@ -1594,17 +1513,17 @@ If so calculate pacakge name from current directory name."
 
 (defun mp-dired-2pane-copy-over ()
   (interactive)
-    (when (eq 2 (length (window-list)))
-      (let ((other-directory nil)
-            (file-to-copy (dired-get-filename)))
-        (progn
-          (other-window 1)
-          (setq other-directory (dired-current-directory))
-          (other-window 1)
-          (copy-file file-to-copy other-directory)
-          (other-window 1)
-          (revert-buffer)
-          (other-window 1)))))
+  (when (eq 2 (length (window-list)))
+    (let ((other-directory nil)
+          (file-to-copy (dired-get-filename)))
+      (progn
+        (other-window 1)
+        (setq other-directory (dired-current-directory))
+        (other-window 1)
+        (copy-file file-to-copy other-directory)
+        (other-window 1)
+        (revert-buffer)
+        (other-window 1)))))
 
 (add-hook 'dired-mode-hook
           (lambda ()
@@ -1661,7 +1580,7 @@ If so calculate pacakge name from current directory name."
 
 (defun mp-nxml-mode-setup ()
   (local-set-key (kbd "<tab>") 'mp-nxml-tab-handler)
-)
+  )
 
 (add-hook 'nxml-mode-hook 'mp-nxml-mode-setup)
 
@@ -1691,7 +1610,6 @@ If so calculate pacakge name from current directory name."
 ;; [ ivy, avy, ido & co
 
 (use-package ivy
-  :defer 1
   :config
   (setq ivy-fixed-height-minibuffer t
         ivy-mode t
@@ -1779,16 +1697,10 @@ If so calculate pacakge name from current directory name."
   (add-hook 'web-mode-hook 'mp-web-mode-extension)
   (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode)))
 
-(use-package ac-html
-  :after web-mode)
-
 (defun mp-web-mode-extension ()
   (interactive)
-  (make-local-variable 'ac-use-quick-help)  
   (setq indent-tabs-mode nil
-        web-mode-markup-indent-offset 4
-        ac-use-quick-help t
-        ac-sources '(ac-source-yasnippet ac-source-html))
+        web-mode-markup-indent-offset 4)
   (hs-minor-mode))
 
 (require 'hideshow)
@@ -1897,7 +1809,7 @@ If so calculate pacakge name from current directory name."
 
 (defun mp-css-mode-hook ()
   "Personal css mode hook extender."
-  (setq ac-sources '(ac-source-yasnippet ac-source-css-property ac-source-words-in-same-mode-buffers)))
+  )
 
 (add-hook 'css-mode-hook' mp-css-mode-hook)
 
@@ -1915,17 +1827,6 @@ If so calculate pacakge name from current directory name."
   (setq indent-tabs-mode nil
         c-basic-offset 4
         php-template-compatibility nil) )
-
-;; see https://github.com/xcwen/ac-php
-(use-package ac-php)
-
-(defun mp-setup-ac-php ()
-  "Turn on auto-complete mode and set ac-sources for ac-php."
-  (auto-complete-mode)
-  (setq ac-sources  '(ac-source-yasnippet ac-source-php ac-source-words-in-same-mode-buffers) )
-  (require 'ac-php) )
-
-(add-hook 'php-mode-hook 'mp-setup-ac-php)
 
 (use-package php-mode
   :config
@@ -1947,9 +1848,7 @@ If so calculate pacakge name from current directory name."
              '(".*\\.sh$" . [ "template.sh" mp-elisp-post-processor ] ) )
 
 (defun mp-shell-mode-extender ()
-  (interactive)
-  (define-key ac-mode-map (kbd "C-c /") 'ac-complete-filename) 
-  (auto-complete-mode) )
+  (interactive) )
 
 (add-hook 'shell-mode-hook 'mp-shell-mode-extender)
 

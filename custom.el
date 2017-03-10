@@ -71,7 +71,7 @@
       ("help-mode"
        (mode . help-mode))
       ("elisp-byte-code-mode"
-       (mode . elisp-byte-code-mode))))) t)
+       (mode . elisp-byte-code-mode))))))
  '(ibuffer-saved-filters
    (quote
     (("gnus"
@@ -122,6 +122,8 @@
  '(ispell-complete-word-dict "~/.emacs.d/ispell-completion.dict")
  '(ispell-personal-dictionary "~/.emacs.d/ispell.dict")
  '(ispell-silently-savep t)
+ '(ivy-count-format "(%d/%d) ")
+ '(ivy-format-function (quote ivy-format-function-arrow))
  '(java-project-root "~/java/")
  '(linum-format "%5d")
  '(minimap-dedicated-window nil)
