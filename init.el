@@ -1504,10 +1504,9 @@ If so calculate pacakge name from current directory name."
 
 ;; [ dired
 
-;; [[ usefull keybindings
+;; usefull keybindings
 ;;
 ;; C-x d <regexp>   -   to show only files matching regexp
-;; ]]
 
 (defun mp-dired-2pane-copy-over ()
   (interactive)
@@ -1980,5 +1979,24 @@ If so calculate pacakge name from current directory name."
 ;; [ view x.509 certificates
 
 ;; (require 'x509-certificate-mode)
+
+;; ]
+
+;; [ linum mode
+
+(defun mp-profile-forward-line ()
+  (interactive)
+  (profiler-start 'cpu+mem)
+  (let ((count 0))
+    (while (< count 75)
+      (forward-line)
+      (setq count (+ count 1))))
+  (profiler-report))
+
+;; TODO: profile this a little bit. Then turn
+;; on conditionally for buffers not larger then
+;; 250 lines... do add to certain mode hooks
+;; here so that configuration is not scattered
+;; all over the file.
 
 ;; ]
