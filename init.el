@@ -1174,7 +1174,6 @@
 
 (defun mp-c-mode-hook ()
   "Personal c mode hook extender."
-  (linum-mode)
   (let ((add-openssl-dict nil))
     (save-excursion 
       (goto-char (point-min))
@@ -1493,7 +1492,6 @@ If so calculate pacakge name from current directory name."
 (defun mp-java-mode-hook()
   (setq-local comment-auto-fill-only-comments t)
   (subword-mode)
-  (linum-mode)
   (local-set-key (kbd "C-h j") 'javadoc-lookup)
   (setq-local comment-multi-line t) )
 
@@ -1970,6 +1968,12 @@ If so calculate pacakge name from current directory name."
   (linum-mode)
   (visual-line-mode)
   t)
+
+;; ]
+
+;; [ gdb
+
+(setq gdb-many-windows t)
 
 ;; ]
 
