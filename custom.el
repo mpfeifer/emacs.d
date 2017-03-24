@@ -18,7 +18,9 @@
  '(desktop-modes-not-to-save (quote (tags-table-mode prodigy-mode)))
  '(desktop-path (quote ("~/.emacs.d/desktop")))
  '(diary-file "~/.emacs.d/diary")
+ '(dired-auto-revert-buffer t)
  '(dired-dwim-target t)
+ '(dired-listing-switches "-al")
  '(elpy-modules
    (quote
     (elpy-module-company elpy-module-eldoc elpy-module-pyvenv elpy-module-highlight-indentation elpy-module-yasnippet elpy-module-sane-defaults)))
@@ -71,7 +73,7 @@
       ("help-mode"
        (mode . help-mode))
       ("elisp-byte-code-mode"
-       (mode . elisp-byte-code-mode))))))
+       (mode . elisp-byte-code-mode))))) t)
  '(ibuffer-saved-filters
    (quote
     (("gnus"

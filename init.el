@@ -1,5 +1,5 @@
 ;;; init.el --- Emacs initialization file
-
+;; -*- lexical-binding: t -*-
 ;;
 ;;
 ;;; Commentary:
@@ -578,6 +578,19 @@
           (setq lsoutput (buffer-substring-no-properties (point-min) (- (point-max) 1))))))
     (message lsoutput)))
 
+(defun mp-ibuffer-show-file-path ()
+  (interactive)
+  (let ((buf (ibuffer-current-buffer))
+        (lsoutput nil))
+    (when (file-exists-p (buffer-file-name buf))
+      (with-temp-buffer
+        (let* ((filename (buffer-file-name buf))
+               (default-directory (file-name-directory filename))
+               (just-filename (file-name-nondirectory filename)))
+          (call-process "/usr/bin/pwd" nil t nil)
+          (setq lsoutput (buffer-substring-no-properties (point-min) (- (point-max) 1))))))
+    (message lsoutput)))
+
 (use-package ibuffer
   :bind ("C-x C-b" . ibuffer)
   :init
@@ -670,6 +683,7 @@
     (define-key ibuffer-mode-map (kbd "C-p") 'ibuffer-previous-line)
     (define-key ibuffer-mode-map (kbd "C-n") 'ibuffer-next-line)
     (define-key ibuffer-mode-map (kbd "f") 'mp-ibuffer-show-filename)
+    (define-key ibuffer-mode-map (kbd "p") 'mp-ibuffer-show-file-path)
     (ibuffer-switch-to-saved-filter-groups "Projects"))
   
   (add-hook 'ibuffer-mode-hook 'mp-ibuffer-mode-hook-extender))
@@ -1522,8 +1536,31 @@ If so calculate pacakge name from current directory name."
         (revert-buffer)
         (other-window 1)))))
 
+;; copied from '(or emacs' blog
+
+(defun ora-ediff-files ()
+  (interactive)
+  (let ((files (dired-get-marked-files))
+        (wnd (current-window-configuration)))
+    (if (<= (length files) 2)
+        (let ((file1 (car files))
+              (file2 (if (cdr files)
+                         (cadr files)
+                       (read-file-name
+                        "file: "
+                        (dired-dwim-target-directory)))))
+          (if (file-newer-than-file-p file1 file2)
+              (ediff-files file2 file1)
+            (ediff-files file1 file2))
+          (add-hook 'ediff-after-quit-hook-internal
+                    (lambda ()
+                      (setq ediff-after-quit-hook-internal nil)
+                      (set-window-configuration wnd))))
+      (error "no more than 2 files should be marked"))))
+
 (add-hook 'dired-mode-hook
           (lambda ()
+            (define-key dired-mode-map "e" 'ora-ediff-files)
             (define-key dired-mode-map (kbd "<backspace>")
               (lambda () (interactive) (find-alternate-file "..")))
             (define-key dired-mode-map (kbd "c") 'mp-dired-2pane-copy-over)
