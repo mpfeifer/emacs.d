@@ -1359,26 +1359,49 @@ and display corresponding buffer in new frame."
 
 (use-package javadoc-lookup)
 
-(defun mp-read-classes-from-jar ()
-  (with-temp-buffer
-    (call-process "/usr/bin/unzip" nil t nil "-l" (concat jdk-location "jre/lib/rt.jar"))
-    (goto-char (point-min))
-    (let ((end 0)
-          (result '())
-          (classname ""))
-      (while (search-forward ".class" nil t nil)
-        (end-of-line)
-        (setq end (point))
-        (beginning-of-line)
-        (goto-char (+ (point) 30))
-        (setq classname (substring 
-                         (replace-regexp-in-string "/" "."
-                                                   (buffer-substring-no-properties (point) end))
-                         0 -6))
-        (setq result (cons classname result))
-        (forward-line 1)
-        (beginning-of-line))
-      result)))
+(defvar mp-classpath nil)
+
+(defun mp-read-classes-from-classpath ()
+  "Iterate over classpath and gather classes from jar files.
+Evaluates into one large list containing all classes."
+  (let* ((jarfiles (cons (concat jdk-location "jre/lib/rt.jar")
+                         mp-classpath))
+         (jarfile nil)
+         (result '()))
+    (with-temp-buffer
+      (while jarfiles
+        (progn
+          (setq jarfile (car jarfiles)
+                jarfiles (cdr jarfiles))
+          (call-process "/usr/bin/unzip" nil t nil "-l" jarfile)
+          (goto-char (point-min))
+          (let ((end 0)
+                (classname ""))
+            (while (search-forward ".class" nil t nil)
+              (end-of-line)
+              (setq end (point))
+              (beginning-of-line)
+              (goto-char (+ (point) 30))
+              (setq classname (substring 
+                               (replace-regexp-in-string "/" "."
+                                                         (buffer-substring-no-properties (point) end))
+                               0 -6))
+              (setq result (cons classname result))
+              (forward-line 1)
+              (beginning-of-line))
+            (erase-buffer)))))
+    result))
+
+(defun mp-insert-classname-completing-read (x)
+  "Query the user for a class name.
+With prefix argument insert classname with package name. Otherwise omit package name."
+  (interactive "P")
+  (let* ((default (thing-at-point 'symbol))
+         (classes (mp-read-classes-from-classpath))
+         (classname (completing-read "Class: " classes)))
+    (if x
+        (insert classname)
+      (insert (replace-regexp-in-string ".*\\." "" classname)))))
 
 (defun mp-assert-import (name)
   "Insert import statement for class NAME if it does not yet exist. "
@@ -1855,7 +1878,7 @@ If so calculate pacakge name from current directory name."
   ;; does nothing yet
   t)
 
-(add-to-list 'auto-insert-alist '(".*\\.php$" . [ "template.php" mp-php-preprocessor ] ) )
+;; (add-to-list 'auto-insert-alist '(".*\\.php$" . [ "template.php" mp-php-preprocessor ] ) )
 
 (defun mp-php-mode-extension ()
   (setq indent-tabs-mode nil
@@ -1971,18 +1994,16 @@ If so calculate pacakge name from current directory name."
                                 ;; with unix line endings (:)
                                 ;; read-write (*)
                                 ;; modified (*)
-                                "%e" "[" mode-line-mule-info mode-line-client mode-line-modified "] "
+                                "%e" "[" mode-line-mule-info mode-line-client mode-line-modified "]"
                                 '(:eval
-                                  (propertize "[%b] " 'help-echo (buffer-file-name)))
+                                  (propertize "[%b]" 'help-echo (buffer-file-name)))
                                 ;; line and column
                                 "[" ;; '%02' to set to 2 chars at least; prevents flickering
                                 (propertize "%03l") ","
                                 (propertize "%c")
-                                "] ["
-                                mode-name
-                                "] "
+                                "]"
                                 (mp-sunrise-sunset-for-modeline)
-                                " [" '(vc-mode vc-mode) " ] " mode-line-misc-info))
+                                "[" '(vc-mode vc-mode) " ]" mode-line-misc-info))
 
 ;; ]
 
