@@ -1200,7 +1200,8 @@
   (local-set-key (kbd "C-c a") 'align-regexp)
   (add-to-list 'er/try-expand-list 'mp-mark-def-undef-block)
   (add-to-list 'er/try-expand-list 'mp-mark-if-endif-block)
-  (local-set-key (kbd "C-c C-c") 'compile) )
+  (local-set-key (kbd "C-c C-c") 'compile)
+  (local-set-key (kbd "C-M-j") 'imenu))
 
 (add-hook 'c++-mode-hook 'mp-c-mode-hook)
 (add-hook 'c-mode-hook 'mp-c-mode-hook)
@@ -1530,7 +1531,9 @@ If so calculate pacakge name from current directory name."
   (setq-local comment-auto-fill-only-comments t)
   (subword-mode)
   (local-set-key (kbd "C-h j") 'javadoc-lookup)
-  (setq-local comment-multi-line t) )
+  (setq-local comment-multi-line t)
+  (local-set-key (kbd "C-M-j") 'imenu)
+  (local-set-key (kbd "C-c c") 'mp-insert-classname-completing-read))
 
 (add-hook 'java-mode-hook 'mp-java-mode-hook)
 
