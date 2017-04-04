@@ -1182,7 +1182,7 @@
 (defun mp-c++-help ()
   (interactive)
   (browse-url-firefox (concat 
-                       "https://www.cplusplus.com/reference/"
+                       "http://www.cplusplus.com/reference/"
                        (thing-at-point 'symbol))
                       t) )
 
@@ -2164,8 +2164,5 @@ If so calculate pacakge name from current directory name."
 
 
   ) ;; end of use-package
-
-
-
 
 ;; ]
