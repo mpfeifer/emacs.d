@@ -32,7 +32,7 @@
 
 ;; ]
 
-;; [ packages
+ ;; [ packages
 
 (require 'package)
 
@@ -506,6 +506,8 @@
 ;; visualize matching paren
 (show-paren-mode)
 
+;; ]
+ 
 ;; [ backups
 
 (setq backup-directory-alist '(("." . "~/.emacs.d/backups"))
@@ -747,7 +749,7 @@
   (setq-local comment-multi-line t)
   (make-local-variable 'paragraph-start)
   (make-local-variable 'paragraph-separate)
-  (setq paragraph-start ";; [ "
+  (setq paragraph-start ";; \\[ "
         paragraph-separate ";; ]")
   (setq imenu-generic-expression 
         (list '(nil "^;; \\[ \\(.+\\)$" 1)))
@@ -875,6 +877,8 @@
 ;; save and restore open buffers
 
 (desktop-save-mode)
+
+;; ]
 
 ;; [ org mode
 
@@ -1991,7 +1995,7 @@ If so calculate pacakge name from current directory name."
 
 (setq-default mode-line-format (list
                                 ;; These setting provide four characters:
-                                ;; [encoding line-endings read/write modified]
+                                ;; encoding line-endings read/write modified
                                 ;; eg [U:**] 
                                 ;; - unicode encoding (U)
                                 ;; with unix line endings (:)
@@ -2037,12 +2041,6 @@ If so calculate pacakge name from current directory name."
 
 ;; ]
 
-;; [ view x.509 certificates
-
-;; (require 'x509-certificate-mode)
-
-;; ]
-
 ;; [ linum mode
 
 (defun mp-profile-forward-line ()
@@ -2054,15 +2052,7 @@ If so calculate pacakge name from current directory name."
       (setq count (+ count 1))))
   (profiler-report))
 
-;; TODO: profile this a little bit. Then turn
-;; on conditionally for buffers not larger then
-;; 250 lines... do add to certain mode hooks
-;; here so that configuration is not scattered
-;; all over the file.
-
 ;; ]
-
-;; [ 
 
 ;; [ auto complete
 
@@ -2166,3 +2156,4 @@ If so calculate pacakge name from current directory name."
   ) ;; end of use-package
 
 ;; ]
+
