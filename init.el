@@ -482,11 +482,9 @@
             (apply 'solar-time-string (cadr l)))))
 
 ;; nice dark theme with a light variante
-
 (use-package material-theme)
-
-;; (load-theme 'material-light)
-(load-theme 'material)
+(load-theme 'material-light)
+;; (load-theme 'material)
 
 (use-package volatile-highlights
   :init
@@ -2054,106 +2052,27 @@ If so calculate pacakge name from current directory name."
 
 ;; ]
 
-;; [ auto complete
+;; [ popup edit menu
 
-;; TODO - want per mode and per file dictionary files
-
-
-(use-package ac-etags
+(use-package popup-edit-menu
   :config
-  :disabled
-  (ac-etags-setup))
-
-(use-package ac-php
-  :disabled)
-
-(use-package auto-complete
-
-  :disabled
-  :config
-  
-  (require 'auto-complete)
-  (require 'auto-complete-config)
-
-  (setq
-   ac-auto-show-menu 2
-   ac-auto-start 0.1
-   ac-comphist-file "~/.emacs.d/ac-comphist.dat"
-   ac-dictionary-directories (quote ("~/.emacs.d/dictionaries/")) ;; mode specific dictionaries
-   ac-dictionary-files (quote ("~/.dict")) ;; personal dictionary
-   ac-quick-help-delay 0.2
-   ac-use-fuzzy t
-   ac-dwim t
-   ac-use-menu-map t
-   ac-use-quick-help nil
-   ac-user-dictionary (quote ("")))
-
-  (global-set-key (kbd "C-c C-<SPC>") 'auto-complete)
-
-  (define-key ac-menu-map "\C-n" 'ac-next)
-  (define-key ac-menu-map "\C-p" 'ac-previous)
-  (define-key ac-menu-map "\C-s" 'ac-isearch)
-  (define-key ac-mode-map (kbd "C-x /") 'ac-complete-filename)
-
-  (add-to-list 'ac-modes 'web-mode)
-
-  (dolist (mode (list 'xml-mode 'web-mode 'sh-mode
-                      'emacs-lisp-mode 'java-mode))
-    (add-to-list 'ac-modes mode))
-
-  ;; Just in case linum mode and ac interfer
-  ;; (ac-linum-workaround)
-
-  (defun mp-ac-setup-for-emacs-lisp ()
-    "Turn on auto-complete mode and set ac-sources for emacs-lisp-mode."
-    (setq ac-sources '(ac-source-yasnippet
-                       ac-source-filename
-                       ac-source-files-in-current-dir))
-    (auto-complete-mode t) )
-
-  (add-hook 'emacs-lisp-mode-hook 'mp-ac-setup-for-emacs-lisp)
-
-  (defun mp-ac-setup-for-c-mode ()
-    "Turn on auto-complete mode and set ac-sources for c/c++-mode."
-    (setq ac-sources  (list
-                       'ac-source-yasnippet
-                       'ac-source-etags
-                       'ac-source-dictionary
-                       'ac-source-words-in-same-mode-buffers))
-    (auto-complete-mode 1) )
-
-  (add-hook 'c-mode-hook 'mp-ac-setup-for-c-mode)
-  (add-hook 'c++-mode-hook 'mp-ac-setup-for-c-mode)
-
-  (defun mp-ac-setup-for-java-mode ()
-    "Turn on auto-complete mode and set ac-sources for java-mode."
-    (auto-complete-mode 1)
-    (setq ac-sources '(ac-source-etags
-                       ac-source-yasnippet
-                       ac-source-classpath
-                       ac-source-dictionary
-                       ac-source-words-in-same-mode-buffers)))
-
-  (defun mp-ac-setup-for-php-mode ()
-    "Turn on auto-complete mode and set ac-sources for ac-php."
-    (require 'ac-php)    
-    (setq ac-sources  (list
-                       'ac-source-yasnippet
-                       'ac-source-php
-                       'ac-source-words-in-same-mode-buffers) )
-    (auto-complete-mode 1))
-
-  (add-hook 'php-mode-hook 'mp-ac-setup-for-php-mode)
-
-  (defun mp-ac-setup-for-shell-mode ()
-    "Turn on auto-complete mode and set ac-sources for shell-mode."
-    (define-key ac-mode-map (kbd "C-c /") 'ac-complete-filename) 
-    (auto-complete-mode 1) )
-
-  (add-hook 'shell-mode-hook 'mp-ac-setup-for-shell-mode)
-
-
-  ) ;; end of use-package
+  (global-set-key [mouse-3] (popup-edit-menu-stub))
+  (setq popup-edit-menu-mode-menus-down-flag t)
+  (easy-menu-add-item nil '("edit") ["--" nil t])
+  (easy-menu-add-item nil '("edit") ["base64-encode" base64-encode-region t])
+  (easy-menu-add-item nil '("edit") ["base64-decode" base64-decode-region t]))
 
 ;; ]
 
+;; [ company
+
+;; (use-package company-jedi)
+;; (use-package company-php)
+;; (use-package company-statistics)
+
+(use-package company
+  :config
+  ;; see company-backends for company backends
+  (global-company-mode))
+
+;; ]
