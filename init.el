@@ -1062,7 +1062,7 @@
 
 ;; ]
 
-;; [ speedbar
+;; [ speedbar neotree
 
 (use-package sr-speedbar
   :bind ("<f6>" . sr-speedbar-toggle)
@@ -1081,6 +1081,10 @@
       (when window (select-window window)))))
 
 ;; (modify-frame-parameters nil (list '( name . "Emacs" )
+
+(use-package neotree)
+
+
 
 ;; ]
 
