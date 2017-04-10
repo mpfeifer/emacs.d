@@ -499,7 +499,8 @@
   (add-hook 'nxml-mode-hook 'volatile-highlights-mode)
   (add-hook 'python-mode-hook 'volatile-highlights-mode)
   (add-hook 'php-mode-hook 'volatile-highlights-mode)
-  (add-hook 'shell-mode-hook 'volatile-highlights-mode) )
+  (add-hook 'shell-mode-hook 'volatile-highlights-mode)
+  (add-hook 'org-mode-hook 'volatile-highlights-mode))
 
 ;; visualize matching paren
 (show-paren-mode)

@@ -73,7 +73,7 @@
       ("help-mode"
        (mode . help-mode))
       ("elisp-byte-code-mode"
-       (mode . elisp-byte-code-mode))))) t)
+       (mode . elisp-byte-code-mode))))))
  '(ibuffer-saved-filters
    (quote
     (("gnus"
@@ -172,5 +172,6 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(diary ((t (:background "cornflower blue" :foreground "yellow1")))))
+ '(diary ((t (:background "cornflower blue" :foreground "yellow1"))))
+ '(vhl/default-face ((t (:background "white smoke")))))
 
