@@ -1090,11 +1090,39 @@
 
 ;; [ xref and tags
 
+;; TODO Change window handling for xref popups
+
+(add-to-list 'display-buffer-alist
+             `(,(rx bos "*xref*" eos)
+               (display-buffer-reuse-window
+                display-buffer-in-side-window)
+               (reusable-frames . visible)
+               (side            . bottom)
+               (window-height   . 0.2)))
+
+(defun close-window-by-buffer-name (name)
+  (interactive "b")
+  (let ((buffer-name name)
+        (buffer nil)
+        (buffer-window nil))
+    (setq buffer (get-buffer buffer-name))
+    (setq buffer-window (if (bufferp buffer)
+                            (get-buffer-window buffer)
+                          nil))
+    (when (windowp buffer-window)
+      (delete-window buffer-window))))
+
+(defun mp-close-xref-buffer ()
+  (close-window-by-buffer-name "*xref"))
+
 (setq tags-file-name nil
       tags-table-list nil
       tags-revert-without-query t)
 
+;; use C-o in xref buffer to display match in other window
+
 (global-set-key (kbd "M-*") #'xref-pop-marker-stack)
+(global-set-key (kbd "M-.") #'xref-find-definitions)
 
 ;; ]
 
@@ -2077,6 +2105,22 @@ If so calculate pacakge name from current directory name."
 (use-package company
   :config
   ;; see company-backends for company backends
+
+  (setq company-backends '(company-slime))
   (global-company-mode))
+
+;; ]
+
+;; [ ffip
+
+(defun find-file-dispatcher (arg)
+  (interactive "P")
+  (call-interactively (if arg
+                          'find-file
+                        'ffip)))
+
+(use-package find-file-in-project
+  :config
+  (global-set-key (kbd "C-x C-f") 'find-file-dispatcher) )
 
 ;; ]

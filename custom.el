@@ -73,7 +73,7 @@
       ("help-mode"
        (mode . help-mode))
       ("elisp-byte-code-mode"
-       (mode . elisp-byte-code-mode))))))
+       (mode . elisp-byte-code-mode))))) t)
  '(ibuffer-saved-filters
    (quote
     (("gnus"
@@ -120,7 +120,7 @@
  '(ido-use-virtual-buffers (quote auto))
  '(ido-vertical-pad-list nil)
  '(ido-vertical-show-count t)
- '(imenu-level-separator "::")
+ '(imenu-level-separator ".")
  '(ispell-complete-word-dict "~/.emacs.d/ispell-completion.dict")
  '(ispell-personal-dictionary "~/.emacs.d/ispell.dict")
  '(ispell-silently-savep t)
@@ -138,7 +138,7 @@
  '(org-clock-mode-line-total (quote today))
  '(package-selected-packages
    (quote
-    (lenlen-theme twilight-theme company-php company-statistics popup-edit-menu ac-php git-gutter-fringe goto-last-change request windata jtags-mode jtags powerline hs-minor-mode ido-grid-mode wndmove bookmark+ adoc-mode restclient fuzzy javadoc-lookup help material theme-changer gnuplot-mode zerodark-theme org-mobile-sync ldap-mode magit sunny-day-theme sunshine elf-mode volatile-highlights web-mode yatemplate aggressive-indent ac-ispell yaml-mode org-bullets ibuffer-git ibuffer-projectile projectile projectile-speedbar htmlize paredit edit-server auto-compile neotree elpy material-theme log4e company-jedi autumn-light-theme paper-theme soft-morning-theme org-ac foggy-night-theme yasnippet use-package sr-speedbar solarized-theme smex prodigy php-mode js2-mode jedi-direx ido-vertical-mode ido-ubiquitous hungry-delete expand-region elisp-slime-nav dracula-theme color-theme-solarized avy aurora-theme anti-zenburn-theme ample-zen-theme ample-theme airline-themes ahungry-theme afternoon-theme)))
+    (slime-company lenlen-theme twilight-theme company-php company-statistics popup-edit-menu ac-php git-gutter-fringe goto-last-change request windata jtags-mode jtags powerline hs-minor-mode ido-grid-mode wndmove bookmark+ adoc-mode restclient fuzzy javadoc-lookup help material theme-changer gnuplot-mode zerodark-theme org-mobile-sync ldap-mode magit sunny-day-theme sunshine elf-mode volatile-highlights web-mode yatemplate aggressive-indent ac-ispell yaml-mode org-bullets ibuffer-git ibuffer-projectile projectile projectile-speedbar htmlize paredit edit-server auto-compile neotree elpy material-theme log4e company-jedi autumn-light-theme paper-theme soft-morning-theme org-ac foggy-night-theme yasnippet use-package sr-speedbar solarized-theme smex prodigy php-mode js2-mode jedi-direx ido-vertical-mode ido-ubiquitous hungry-delete expand-region elisp-slime-nav dracula-theme color-theme-solarized avy aurora-theme anti-zenburn-theme ample-zen-theme ample-theme airline-themes ahungry-theme afternoon-theme)))
  '(projectile-cache-file "~/.emacs.d/projectile.cache")
  '(projectile-known-projects-file "~/.emacs.d/projectile-bookmarks.eld")
  '(python-environment-directory "~/.emacs.d/python-environments")
