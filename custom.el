@@ -29,6 +29,8 @@
     (elpy-project-find-projectile-root elpy-project-find-python-root elpy-project-find-git-root elpy-project-find-svn-root)))
  '(elpy-rpc-error-timeout 30)
  '(elpy-rpc-timeout 2)
+ '(enable-local-variables :all)
+ '(enable-remote-dir-locals nil)
  '(eshell-directory-name "~/.emacs.d/")
  '(fit-window-to-buffer-horizontally t)
  '(git-gutter:update-commands (quote (ido-switch-buffer)))
