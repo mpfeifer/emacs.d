@@ -1714,7 +1714,7 @@ If so calculate pacakge name from current directory name."
 
 ;; ]
 
-;; [ python
+;; [ elpy python
 
 (use-package elpy)
 
@@ -1727,11 +1727,11 @@ If so calculate pacakge name from current directory name."
 
 (defun mp-python-mode-hook ()
   "Personal python mode hook extension."
-  (auto-fill-mode 1)
-  (elpy-mode)
+  (elpy-enable)
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
-  (setq python-indent-offset 4)
+  (setq elpy-rpc-backend "jedi"
+        python-indent-offset 4)
   (local-set-key (kbd "M-;") 'comment-dwim)
   (local-set-key (kbd "=") 'mp-electric-=) )
 
@@ -2088,9 +2088,6 @@ If so calculate pacakge name from current directory name."
                (setq company-backends '(company-ac-php-backend )))))
 
 ;;(use-package company-statistics)
-
-(add-hook 'elpy-mode-hook '(lambda ()
-                             (setq company-backend '(company-jedi))))
 
 (use-package company
   :config
