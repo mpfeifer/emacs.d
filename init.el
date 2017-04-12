@@ -1091,8 +1091,6 @@
 
 (use-package neotree)
 
-
-
 ;; ]
 
 ;; [ xref and tags
@@ -2082,15 +2080,23 @@ If so calculate pacakge name from current directory name."
 
 ;; [ company
 
-;; (use-package company-jedi)
-;; (use-package company-php)
-;; (use-package company-statistics)
+(use-package company-php
+  :config
+  (add-hook 'php-mode-hook
+            '(lambda ()
+               (require 'company-php)
+               (setq company-backends '(company-ac-php-backend )))))
+
+;;(use-package company-statistics)
+
+(add-hook 'elpy-mode-hook '(lambda ()
+                             (setq company-backend '(company-jedi))))
 
 (use-package company
   :config
   ;; see company-backends for company backends
-
-  (setq company-backends '(company-slime))
+  (make-variable-buffer-local 'company-backends)
+  (require 'company-template)
   (global-company-mode))
 
 ;; ]

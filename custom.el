@@ -27,6 +27,7 @@
  '(elpy-project-root-finder-functions
    (quote
     (elpy-project-find-projectile-root elpy-project-find-python-root elpy-project-find-git-root elpy-project-find-svn-root)))
+ '(elpy-rpc-backend "jedi")
  '(elpy-rpc-error-timeout 30)
  '(elpy-rpc-timeout 2)
  '(enable-local-variables :all)
@@ -75,7 +76,7 @@
       ("help-mode"
        (mode . help-mode))
       ("elisp-byte-code-mode"
-       (mode . elisp-byte-code-mode))))))
+       (mode . elisp-byte-code-mode))))) t)
  '(ibuffer-saved-filters
    (quote
     (("gnus"
@@ -129,6 +130,7 @@
  '(ivy-count-format "(%d/%d) ")
  '(ivy-format-function (quote ivy-format-function-arrow))
  '(java-project-root "~/java/")
+ '(jedi:environment-virtualenv (quote virtualenv))
  '(linum-format "%5d")
  '(minimap-dedicated-window nil)
  '(neo-force-change-root t)
@@ -144,9 +146,6 @@
  '(projectile-cache-file "~/.emacs.d/projectile.cache")
  '(projectile-known-projects-file "~/.emacs.d/projectile-bookmarks.eld")
  '(python-environment-directory "~/.emacs.d/python-environments")
- '(python-environment-virtualenv
-   (quote
-    ("virtualenv.exe" "--system-site-packages" "--quiet")))
  '(python-shell-interpreter "python3")
  '(recentf-save-file "~/.emacs.d/recentf")
  '(ring-bell-function (quote ignore))
