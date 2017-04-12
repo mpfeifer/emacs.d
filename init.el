@@ -1714,9 +1714,13 @@ If so calculate pacakge name from current directory name."
 
 ;; ]
 
-;; [ elpy python
+;; [ elpy python jedi
 
-(use-package elpy)
+;; This still needs testing 
+(setenv "PATH" (concat (getenv "PATH") ":~/.local/bin/"))
+(setq exec-path (append exec-path '("~/.local/bin")))
+
+(use-package jedi-core)
 
 (defun mp-electric-= ()
   (interactive)
@@ -1727,22 +1731,23 @@ If so calculate pacakge name from current directory name."
 
 (defun mp-python-mode-hook ()
   "Personal python mode hook extension."
-  (elpy-enable)
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
   (setq elpy-rpc-backend "jedi"
         python-indent-offset 4)
   (local-set-key (kbd "M-;") 'comment-dwim)
-  (local-set-key (kbd "=") 'mp-electric-=) )
+  (local-set-key (kbd "=") 'mp-electric-=)
+  (elpy-mode))
 
-(add-hook 'python-mode-hook 'mp-python-mode-hook)
+(use-package elpy
+  :config
+  (add-hook 'python-mode-hook 'mp-python-mode-hook)
+  (add-to-list 'auto-mode-alist '("\\.py\\'" . python-mode))
+  (add-to-list 'auto-mode-alist '("\\.py2\\'" . python-mode))
+  (add-to-list 'auto-mode-alist '("\\.py3\\'" . python-mode))
 
-(add-to-list 'auto-mode-alist '("\\.py\\'" . python-mode))
-(add-to-list 'auto-mode-alist '("\\.py2\\'" . python-mode))
-(add-to-list 'auto-mode-alist '("\\.py3\\'" . python-mode))
-
-(add-to-list 'auto-insert-alist '(".*\\.py3?$" . [ "template.py3" ] ) )
-(add-to-list 'auto-insert-alist '(".*\\.py2$" . [ "template.py" ] ) )
+  (add-to-list 'auto-insert-alist '(".*\\.py3?$" . [ "template.py3" ] ) )
+  (add-to-list 'auto-insert-alist '(".*\\.py2$" . [ "template.py" ] ) ))
 
 ;; ]
 
@@ -2028,7 +2033,8 @@ If so calculate pacakge name from current directory name."
 
 ;; [ version control
 
-;; Emacs interface to version control is under keymap C-x v (C-x v C-h for help)
+;; Emacs interface to version control can
+;; be found under keymap C-x v (C-x v C-h for help)
 
 ;; some eye-candy:
 
