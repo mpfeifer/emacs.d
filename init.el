@@ -446,7 +446,7 @@
   "Add an entry to display-buffer-alist for buffers called NAME.
 TODO: Untested"
   (add-to-list 'display-buffer-alist
-               `((regexp-quote name)
+               `(,(regexp-quote name)
                  (display-buffer-at-bottom
                   display-buffer-reuse-window
                   display-buffer-in-side-window)
@@ -2124,3 +2124,4 @@ If so calculate pacakge name from current directory name."
   (auto-compile-on-save-mode))
 
 ;; ]
+
