@@ -103,26 +103,6 @@
 
 ;; ]
 
-;; [ compilation
-
-
-(mp-add-standard-display-buffer-entry "*compilation")
-
-(defun mp-compilation-mode-hook-extender ()
-  ;; (next-error-follow-minor-mode)
-  (local-set-key (kbd "q") 'winner-undo))
-
-(add-hook 'compilation-mode-hook 'mp-compilation-mode-hook-extender)
-
-(use-package auto-compile
-  :config
-  ;; Watch out! Files are auto-compiled only if compiled file exists
-  (auto-compile-on-load-mode)
-  (auto-compile-on-save-mode))
-
-;; ]
-
-
 ;; customization
 
 (defgroup mp 
@@ -2124,5 +2104,23 @@ If so calculate pacakge name from current directory name."
 (use-package find-file-in-project
   :config
   (global-set-key (kbd "C-x C-f") 'find-file-dispatcher) )
+
+;; ]
+
+;; [ compilation
+
+(mp-add-standard-display-buffer-entry "*compilation")
+
+(defun mp-compilation-mode-hook-extender ()
+  ;; (next-error-follow-minor-mode)
+  (local-set-key (kbd "q") 'winner-undo))
+
+(add-hook 'compilation-mode-hook 'mp-compilation-mode-hook-extender)
+
+(use-package auto-compile
+  :config
+  ;; Watch out! Files are auto-compiled only if compiled file exists
+  (auto-compile-on-load-mode)
+  (auto-compile-on-save-mode))
 
 ;; ]
