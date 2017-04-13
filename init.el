@@ -105,6 +105,9 @@
 
 ;; [ compilation
 
+
+(mp-add-standard-display-buffer-entry "*compilation")
+
 (defun mp-compilation-mode-hook-extender ()
   ;; (next-error-follow-minor-mode)
   (local-set-key (kbd "q") 'winner-undo))
@@ -458,6 +461,18 @@
 ;; ]
 
 ;; [ global appearence
+
+(defun mp-add-standard-display-buffer-entry (name)
+  "Add an entry to display-buffer-alist for buffers called NAME.
+TODO: Untested"
+  (add-to-list 'display-buffer-alist
+               `((regexp-quote name)
+                 (display-buffer-at-bottom
+                  display-buffer-reuse-window
+                  display-buffer-in-side-window)
+                 (reusable-frames . visible)
+                 (side            . bottom)
+                 (window-height   . 0.3))))
 
 (setq frame-title-format "%b")
 
@@ -1097,13 +1112,7 @@
 
 ;; TODO Change window handling for xref popups
 
-(add-to-list 'display-buffer-alist
-             `(,(rx bos "*xref*" eos)
-               (display-buffer-reuse-window
-                display-buffer-in-side-window)
-               (reusable-frames . visible)
-               (side            . bottom)
-               (window-height   . 0.2)))
+(mp-add-standard-display-buffer-entry "*xref*")
 
 (defun close-window-by-buffer-name (name)
   (interactive "b")
@@ -2109,8 +2118,8 @@ If so calculate pacakge name from current directory name."
 (defun find-file-dispatcher (arg)
   (interactive "P")
   (call-interactively (if arg
-                          'find-file
-                        'ffip)))
+                          'ffip
+                        'find-file)))
 
 (use-package find-file-in-project
   :config
