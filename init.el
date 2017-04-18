@@ -1762,10 +1762,12 @@ If so calculate pacakge name from current directory name."
 
 ;; [ html editing web mode
 
+
 (use-package web-mode
   :config
   (add-hook 'web-mode-hook 'mp-web-mode-extension)
-  (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode)))
+  ;; TODO: Not tested
+  (defalias 'html-mode 'web-mode "Use web-mode instead of html-mode."))
 
 (defun mp-web-mode-extension ()
   (interactive)
