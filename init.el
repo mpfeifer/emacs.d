@@ -905,6 +905,7 @@ TODO: Untested"
 
 (defun mp-org-mode-hook ()
   (flyspell-mode)
+  (add-to-list 'org-file-apps '("\\.png\\'" . default))
   (add-to-list 'auto-mode-alist '("organizer\\'" . org-mode))
   (setq org-agenda-span 7
         org-agenda-comact-blocks t
@@ -925,6 +926,7 @@ TODO: Untested"
         org-todo-keywords (quote ((sequence "TODO(t)" "WAIT(w)" "DONE(d)" "CANCEL(c)"))))
 
   (local-set-key (kbd "<return>") 'org-return-indent)
+  (local-set-key (kbd "M-<return>") 'org-open-at-point)
   (local-set-key (kbd "C-x n c") 'mp-org-clone-and-narrow-to-block)
 
   (setenv "GRAPHVIZ_DOT" "/usr/bin/dot")
@@ -1146,8 +1148,6 @@ TODO: Untested"
 ;; C-c C-j  to put terminal to line mode
 ;; C-c C-k  to put terminal in char mode
 
-(add-hook 'term-mode-hook 'mp-term-mode-hook)
-
 (add-to-list 'display-buffer-alist
              `(,(regexp-quote "*terminal*")
                (display-buffer-at-bottom
@@ -1160,7 +1160,9 @@ TODO: Untested"
 (defun open-terminal (prefix-arg)
   "PREFIX-ARG -> open terminal in new frame
 current buffer is terminal buffer -> close buffer
-terminal is only buffer in frame -> close frame"
+terminal is only buffer in frame -> close frame
+current frame has one window -> split window + open terminal
+current frame has more windows -> open terminal in new frame"
   (interactive "P")
   (if prefix-arg
       (progn 
