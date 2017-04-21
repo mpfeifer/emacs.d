@@ -1248,12 +1248,10 @@ terminal is only buffer in frame -> close frame"
     (make-sparse-keymap)
     "Keymap for windmove commands.")
 
-  (define-key mp-windmove-keymap (kbd "p") 'windmove-up)
-  (define-key mp-windmove-keymap (kbd "n") 'windmove-down)
-  (define-key mp-windmove-keymap (kbd "f") 'windmove-right)
-  (define-key mp-windmove-keymap (kbd "b") 'windmove-left)
-
-  (global-set-key (kbd "C-x w") mp-windmove-keymap) )
+  (global-set-key (kbd "C-<up>") 'windmove-up)
+  (global-set-key (kbd "C-<down>") 'windmove-down)
+  (global-set-key (kbd "C-<right>") 'windmove-right)
+  (global-set-key (kbd "C-<left>") 'windmove-left))
 
 (winner-mode)
 
