@@ -72,7 +72,7 @@
     (insert (prin1-to-string (current-time)))
     (write-file mp-fn-package-guard)))
 
-(global-set-key (kbd "C-c 5") #'package-list-packages)
+(global-set-key (kbd "C-x p") #'package-list-packages)
 
 ;; see if this emacs is starting for the first time (with this init.el)
 ;; and if pacakge refresh is necessary (currently once in a week)
@@ -886,7 +886,7 @@ TODO: Untested"
 
 ;; [ org mode
 
-(global-set-key (kbd "C-c c") #'org-capture)
+(global-set-key (kbd "C-x c") #'org-capture)
 
 (require 'ob-plantuml)
 (require 'ob-python)
@@ -909,6 +909,7 @@ TODO: Untested"
 
 (defun mp-org-mode-hook ()
   (flyspell-mode)
+  (add-to-list 'org-file-apps '("\\.png\\'" . default))
   (add-to-list 'auto-mode-alist '("organizer\\'" . org-mode))
   (setq org-agenda-span 7
         org-agenda-comact-blocks t
@@ -929,6 +930,7 @@ TODO: Untested"
         org-todo-keywords (quote ((sequence "TODO(t)" "WAIT(w)" "DONE(d)" "CANCEL(c)"))))
 
   (local-set-key (kbd "<return>") 'org-return-indent)
+  (local-set-key (kbd "M-<return>") 'org-open-at-point)
   (local-set-key (kbd "C-x n c") 'mp-org-clone-and-narrow-to-block)
 
   (setenv "GRAPHVIZ_DOT" "/usr/bin/dot")
@@ -1145,45 +1147,46 @@ TODO: Untested"
 
 ;; ]
 
-;; [ eshell
+;; [ term mode
 
-(defun mp-eshell-mode-hook ()
-  "Personal eshell mode hook."
-  (interactive)
-  (local-set-key (kbd "C-c C-c") 'mp-eshell) )
+;; C-c C-j  to put terminal to line mode
+;; C-c C-k  to put terminal in char mode
 
-(add-hook 'eshell-mode-hook 'mp-eshell-mode-hook)
+(add-to-list 'display-buffer-alist
+             `(,(regexp-quote "*terminal*")
+               (display-buffer-at-bottom
+                display-buffer-reuse-window
+                display-buffer-in-side-window)
+               (reusable-frames . visible)
+               (side            . bottom)
+               (window-height   . 0.3)))
 
-(defconst eshell-window-height -15 "Height of eshell window.")
-(defconst eshell-buffer-name "*eshell*")
-
-(defun mp-eshell ()
-  "Start eshell open buffer with smart logic."
-  (interactive)
-  (let ((numWindows (length (window-list))))
-    (if (string= (buffer-name) eshell-buffer-name)
-        ;; Current buffer is eshell buffer. Lets close it.
-        (if (eq 1 numWindows)
+(defun open-terminal (prefix-arg)
+  "PREFIX-ARG -> open terminal in new frame
+current buffer is terminal buffer -> close buffer
+terminal is only buffer in frame -> close frame
+current frame has one window -> split window + open terminal
+current frame has more windows -> open terminal in new frame"
+  (interactive "P")
+  (if prefix-arg
+      (progn 
+        (select-frame (make-frame))
+        (let ((term-buffer (get-buffer "*terminal*")))
+          (if term-buffer
+              (switch-to-buffer "*terminal*")
+            (term "/bin/bash"))))
+    (if (string= "*terminal*" (buffer-name))
+        (if (eq 1 (length (window-list)))
             (delete-frame)
           (delete-window))
-      (if (eq 1 numWindows)
-          ;; Current buffer is not an eshell buffer. Lets start one.
-          (let ((newwindow (split-window nil eshell-window-height)))
-            (select-window newwindow)
-            (eshell)
-            )
-        (progn
-          (select-frame (make-frame))
-          (eshell))))))
+      (progn
+        (if (get-buffer "*terminal*")
+            (select-window (display-buffer "*terminal*"))
+          (term "/bin/bash"))))))
 
-(global-set-key (kbd "<f7>") #'mp-eshell)
+(global-set-key (kbd "<f7>") #'open-terminal)
 
-(defun eshell-emergency-exit ()
-  "When eshell refuses to close with \"Text is read-only.\" message exit eshell with this function instead."
-  (interactive)
-  (let ((inhibit-read-only t)) (kill-this-buffer)))
-
-;; ]
+  ;; ]
 
 ;; [ C/C++
 
@@ -1229,7 +1232,7 @@ TODO: Untested"
       (progn
         (local-set-key (kbd "C-h o") 'mp-openssl-help))))
   (local-set-key (kbd "C-h c") 'mp-c++-help)
-  (local-set-key (kbd "C-c a") 'align-regexp)
+  (local-set-key (kbd "C-x a") 'align-regexp)
   (add-to-list 'er/try-expand-list 'mp-mark-def-undef-block)
   (add-to-list 'er/try-expand-list 'mp-mark-if-endif-block)
   (local-set-key (kbd "C-c C-c") 'compile)
@@ -1251,12 +1254,10 @@ TODO: Untested"
     (make-sparse-keymap)
     "Keymap for windmove commands.")
 
-  (define-key mp-windmove-keymap (kbd "p") 'windmove-up)
-  (define-key mp-windmove-keymap (kbd "n") 'windmove-down)
-  (define-key mp-windmove-keymap (kbd "f") 'windmove-right)
-  (define-key mp-windmove-keymap (kbd "b") 'windmove-left)
-
-  (global-set-key (kbd "C-x w") mp-windmove-keymap) )
+  (global-set-key (kbd "C-<up>") 'windmove-up)
+  (global-set-key (kbd "C-<down>") 'windmove-down)
+  (global-set-key (kbd "C-<right>") 'windmove-right)
+  (global-set-key (kbd "C-<left>") 'windmove-left))
 
 (winner-mode)
 
@@ -1342,7 +1343,7 @@ and display corresponding buffer in new frame."
 
 ;; [ whitespace mode
 
-(global-set-key (kbd "C-c 2") #'whitespace-mode)
+(global-set-key (kbd "C-x TAB") #'whitespace-mode)
 
 ;; ]
 
@@ -1392,9 +1393,9 @@ and display corresponding buffer in new frame."
 
 (use-package javadoc-lookup)
 
-(defvar mp-classpath nil)
+(defvar java-classpath nil)
 
-(defun mp-read-classes-from-classpath ()
+(defun java-read-classes-from-classpath ()
   "Iterate over classpath and gather classes from jar files.
 Evaluates into one large list containing all classes."
   (let* ((jarfiles (cons (concat jdk-location "jre/lib/rt.jar")
@@ -1425,23 +1426,31 @@ Evaluates into one large list containing all classes."
             (erase-buffer)))))
     result))
 
-(defvar mp-classes-cache nil "Cache classes for faster retrival")
+(defvar java-classes-cache nil "Cache list of classes")
 
-(defun mp-insert-classname-completing-read (prefix-arg)
+(defun insert-import-statement ()
+  (interactive)
+  (let* ((default (thing-at-point 'symbol))
+         (classes (progn (when (not java-classes-cache)
+                           (setq java-classes-cache (mp-read-classes-from-classpath)))
+                         java-classes-cache))
+         (classname (completing-read "Class: " classes)))
+    (insert "import " classname ";")))
+
+(defun java-insert-classname-completing-read (x)
   "Query the user for a class name.
 With prefix argument insert classname with package name. Otherwise omit package name."
   (interactive "P")
   (let* ((default (thing-at-point 'symbol))
-         (classes (progn
-                    (when (not mp-classes-cache)
-                      (setq mp-classes-cache (mp-read-classes-from-classpath))
-                      mp-classes-cache)))
+         (classes (progn (when (not java-classes-cache)
+                           (setq java-classes-cache (mp-read-classes-from-classpath)))
+                         java-classes-cache))
          (classname (completing-read "Class: " classes)))
     (if prefix-arg
         (insert classname)
       (insert (replace-regexp-in-string ".*\\." "" classname)))))
 
-(defun mp-assert-import (name)
+(defun java-assert-import (name)
   "Insert import statement for class NAME if it does not yet exist. "
   (save-excursion
     (goto-char (point-min))
@@ -1488,7 +1497,6 @@ With prefix argument insert classname with package name. Otherwise omit package 
                             (list 
                              (list 'DISPLAY-NAME (format "%s %s" artifact-id version-number))))))
       (goto-char (point-max)) ) ) )
-
 
 (defun mp-guess-package-name-for-current-buffer ()
   "See if this is a maven project with standard directory layout.
@@ -1570,7 +1578,7 @@ If so calculate pacakge name from current directory name."
   (local-set-key (kbd "C-h j") 'javadoc-lookup)
   (setq-local comment-multi-line t)
   (local-set-key (kbd "C-M-j") 'imenu)
-  (local-set-key (kbd "C-c c") 'mp-insert-classname-completing-read))
+  (local-set-key (kbd "C-x c") 'mp-insert-classname-completing-read))
 
 (add-hook 'java-mode-hook 'mp-java-mode-hook)
 
@@ -1583,7 +1591,13 @@ If so calculate pacakge name from current directory name."
 
 ;; usefull keybindings
 ;;
-;; C-x d <regexp>   -   to show only files matching regexp
+
+(defun dired-show-only (regexp)
+  "Show only files matching REGEXP. To revert buffer to show all files press g."
+   (interactive "sFiles to show (regexp): ")
+   (dired-mark-files-regexp regexp)
+   (dired-toggle-marks)
+   (dired-do-kill-lines))
 
 (defun mp-dired-2pane-copy-over ()
   (interactive)
@@ -1602,6 +1616,7 @@ If so calculate pacakge name from current directory name."
 ;; copied from '(or emacs' blog
 
 (defun ora-ediff-files ()
+  "Invoke ediff on marked file(s)."
   (interactive)
   (let ((files (dired-get-marked-files))
         (wnd (current-window-configuration)))
@@ -1623,6 +1638,7 @@ If so calculate pacakge name from current directory name."
 
 (add-hook 'dired-mode-hook
           (lambda ()
+            (define-key dired-mode-map "f" 'dired-show-only)
             (define-key dired-mode-map "e" 'ora-ediff-files)
             (define-key dired-mode-map (kbd "<backspace>")
               (lambda () (interactive) (find-alternate-file "..")))
@@ -1771,10 +1787,12 @@ If so calculate pacakge name from current directory name."
 
 ;; [ html editing web mode
 
+
 (use-package web-mode
   :config
   (add-hook 'web-mode-hook 'mp-web-mode-extension)
-  (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode)))
+  ;; TODO: Not tested
+  (defalias 'html-mode 'web-mode "Use web-mode instead of html-mode."))
 
 (defun mp-web-mode-extension ()
   (interactive)
