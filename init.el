@@ -131,7 +131,11 @@
 
 (defcustom ibuffer-project-file
   "~/.emacs.d/ibuffer-projects"
-  "A file describing a list of project directories for ibuffer."
+  "A file describing a list of project directories for ibuffer. Format
+of the file is like this:
+ projectname,projectdir
+ projectname,projectdir
+ …"
   :group 'ibuffer)
 
 (defcustom web-project-root
@@ -454,7 +458,7 @@ TODO: Untested"
                  (side            . bottom)
                  (window-height   . 0.3))))
 
-(setq frame-title-format "%b")
+(setq frame-title-format '("%b [" (:eval (symbol-to-string major-mode)) "]"))
 
 (global-hl-line-mode)
 
@@ -483,7 +487,7 @@ TODO: Untested"
 
 (use-package theme-changer
   :config
-  (change-theme 'material-light 'material-dark))
+  (change-theme 'material-light 'material))
 
 (use-package volatile-highlights
   :init
@@ -1421,14 +1425,19 @@ Evaluates into one large list containing all classes."
             (erase-buffer)))))
     result))
 
-(defun mp-insert-classname-completing-read (x)
+(defvar mp-classes-cache nil "Cache classes for faster retrival")
+
+(defun mp-insert-classname-completing-read (prefix-arg)
   "Query the user for a class name.
 With prefix argument insert classname with package name. Otherwise omit package name."
   (interactive "P")
   (let* ((default (thing-at-point 'symbol))
-         (classes (mp-read-classes-from-classpath))
+         (classes (progn
+                    (when (not mp-classes-cache)
+                      (setq mp-classes-cache (mp-read-classes-from-classpath))
+                      mp-classes-cache)))
          (classname (completing-read "Class: " classes)))
-    (if x
+    (if prefix-arg
         (insert classname)
       (insert (replace-regexp-in-string ".*\\." "" classname)))))
 
@@ -2074,6 +2083,58 @@ If so calculate pacakge name from current directory name."
 ;; ]
 
 ;; [ company
+
+(require 'cl-lib)
+(require 'company)
+
+(setq package-list-cache nil)
+
+(defun get-package-names-from-packages-buffer ()
+  "Read package names from *Packges* buffer.
+
+Just go over buffer line by line and collect package names in the way they
+are displayed. The drawback is that the names provided in the buffer are
+not correct as they are cut after some chars and ... is appended."
+
+  (when (not (get-buffer "*Packages*"))
+    (save-excursion
+      (package-list-packages-no-fetch)))
+  (with-current-buffer "*Packages*"
+    (let ((result nil))
+      (goto-char (point-min))
+      (while (looking-at ".*\\(available\\|installed\\|dependency\\|built-in\\).*")
+        (forward-char 2)
+        (let ((beginning (point))
+              (end nil)
+              (package-name nil))
+          (search-forward " ")
+          (backward-char 1)
+          (setq end (point))
+          (setq package-name (buffer-substring-no-properties beginning end))
+          (setq result (cons package-name result)))
+        (forward-line 1)
+        (beginning-of-line))
+      result)))
+
+(defun company-use-package (command &optional arg &rest ignored)
+  "Complete arg to possible package names."
+  (interactive (list 'interactive))
+  (cl-case command
+    (interactive (company-begin-backend 'company-sample-backend))
+    (prefix
+     (and (eq major-mode 'emacs-lisp-mode)
+          (or (company-grab-symbol) 'stop)))
+    (candidates
+     (let ((completion-ignore-case nil)
+           (symbols package-list-cache))
+       (all-completions arg symbols)))
+    (sorted t)
+    (init (progn
+            (setq package-list-cache
+                   (sort
+                    (get-package-names-from-packages-buffer) 'string-lessp))))))
+
+(setq company-backends '(company-use-package))
 
 (use-package company-php
   :config
