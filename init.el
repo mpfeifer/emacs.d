@@ -815,9 +815,9 @@ TODO: Untested"
 
 ;; ]
 
-;; [ javascript
+;; [ js2 javascript
 
-(defun mp-js2-mode-hook ()
+(defun js2-mode-setup ()
   (setq indent-tabs-mode nil
         js-indent-level 4)
   ;;  (idle-highlight-mode 1)
@@ -825,7 +825,9 @@ TODO: Untested"
   (setq-local comment-auto-fill-only-comments t)
   (auto-fill-mode 1)
   (setq-local comment-multi-line t)
-  (local-set-key (kbd "RET") 'c-indent-new-comment-line) )
+  (local-set-key (kbd "RET") 'c-indent-new-comment-line) 
+  (add-to-list #'js2-imenu-extras-mode)
+)
 
 (define-auto-insert '("\\.js\\'" . "Javscript Skeleton")
   [ '(nil
@@ -850,7 +852,8 @@ TODO: Untested"
 (use-package js2-mode
   :mode "\\.js\\'"
   :config
-  (add-hook 'js2-mode-hook 'mp-js2-mode-hook))
+  (add-to-list 'auto-mode-alist '("\\.js\\'" . js2-mode))
+  (add-hook 'js2-mode-hook 'js2-mode-setup))
 
 ;; ]
 
@@ -1164,6 +1167,9 @@ terminal is only buffer in frame -> close frame
 current frame has one window -> split window + open terminal
 current frame has more windows -> open terminal in new frame"
   (interactive "P")
+  (when (and (not (get-buffer "*terminal*"))
+             (>= (length (window-list)) 2))
+    (setq prefix-arg t))
   (if prefix-arg
       (progn 
         (select-frame (make-frame))
