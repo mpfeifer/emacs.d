@@ -1250,12 +1250,8 @@ current frame has more windows -> open terminal in new frame"
 (use-package windmove
   :config
 
-  (setq windmove-wrap-around t) 
-
-  (defvar mp-windmove-keymap 
-    (make-sparse-keymap)
-    "Keymap for windmove commands.")
-
+  (setq windmove-wrap-around t)
+  
   (global-set-key (kbd "C-<up>") 'windmove-up)
   (global-set-key (kbd "C-<down>") 'windmove-down)
   (global-set-key (kbd "C-<right>") 'windmove-right)
@@ -1322,8 +1318,15 @@ and display corresponding buffer in new frame."
 (global-set-key (kbd "<f3>") #'delete-frame)
 (global-set-key (kbd "C-x 2") #'split-window-below)
 (global-set-key (kbd "C-x 3") #'split-window-right)
-(global-set-key (kbd "<f8>") #'rotate-windows)
-(global-set-key (kbd "<f9>") #'swap-buffers)
+
+(defvar windows-ops-keymap
+  (make-sparse-keymap)
+  "Keymap for windmove commands.")
+
+(global-set-key (kbd "C-x w") windows-ops-keymap)
+(define-key windows-ops-keymap (kbd "s") #'swap-buffers)
+(define-key windows-ops-keymap (kbd "r") #'rotate-windows)
+
 
 ;; ]
 
