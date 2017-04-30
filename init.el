@@ -143,15 +143,15 @@ of the file is like this:
   "New web projects are stored in this directory."
   :group 'web)
 
-(defcustom java-project-root
+(defcustom java-new-projects-repo
   "~/src/"
   "New java projects are stored in this directory."
-  :group 'mp-java)
+  :group 'java-extensions)
 
 (defcustom jdk-location
-  "/home/map/opt/jdk1.8.0_101/"
+  nil
   "Location of JDK"
-  :group 'mp-java)
+  :group 'java-extensions)
 
 (defcustom openssl-dictionary-location
   "~/.emacs.d/dictionaries/openssl.txt"
@@ -824,14 +824,10 @@ TODO: Untested"
 (defun js2-mode-setup ()
   (setq indent-tabs-mode nil
         js-indent-level 4)
-  ;;  (idle-highlight-mode 1)
-  ;; writing longer comments
   (setq-local comment-auto-fill-only-comments t)
   (auto-fill-mode 1)
   (setq-local comment-multi-line t)
-  (local-set-key (kbd "RET") 'c-indent-new-comment-line) 
-  (add-to-list #'js2-imenu-extras-mode)
-)
+  (local-set-key (kbd "RET") 'c-indent-new-comment-line))
 
 (define-auto-insert '("\\.js\\'" . "Javscript Skeleton")
   [ '(nil
@@ -1402,13 +1398,13 @@ and display corresponding buffer in new frame."
 
 (use-package javadoc-lookup)
 
-(defvar java-classpath nil)
+(defvar java-classpath nil "Java classpath. This will be set by .dir-locals.el (hopefully).")
 
 (defun java-read-classes-from-classpath ()
   "Iterate over classpath and gather classes from jar files.
 Evaluates into one large list containing all classes."
   (let* ((jarfiles (cons (concat jdk-location "jre/lib/rt.jar")
-                         mp-classpath))
+                         java-classpath))
          (jarfile nil)
          (result '()))
     (with-temp-buffer
@@ -1435,29 +1431,21 @@ Evaluates into one large list containing all classes."
             (erase-buffer)))))
     result))
 
-(defvar java-classes-cache nil "Cache list of classes")
-
 (defun insert-import-statement ()
   (interactive)
   (let* ((default (thing-at-point 'symbol))
-         (classes (progn (when (not java-classes-cache)
-                           (setq java-classes-cache (mp-read-classes-from-classpath)))
-                         java-classes-cache))
-         (classname (completing-read "Class: " classes)))
+         (classname (completing-read "Class: " java-classpath-cache)))
     (insert "import " classname ";")))
 
-(defun java-insert-classname-completing-read (x)
+(defun java-insert-classname-completing-read (prefix-arg)
   "Query the user for a class name.
 With prefix argument insert classname with package name. Otherwise omit package name."
   (interactive "P")
   (let* ((default (thing-at-point 'symbol))
-         (classes (progn (when (not java-classes-cache)
-                           (setq java-classes-cache (mp-read-classes-from-classpath)))
-                         java-classes-cache))
-         (classname (completing-read "Class: " classes)))
-    (if prefix-arg
-        (insert classname)
-      (insert (replace-regexp-in-string ".*\\." "" classname)))))
+         (classname (completing-read "Class: " java-classpath-cache)))
+    (when (not (null prefix-arg))
+      (setq classname (replace-regexp-in-string ".*\\." "" classname)))
+    (insert classname)))
 
 (defun java-assert-import (name)
   "Insert import statement for class NAME if it does not yet exist. "
@@ -1472,7 +1460,7 @@ With prefix argument insert classname with package name. Otherwise omit package 
 
 (defun mp-start-new-web-application (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
-  (let* ((project-path java-project-root)
+  (let* ((project-path java-new-projects-repo)
          (live-buffer-name "*mvn*")
          (live-buffer (get-buffer-create live-buffer-name))
          (target-web-xml (concat project-path "/" artifact-id "/src/main/webapp/WEB-INF/web.xml"))
@@ -1553,7 +1541,7 @@ If so calculate pacakge name from current directory name."
 
 (defun mp-start-new-java-project (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
-  (let* ((project-root (concat (expand-file-name java-project-root) artifact-id))
+  (let* ((project-root (concat (expand-file-name java-new-projects-repo) artifact-id))
          (target-pom (concat project-root "/pom.xml"))
          (src-dir (concat project-root "/src/main/java/"))
          (main-class (concat src-dir
@@ -1581,15 +1569,33 @@ If so calculate pacakge name from current directory name."
     (save-buffer)
     (neotree-dir project-root)) )
 
-(defun mp-java-mode-hook()
+(defvar java-classpath-caches nil "A hashtable mapping project roots to list of classes. Not yet cleaned up at any time.")
+(defvar java-project-root nil "This variable will be set buffer locally from .dir-locals.el")
+
+(defun java-mode-process-dir-locals ()
+  (when (derived-mode-p 'java-mode
+                        (progn
+                          (when (stringp java-project-root) ;; sell the stock from emacs-maven-plugin:
+                            (progn
+                              (when (null java-classpath-caches)
+                                (setq java-classpath-caches (make-hash-table)))
+                              (defvar-local java-classpath-cache nil "Cached list of classes for current project")  
+                              (let ((my-cache (gethash java-project-root java-classpath-caches)))
+                                (when (null my-cache)
+                                  (setq my-cache (java-read-classes-from-classpath))
+                                  (puthash java-project-root my-cache java-classpath-caches))
+                                (setq-local java-classpath-cache my-cache))
+                              (local-set-key (kbd "C-x c") 'java-insert-classname-completing-read)))))))
+
+(defun java-mode-setup()
   (setq-local comment-auto-fill-only-comments t)
+  (setq-local comment-multi-line t)
   (subword-mode)
   (local-set-key (kbd "C-h j") 'javadoc-lookup)
-  (setq-local comment-multi-line t)
-  (local-set-key (kbd "C-M-j") 'imenu)
-  (local-set-key (kbd "C-x c") 'mp-insert-classname-completing-read))
+  (local-set-key (kbd "C-x j") 'imenu))
 
-(add-hook 'java-mode-hook 'mp-java-mode-hook)
+(add-hook 'hack-local-variables-hook 'java-mode-process-dir-locals)
+(add-hook 'java-mode-hook 'java-mode-setup)
 
 ;; preprocessor for interactively generating files from templates
 (add-to-list 'auto-insert-alist '(".*\\.java$" . [ "template.java" mp-java-preprocessor] ) )
