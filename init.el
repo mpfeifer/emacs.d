@@ -480,10 +480,11 @@ TODO: Untested"
             (apply 'solar-time-string (car l))
             (apply 'solar-time-string (cadr l)))))
 
-(use-package material-theme)
-;; nice dark theme with a light variante
-;;(load-theme 'material-light)
-;; (load-theme 'material)
+(use-package material-theme
+  :config
+  ;; (load-theme 'material-light)
+  ;; (load-theme 'material)
+  )
 
 (use-package theme-changer
   :config
@@ -1390,9 +1391,7 @@ and display corresponding buffer in new frame."
   :config
   (add-hook 'java-mode-hook 'jtags-mode))
 
-(setq tags-table-list (list
-                       (concat jdk-location "src/")
-                       "/home/map/java/Graph/src/main/java/"))
+(setq tags-table-list (list (concat jdk-location "src/")))
 
 ;; (setq tags-revert-without-query 't)
 
@@ -2163,11 +2162,10 @@ not correct as they are cut after some chars and ... is appended."
        (all-completions arg symbols)))
     (sorted t)
     (init (progn
-            (setq package-list-cache
-                   (sort
-                    (get-package-names-from-packages-buffer) 'string-lessp))))))
-
-(setq company-backends '(company-use-package))
+            (when (null package-list-cache)
+              (setq package-list-cache
+                    (sort
+                     (get-package-names-from-packages-buffer) 'string-lessp)))))))
 
 (use-package company-php
   :config
