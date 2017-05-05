@@ -6,7 +6,7 @@
  ;; If there is more than one, they won't work right.
  '(Info-additional-directory-list (quote ("~/.emacs.d/info/")))
  '(auto-save-list-file-prefix "~/.emacs.d/auto-save/saved-")
- '(bmkp-last-as-first-bookmark-file "~/.emacs.d/bookmarks")
+ '(bmkp-last-as-first-bookmark-file "/home/map/.emacs.d/bookmarks")
  '(c-basic-offset 4)
  '(calendar-mark-diary-entries-flag t)
  '(calendar-view-diary-initially-flag t)
@@ -76,7 +76,7 @@
       ("help-mode"
        (mode . help-mode))
       ("elisp-byte-code-mode"
-       (mode . elisp-byte-code-mode))))) t)
+       (mode . elisp-byte-code-mode))))))
  '(ibuffer-saved-filters
    (quote
     (("gnus"
@@ -140,11 +140,11 @@
  '(next-error-recenter (quote (4)))
  '(nxml-slash-auto-complete-flag t)
  '(org-clock-mode-line-total (quote today))
+ '(org-default-notes-file "~/org/capture.org")
  '(package-selected-packages
    (quote
-    (elpy jedi slime-company lenlen-theme twilight-theme company-php company-statistics popup-edit-menu ac-php git-gutter-fringe goto-last-change request windata jtags-mode jtags powerline hs-minor-mode ido-grid-mode wndmove bookmark+ adoc-mode restclient fuzzy javadoc-lookup help material theme-changer gnuplot-mode zerodark-theme org-mobile-sync ldap-mode magit sunny-day-theme sunshine elf-mode volatile-highlights web-mode yatemplate aggressive-indent ac-ispell yaml-mode org-bullets ibuffer-git ibuffer-projectile projectile projectile-speedbar htmlize paredit edit-server auto-compile neotree material-theme log4e autumn-light-theme paper-theme soft-morning-theme org-ac foggy-night-theme yasnippet use-package sr-speedbar solarized-theme smex prodigy php-mode js2-mode jedi-direx ido-vertical-mode ido-ubiquitous hungry-delete expand-region elisp-slime-nav dracula-theme color-theme-solarized avy aurora-theme anti-zenburn-theme ample-zen-theme ample-theme airline-themes ahungry-theme afternoon-theme)))
- '(projectile-cache-file "~/.emacs.d/projectile.cache")
- '(projectile-known-projects-file "~/.emacs.d/projectile-bookmarks.eld")
+    (elpy jedi slime-company company-php company-statistics popup-edit-menu ac-php git-gutter-fringe goto-last-change request windata jtags-mode jtags powerline hs-minor-mode ido-grid-mode wndmove bookmark+ adoc-mode restclient fuzzy javadoc-lookup help material gnuplot-mode org-mobile-sync ldap-mode magit sunshine elf-mode volatile-highlights web-mode yatemplate aggressive-indent ac-ispell yaml-mode org-bullets ibuffer-git htmlize paredit edit-server auto-compile neotree material-theme log4e org-ac yasnippet use-package sr-speedbar smex prodigy php-mode js2-mode jedi-direx ido-vertical-mode ido-ubiquitous hungry-delete expand-region elisp-slime-nav avy)))
+ '(projectile-completion-system (quote ivy))
  '(python-environment-directory "~/.emacs.d/python-environments")
  '(python-shell-interpreter "python3")
  '(recentf-save-file "~/.emacs.d/recentf")

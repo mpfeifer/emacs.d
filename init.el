@@ -480,15 +480,8 @@ TODO: Untested"
             (apply 'solar-time-string (car l))
             (apply 'solar-time-string (cadr l)))))
 
-(use-package material-theme
-  :config
-  ;; (load-theme 'material-light)
-  ;; (load-theme 'material)
-  )
-
-(use-package theme-changer
-  :config
-  (change-theme 'material-light 'material))
+(require 'material-theme)
+(load-theme 'material-light)
 
 (use-package volatile-highlights
   :init
@@ -954,18 +947,18 @@ TODO: Untested"
 
 (org-clock-persistence-insinuate)
 
+(defconst org-capture-file "~/org/capture.org" "Locate of file where to store org capture notes.")
+
 (setq org-capture-templates
-      (quote (("s" "source code location" entry (file "~/org/bookmarks.org")
-               "* New Entry\n  - %U\n  - %A%?\n" :clock-in nil :clock-resume nil)
-              ("t" "todo" entry (file "~/org/gtd.org")
+      (quote (("t" "todo" entry (file org-capture-file)
                "** TODO %?\n%U\n%a\n" :clock-in t :clock-resume t)
-              ("r" "respond" entry (file "~/org/gtd.org")
+              ("r" "respond" entry (file org-capture-file)
                "** NEXT Respond to %:from on %:subject\nSCHEDULED: %t\n%U\n%a\n" :clock-in t :clock-resume t :immediate-finish t)
-              ("n" "note" entry (file "~/org/gtd.org")
+              ("n" "note" entry (file org-capture-file)
                "** %? :NOTE:\n%U\n%a\n" :clock-in t :clock-resume t)
-              ("m" "Meeting" entry (file "~/org/gtd.org")
+              ("m" "Meeting" entry (file org-capture-file)
                "** MEETING with %? :MEETING:\n%U" :clock-in t :clock-resume t)
-              ("p" "Phone call" entry (file "~/org/gtd.org")
+              ("p" "Phone call" entry (file org-capture-file)
                "** PHONE %? :PHONE:\n%U" :clock-in t :clock-resume t) ) ) )
 
 (add-hook 'org-mode-hook 'mp-org-mode-hook)
@@ -1151,49 +1144,54 @@ TODO: Untested"
 
 ;; ]
 
-;; [ term mode
+;; [ ansi term mode
 
 ;; C-c C-j  to put terminal to line mode
 ;; C-c C-k  to put terminal in char mode
 
-(add-to-list 'display-buffer-alist
-             `(,(regexp-quote "*terminal*")
-               (display-buffer-at-bottom
-                display-buffer-reuse-window
-                display-buffer-in-side-window)
-               (reusable-frames . visible)
-               (side            . bottom)
-               (window-height   . 0.3)))
+(use-package term
+  :config
+  (add-to-list 'display-buffer-alist
+               `(,(regexp-quote "*terminal*")
+                 (display-buffer-at-bottom
+                  display-buffer-reuse-window
+                  display-buffer-in-side-window)
+                 (reusable-frames . visible)
+                 (side            . bottom)
+                 (window-height   . 0.3)))
 
-(defun open-terminal (prefix-arg)
-  "PREFIX-ARG -> open terminal in new frame
+  (defun open-terminal (prefix-arg)
+    "PREFIX-ARG -> open terminal in new frame
 current buffer is terminal buffer -> close buffer
 terminal is only buffer in frame -> close frame
 current frame has one window -> split window + open terminal
 current frame has more windows -> open terminal in new frame"
-  (interactive "P")
-  (when (and (not (get-buffer "*terminal*"))
-             (>= (length (window-list)) 2))
-    (setq prefix-arg t))
-  (if prefix-arg
-      (progn 
-        (select-frame (make-frame))
-        (let ((term-buffer (get-buffer "*terminal*")))
-          (if term-buffer
-              (switch-to-buffer "*terminal*")
-            (term "/bin/bash"))))
-    (if (string= "*terminal*" (buffer-name))
-        (if (eq 1 (length (window-list)))
-            (delete-frame)
-          (delete-window))
-      (progn
-        (if (get-buffer "*terminal*")
-            (select-window (display-buffer "*terminal*"))
-          (term "/bin/bash"))))))
+    (interactive "P")
+    (when (and (not (get-buffer "*terminal*"))
+               (>= (length (window-list)) 2))
+      (setq prefix-arg t))
+    (if prefix-arg
+        (progn 
+          (select-frame (make-frame))
+          (let ((term-buffer (get-buffer "*terminal*")))
+            (if term-buffer
+                (switch-to-buffer "*terminal*")
+              (ansi-term "/bin/bash"))))
+      (if (string= "*terminal*" (buffer-name))
+          (if (eq 1 (length (window-list)))
+              (delete-frame)
+            (delete-window))
+        (progn
+          (if (get-buffer "*terminal*")
+              (select-window (display-buffer "*terminal*"))
+            (ansi-term "/bin/bash"))))))
 
-(global-set-key (kbd "<f7>") #'open-terminal)
+  (global-set-key (kbd "C-x 0") #'delete-window)
+  (global-set-key (kbd "C-x k") #'kill-buffer)
+  (global-set-key (kbd "<f7>") #'open-terminal)
+  (define-key term-raw-map (kbd "M-o") 'other-buffer))
 
-  ;; ]
+;; ]
 
 ;; [ C/C++
 
@@ -1407,7 +1405,7 @@ and display corresponding buffer in new frame."
   "Iterate over classpath and gather classes from jar files.
 Evaluates into one large list containing all classes."
   (let* ((jarfiles (cons (concat jdk-location "jre/lib/rt.jar")
-                         mp-classpath))
+                         java-classpath))
          (jarfile nil)
          (result '()))
     (with-temp-buffer
@@ -1440,7 +1438,7 @@ Evaluates into one large list containing all classes."
   (interactive)
   (let* ((default (thing-at-point 'symbol))
          (classes (progn (when (not java-classes-cache)
-                           (setq java-classes-cache (mp-read-classes-from-classpath)))
+                           (setq java-classes-cache (java-read-classes-from-classpath)))
                          java-classes-cache))
          (classname (completing-read "Class: " classes)))
     (insert "import " classname ";")))
@@ -1451,7 +1449,7 @@ With prefix argument insert classname with package name. Otherwise omit package 
   (interactive "P")
   (let* ((default (thing-at-point 'symbol))
          (classes (progn (when (not java-classes-cache)
-                           (setq java-classes-cache (mp-read-classes-from-classpath)))
+                           (setq java-classes-cache (java-read-classes-from-classpath)))
                          java-classes-cache))
          (classname (completing-read "Class: " classes)))
     (if prefix-arg
@@ -1586,7 +1584,7 @@ If so calculate pacakge name from current directory name."
   (local-set-key (kbd "C-h j") 'javadoc-lookup)
   (setq-local comment-multi-line t)
   (local-set-key (kbd "C-M-j") 'imenu)
-  (local-set-key (kbd "C-x c") 'mp-insert-classname-completing-read))
+  (local-set-key (kbd "C-x c") 'java-insert-classname-completing-read))
 
 (add-hook 'java-mode-hook 'mp-java-mode-hook)
 
@@ -2211,3 +2209,17 @@ not correct as they are cut after some chars and ... is appended."
 
 ;; ]
 
+;; [ projectile
+
+(use-package projectile
+  :config
+  (projectile-mode))
+
+;; ]
+
+;; [ bookmarks
+
+;; C-x r l    show bookmark list
+;; C-x p s    save bookmars list
+
+;; ]
