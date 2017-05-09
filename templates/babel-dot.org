@@ -1,0 +1,26 @@
+* An example of chaining source blocks
+1. A named table
+#+name: dot-eg-table
+| 1 | 2 |
+| 2 | 3 |
+| 3 | 5 |
+| 4 | 7 |
+| 5 | 11 |
+
+2. a named source block taking table data and producing dot output
+#+name:make-dot
+#+BEGIN_SRC emacs-lisp :var table=dot-eg-table :results output :exports none
+  (mapcar #'(lambda (x)
+              (princ (format "%s [label =\"%s\", shape = \"box\"];\n"
+                             (first x) (second x)))) table)
+              (princ (format "%s -- %s;\n" (first (first table)) (first (second table))))
+#+END_SRC
+
+and this is chained to a dot source code block
+
+3. a source block reading the output of make-dot
+#+BEGIN_SRC dot :file test-dot.png :var input=make-dot :exports results
+graph {
+ $input
+}
+#+END_SRC

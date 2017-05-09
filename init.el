@@ -946,18 +946,18 @@ TODO: Untested"
 
 (org-clock-persistence-insinuate)
 
+(defconst org-capture-file "~/org/capture.org" "Locate of file where to store org capture notes.")
+
 (setq org-capture-templates
-      (quote (("s" "source code location" entry (file "~/org/bookmarks.org")
-               "* New Entry\n  - %U\n  - %A%?\n" :clock-in nil :clock-resume nil)
-              ("t" "todo" entry (file "~/org/gtd.org")
+      (quote (("t" "todo" entry (file org-capture-file)
                "** TODO %?\n%U\n%a\n" :clock-in t :clock-resume t)
-              ("r" "respond" entry (file "~/org/gtd.org")
+              ("r" "respond" entry (file org-capture-file)
                "** NEXT Respond to %:from on %:subject\nSCHEDULED: %t\n%U\n%a\n" :clock-in t :clock-resume t :immediate-finish t)
-              ("n" "note" entry (file "~/org/gtd.org")
+              ("n" "note" entry (file org-capture-file)
                "** %? :NOTE:\n%U\n%a\n" :clock-in t :clock-resume t)
-              ("m" "Meeting" entry (file "~/org/gtd.org")
+              ("m" "Meeting" entry (file org-capture-file)
                "** MEETING with %? :MEETING:\n%U" :clock-in t :clock-resume t)
-              ("p" "Phone call" entry (file "~/org/gtd.org")
+              ("p" "Phone call" entry (file org-capture-file)
                "** PHONE %? :PHONE:\n%U" :clock-in t :clock-resume t) ) ) )
 
 (add-hook 'org-mode-hook 'mp-org-mode-hook)
@@ -1143,49 +1143,54 @@ TODO: Untested"
 
 ;; ]
 
-;; [ term mode
+;; [ ansi term mode
 
 ;; C-c C-j  to put terminal to line mode
 ;; C-c C-k  to put terminal in char mode
 
-(add-to-list 'display-buffer-alist
-             `(,(regexp-quote "*terminal*")
-               (display-buffer-at-bottom
-                display-buffer-reuse-window
-                display-buffer-in-side-window)
-               (reusable-frames . visible)
-               (side            . bottom)
-               (window-height   . 0.3)))
+(use-package term
+  :config
+  (add-to-list 'display-buffer-alist
+               `(,(regexp-quote "*terminal*")
+                 (display-buffer-at-bottom
+                  display-buffer-reuse-window
+                  display-buffer-in-side-window)
+                 (reusable-frames . visible)
+                 (side            . bottom)
+                 (window-height   . 0.3)))
 
-(defun open-terminal (prefix-arg)
-  "PREFIX-ARG -> open terminal in new frame
+  (defun open-terminal (prefix-arg)
+    "PREFIX-ARG -> open terminal in new frame
 current buffer is terminal buffer -> close buffer
 terminal is only buffer in frame -> close frame
 current frame has one window -> split window + open terminal
 current frame has more windows -> open terminal in new frame"
-  (interactive "P")
-  (when (and (not (get-buffer "*terminal*"))
-             (>= (length (window-list)) 2))
-    (setq prefix-arg t))
-  (if prefix-arg
-      (progn 
-        (select-frame (make-frame))
-        (let ((term-buffer (get-buffer "*terminal*")))
-          (if term-buffer
-              (switch-to-buffer "*terminal*")
-            (term "/bin/bash"))))
-    (if (string= "*terminal*" (buffer-name))
-        (if (eq 1 (length (window-list)))
-            (delete-frame)
-          (delete-window))
-      (progn
-        (if (get-buffer "*terminal*")
-            (select-window (display-buffer "*terminal*"))
-          (term "/bin/bash"))))))
+    (interactive "P")
+    (when (and (not (get-buffer "*terminal*"))
+               (>= (length (window-list)) 2))
+      (setq prefix-arg t))
+    (if prefix-arg
+        (progn 
+          (select-frame (make-frame))
+          (let ((term-buffer (get-buffer "*terminal*")))
+            (if term-buffer
+                (switch-to-buffer "*terminal*")
+              (ansi-term "/bin/bash"))))
+      (if (string= "*terminal*" (buffer-name))
+          (if (eq 1 (length (window-list)))
+              (delete-frame)
+            (delete-window))
+        (progn
+          (if (get-buffer "*terminal*")
+              (select-window (display-buffer "*terminal*"))
+            (ansi-term "/bin/bash"))))))
 
-(global-set-key (kbd "<f7>") #'open-terminal)
+  (global-set-key (kbd "C-x 0") #'delete-window)
+  (global-set-key (kbd "C-x k") #'kill-buffer)
+  (global-set-key (kbd "<f7>") #'open-terminal)
+  (define-key term-raw-map (kbd "M-o") 'other-buffer))
 
-  ;; ]
+;; ]
 
 ;; [ C/C++
 
@@ -1429,7 +1434,10 @@ Evaluates into one large list containing all classes."
 (defun insert-import-statement ()
   (interactive)
   (let* ((default (thing-at-point 'symbol))
-         (classname (completing-read "Class: " java-classpath-cache)))
+         (classes (progn (when (not java-classes-cache)
+                           (setq java-classes-cache (java-read-classes-from-classpath)))
+                         java-classes-cache))
+         (classname (completing-read "Class: " classes)))
     (insert "import " classname ";")))
 
 (defun java-insert-classname-completing-read (prefix-arg)
@@ -1437,10 +1445,13 @@ Evaluates into one large list containing all classes."
 With prefix argument insert classname with package name. Otherwise omit package name."
   (interactive "P")
   (let* ((default (thing-at-point 'symbol))
-         (classname (completing-read "Class: " java-classpath-cache)))
-    (when (not (null prefix-arg))
-      (setq classname (replace-regexp-in-string ".*\\." "" classname)))
-    (insert classname)))
+         (classes (progn (when (not java-classes-cache)
+                           (setq java-classes-cache (java-read-classes-from-classpath)))
+                         java-classes-cache))
+         (classname (completing-read "Class: " classes)))
+    (if prefix-arg
+        (insert classname)
+      (insert (replace-regexp-in-string ".*\\." "" classname)))))
 
 (defun java-assert-import (name)
   "Insert import statement for class NAME if it does not yet exist. "
@@ -1587,7 +1598,9 @@ If so calculate pacakge name from current directory name."
   (setq-local comment-multi-line t)
   (subword-mode)
   (local-set-key (kbd "C-h j") 'javadoc-lookup)
-  (local-set-key (kbd "C-x j") 'imenu))
+  (setq-local comment-multi-line t)
+  (local-set-key (kbd "C-M-j") 'imenu)
+  (local-set-key (kbd "C-x c") 'java-insert-classname-completing-read))
 
 (add-hook 'hack-local-variables-hook 'java-mode-process-dir-locals)
 (add-hook 'java-mode-hook 'java-mode-setup)
@@ -2046,14 +2059,16 @@ If so calculate pacakge name from current directory name."
                                 ;; modified (*)
                                 "%e" "[" mode-line-mule-info mode-line-client mode-line-modified "]"
                                 '(:eval
-                                  (propertize "[%b]" 'help-echo (buffer-file-name)))
+                                  (format " {%s}/%s "
+                                          (projectile-project-name)
+                                          (propertize "%b" 'help-echo (buffer-file-name))))
                                 ;; line and column
                                 "[" ;; '%02' to set to 2 chars at least; prevents flickering
                                 (propertize "%03l") ","
                                 (propertize "%c")
                                 "]"
-                                (mp-sunrise-sunset-for-modeline)
-                                "[" '(vc-mode vc-mode) " ]" mode-line-misc-info))
+;;                                (mp-sunrise-sunset-for-modeline)
+                                mode-line-misc-info))
 
 ;; ]
 
@@ -2187,9 +2202,9 @@ not correct as they are cut after some chars and ... is appended."
 
 (defun find-file-dispatcher (arg)
   (interactive "P")
-  (if arg
-      (ffip)
-    (find-file)))
+      (call-interactively   (if arg 
+				'ffip
+			      'find-file)))
 
 (use-package find-file-in-project
   :config
@@ -2217,8 +2232,36 @@ not correct as they are cut after some chars and ... is appended."
 
 ;; [ projectile
 
+(defun mavenize-current-project ()
+  (interactive)
+  (puthash (projectile-project-root)
+           (prin1 '(lambda ()
+                     "Run unittest using maven"
+                     (interactive)                     
+                     (let ((default-directory (projectile-project-root)))
+                       (call-process "mvn" nil "run-test" t
+                                      "test"))))
+           projectile-test-cmd-map)
+  (puthash (projectile-project-root)
+           (print1 '(lambda ()
+                      "Invoke maven package target"
+                      (interactive)
+                      (let ((default-directory (projectile-project-root)))
+                        (call-process "mvn" nil "run-package" t
+                                      "package"))))))
+
+;; To view key bindings do "C-c p C-h"
+;; Also see http://batsov.com/projectile/
+
 (use-package projectile
   :config
-  )
+  (projectile-mode))
+
+;; ]
+
+;; [ bookmarks
+
+;; C-x r l    show bookmark list
+;; C-x p s    save bookmars list
 
 ;; ]

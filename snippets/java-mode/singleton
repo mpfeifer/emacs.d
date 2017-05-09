@@ -1,0 +1,23 @@
+/* This class is a singleton class. That means that there
+   should always be a single instance available. To facilitate
+   this "pattern" the constructor is private and access to the
+   instance is offered via the getInstance method. */
+
+class ${1:`(file-name-sans-extension (buffer-name))`} {
+    
+    private static volatile $1 instance = null;
+    
+    private $1() {}
+
+    public static $1 getInstance() {
+        if (instance == null)
+            synchronized($1.class)
+            {
+                if (instance == null)
+                    instance = new $1();
+            }
+            
+        return instance;
+    }
+    
+}
