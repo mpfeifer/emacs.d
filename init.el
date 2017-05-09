@@ -267,7 +267,7 @@ of the file is like this:
     available ) )
 
 (defun mp-notify (msg)
-  (if mp-notify-available-p
+  (if (mp-notify-available-p)
       (start-process "notify-send" nil "notify-send" "-t" "3000" msg)
     (message msg) ) )
 
@@ -482,13 +482,9 @@ TODO: Untested"
 
 (use-package material-theme
   :config
-  ;; (load-theme 'material-light)
+  (load-theme 'material-light)
   ;; (load-theme 'material)
   )
-
-(use-package theme-changer
-  :config
-  (change-theme 'material-light 'material))
 
 (use-package volatile-highlights
   :init
@@ -2187,11 +2183,13 @@ not correct as they are cut after some chars and ... is appended."
 
 ;; [ ffip
 
+(add-to-list 'ffip-project-file "pom.xml")
+
 (defun find-file-dispatcher (arg)
   (interactive "P")
-  (call-interactively (if arg
-                          'ffip
-                        'find-file)))
+  (if arg
+      (ffip)
+    (find-file)))
 
 (use-package find-file-in-project
   :config
@@ -2217,3 +2215,10 @@ not correct as they are cut after some chars and ... is appended."
 
 ;; ]
 
+;; [ projectile
+
+(use-package projectile
+  :config
+  )
+
+;; ]
