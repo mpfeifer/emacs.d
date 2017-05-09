@@ -145,6 +145,9 @@
    (quote
     (elpy jedi slime-company company-php company-statistics popup-edit-menu ac-php git-gutter-fringe goto-last-change request windata jtags-mode jtags powerline hs-minor-mode ido-grid-mode wndmove bookmark+ adoc-mode restclient fuzzy javadoc-lookup help material gnuplot-mode org-mobile-sync ldap-mode magit sunshine elf-mode volatile-highlights web-mode yatemplate aggressive-indent ac-ispell yaml-mode org-bullets ibuffer-git htmlize paredit edit-server auto-compile neotree material-theme log4e org-ac yasnippet use-package sr-speedbar smex prodigy php-mode js2-mode jedi-direx ido-vertical-mode ido-ubiquitous hungry-delete expand-region elisp-slime-nav avy)))
  '(projectile-completion-system (quote ivy))
+ '(projectile-globally-ignored-directories
+   (quote
+    (".idea" ".ensime_cache" ".eunit" ".git" ".hg" ".fslckout" "_FOSSIL_" ".bzr" "_darcs" ".tox" ".svn" ".stack-work" ".svn")))
  '(python-environment-directory "~/.emacs.d/python-environments")
  '(python-shell-interpreter "python3")
  '(recentf-save-file "~/.emacs.d/recentf")

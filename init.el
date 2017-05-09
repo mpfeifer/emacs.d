@@ -1443,7 +1443,7 @@ Evaluates into one large list containing all classes."
          (classname (completing-read "Class: " classes)))
     (insert "import " classname ";")))
 
-(defun java-insert-classname-completing-read (x)
+(defun java-insert-classname-completing-read (prefix-arg)
   "Query the user for a class name.
 With prefix argument insert classname with package name. Otherwise omit package name."
   (interactive "P")
@@ -2181,9 +2181,8 @@ not correct as they are cut after some chars and ... is appended."
 
 (defun find-file-dispatcher (arg)
   (interactive "P")
-  (call-interactively (if arg
-                          'ffip
-                        'find-file)))
+  (if arg ffip
+    find-file))
 
 (use-package find-file-in-project
   :config
