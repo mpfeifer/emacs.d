@@ -36,8 +36,8 @@
 
 (require 'package)
 
-(defconst mp-fn-package-guard "~/.emacs.d/.package-guard")
-(defconst mp-package-guard-renewal 604800) ;; this is one week. use 86400 for one day.
+(defconst fn-package-guard "~/.emacs.d/.package-guard")
+(defconst package-guard-renewal 604800) ;; this is one week. use 86400 for one day.
 
 (setq package-archives '(("gnu" . "https://elpa.gnu.org/packages/")
                          ("melpa" . "http://melpa.org/packages/"))
@@ -48,36 +48,36 @@
 
 ;; periodically refresh package contents
 
-(defun mp-timeval-to-seconds (tv)
+(defun timeval-to-seconds (tv)
   "Calculate SEC-HIGH * 2^16 + SEC-LOW for value contained in TV."
   (let* ((sec-high (nth 0 tv))
          (sec-low (nth 1 tv)))
     (+ sec-low (* sec-high (expt 2 16)))))
 
-(defun mp-package-refresh-necessary-p ()
-  (if (file-exists-p mp-fn-package-guard)
+(defun package-refresh-necessary-p ()
+  (if (file-exists-p fn-package-guard)
       (progn
-        (let* ((mtime (mp-timeval-to-seconds
+        (let* ((mtime (timeval-to-seconds
                        (nth 5
-                            (file-attributes mp-fn-package-guard))))
-               (ctime (mp-timeval-to-seconds
+                            (file-attributes fn-package-guard))))
+               (ctime (timeval-to-seconds
                        (current-time))))
-          (< (+ mtime mp-package-guard-renewal) ctime )))
+          (< (+ mtime package-guard-renewal) ctime )))
     t))
 
-(defun mp-update-package-guard ()
+(defun update-package-guard ()
   "Write current time to pacakge-guard file"
   (with-temp-buffer
     (insert ";; (prin1-to-string (current-time))\r\n")
     (insert (prin1-to-string (current-time)))
-    (write-file mp-fn-package-guard)))
+    (write-file fn-package-guard)))
 
 (global-set-key (kbd "C-x p") #'package-list-packages)
 
 ;; see if this emacs is starting for the first time (with this init.el)
 ;; and if pacakge refresh is necessary (currently once in a week)
 
-(if (not (file-exists-p mp-fn-package-guard))
+(if (not (file-exists-p fn-package-guard))
     (let* ((emacs-dir (expand-file-name "~/.emacs.d"))
            (autosave-dir (concat emacs-dir "/auto-save/"))
            (desktop-dir (concat emacs-dir "/desktop"))
@@ -86,77 +86,20 @@
       (when (not (file-exists-p autosave-dir))
         (make-directory autosave-dir)
         (make-directory desktop-dir))
-      (mp-update-package-guard)
+      (update-package-guard)
       (package-refresh-contents)
       (package-install 'use-package))
-  (when (mp-package-refresh-necessary-p)
+  (when (package-refresh-necessary-p)
     (let ((user-information "Will refresh package contents! Press enter."))
       (read-from-minibuffer user-information)
       (package-refresh-contents)
-      (mp-update-package-guard))))
+      (update-package-guard))))
 
 (require 'use-package)
 
 (setq use-package-verbose t
       use-package-always-ensure t
       load-prefer-newer t)
-
-;; ]
-
-;; customization
-
-(defgroup mp 
-  nil "All things related to my customization"
-  :group 'Emacs)
-
-(defgroup ibuffer
-  nil "All things related to ibuffer"
-  :group 'mp)
-
-(defgroup development
-  nil "All things related to development"
-  :group 'mp)
-
-(defgroup web
-  nil "All things related to web development"
-  :group 'development)
-
-(defgroup c++
-  nil "All things related to C++ development"
-  :group 'development)
-
-(defgroup java
-  nil "All things related to web development"
-  :group 'development)
-
-(defcustom ibuffer-project-file
-  "~/.emacs.d/ibuffer-projects"
-  "A file describing a list of project directories for ibuffer. Format
-of the file is like this:
- projectname,projectdir
- projectname,projectdir
- …"
-  :group 'ibuffer)
-
-(defcustom web-project-root
-  "~/public_html/"
-  "New web projects are stored in this directory."
-  :group 'web)
-
-(defcustom java-project-root
-  "~/src/"
-  "New java projects are stored in this directory."
-  :group 'mp-java)
-
-(defcustom jdk-location
-  "/home/map/opt/jdk1.8.0_101/"
-  "Location of JDK"
-  :group 'mp-java)
-
-(defcustom openssl-dictionary-location
-  "~/.emacs.d/dictionaries/openssl.txt"
-  "Location of a file with openssl function names."
-  :group 'c++)
 
 ;; ]
 
@@ -173,12 +116,12 @@ of the file is like this:
                                        (delete-window calendar-window)
                                      (calendar) ) ) ) )
 
-(defun mp-calendar-mode-hook ()
+(defun calendar-mode-setup ()
   (local-set-key (kbd "<RET>") #'diary-view-entries) )
 
 (add-hook 'diary-display-hook 'fancy-diary-display)
 (add-hook 'today-visible-calendar-hook 'calendar-mark-today)
-(add-hook 'calendar-mode-hook 'mp-calendar-mode-hook)
+(add-hook 'calendar-mode-hook 'calendar-mode-setup)
 
 (setq calendar-longitude 6.116951
       calendar-latitude 50.840401
@@ -242,19 +185,27 @@ of the file is like this:
 
 ;; [ General Emacs Behaviour
 
+(defgroup mp 
+  nil "All things related to my customization"
+  :group 'Emacs)
+
+(defgroup development
+  nil "All things related to development"
+  :group 'mp)
+
 ;; (toggle-debug-on-error)
 
 (setq stack-trace-on-error '(buffer-read-only))
 
-(defvar mp-general-keymap 
+(defvar general-keymap 
   (make-sparse-keymap)
   "General purpose keymap.")
 
-(defsubst mp-notify-available-p ()
+(defsubst notify-available-p ()
   "Return true if notify-send is available in PATH. "
-  (mp-exists-in-path "notify-send") )
+  (exists-in-path "notify-send") )
 
-(defun mp-exists-in-path (file)
+(defun exists-in-path (file)
   "Search for FILE in PATH. t if file exists. nil otherwise. "
   (let ((available nil)
         (pathelems (split-string (getenv "PATH") ":"))
@@ -266,8 +217,8 @@ of the file is like this:
       (setq available (file-exists-p (concat pathelem "/" file))) )
     available ) )
 
-(defun mp-notify (msg)
-  (if mp-notify-available-p
+(defun notify (msg)
+  (if notify-available-p
       (start-process "notify-send" nil "notify-send" "-t" "3000" msg)
     (message msg) ) )
 
@@ -446,7 +397,7 @@ of the file is like this:
 
 ;; [ global appearence
 
-(defun mp-add-standard-display-buffer-entry (name)
+(defun add-standard-display-buffer-entry (name)
   "Add an entry to display-buffer-alist for buffers called NAME.
 TODO: Untested"
   (add-to-list 'display-buffer-alist
@@ -473,7 +424,7 @@ TODO: Untested"
 (require 'solar)
 (require 'calendar)
 
-(defun mp-sunrise-sunset-for-modeline ()
+(defun sunrise-sunset-for-modeline ()
   (let ((calendar-time-display-form '(24-hours ":" minutes))
         (l (solar-sunrise-sunset (calendar-current-date))))
     (format "[↑%s, ↓%s]"
@@ -526,7 +477,7 @@ TODO: Untested"
       imenu-space-replacement "-"
       imenu-sort-function 'imenu--sort-by-name) ;; sort only mouse menu
 
-(defadvice imenu-recenter-advice (after mp-imenu-center activate)
+(defadvice imenu-recenter-advice (after imenu-center activate)
   (recenter-top-bottom 2))
 
 
@@ -535,6 +486,19 @@ TODO: Untested"
 ;; ]
 
 ;; [ ibuffer
+
+(defgroup ibuffer
+  nil "All things related to ibuffer"
+  :group 'mp)
+
+(defcustom ibuffer-project-file
+  "~/.emacs.d/ibuffer-projects"
+  "A file describing a list of project directories for ibuffer. Format
+of the file is like this:
+ projectname,projectdir
+ projectname,projectdir
+ …"
+  :group 'ibuffer)
 
 (defadvice ibuffer (around ibuffer-point-to-most-recent) ()
            "Open ibuffer with cursor pointed to most recent (non-minibuffer) buffer name"
@@ -565,7 +529,7 @@ TODO: Untested"
 
 (use-package ibuffer-git)
 
-(defun mp-ibuffer-show-filename ()
+(defun ibuffer-show-filename ()
   (interactive)
   (let ((buf (ibuffer-current-buffer))
         (lsoutput nil))
@@ -578,7 +542,7 @@ TODO: Untested"
           (setq lsoutput (buffer-substring-no-properties (point-min) (- (point-max) 1))))))
     (message lsoutput)))
 
-(defun mp-ibuffer-show-file-path ()
+(defun ibuffer-show-file-path ()
   (interactive)
   (let ((buf (ibuffer-current-buffer))
         (lsoutput nil))
@@ -640,7 +604,7 @@ TODO: Untested"
                                 (name 16 -1)
                                 " " filename)))
 
-  (defun mp-ibuffer-add-project (groupname projectname directory)
+  (defun ibuffer-add-project (groupname projectname directory)
     (let* ((group (assoc groupname ibuffer-saved-filter-groups))
            (project (assoc projectname (cdr group))))
       (if project
@@ -675,24 +639,24 @@ TODO: Untested"
             (progn
               (setq projectname (car project)
                     projectdir (car (cdr project)))
-              (mp-ibuffer-add-project "Projects" projectname projectdir)))))))
+              (ibuffer-add-project "Projects" projectname projectdir)))))))
 
-  (defun mp-ibuffer-mode-hook-extender ()
+  (defun ibuffer-mode-hook-extender ()
     (ibuffer-auto-mode 1) ;; auto updates
     (hl-line-mode)
     (define-key ibuffer-mode-map (kbd "C-p") 'ibuffer-previous-line)
     (define-key ibuffer-mode-map (kbd "C-n") 'ibuffer-next-line)
     (define-key ibuffer-mode-map (kbd "f") 'mp-ibuffer-show-filename)
-    (define-key ibuffer-mode-map (kbd "p") 'mp-ibuffer-show-file-path)
+    (define-key ibuffer-mode-map (kbd "p") 'ibuffer-show-file-path)
     (ibuffer-switch-to-saved-filter-groups "Projects"))
   
-  (add-hook 'ibuffer-mode-hook 'mp-ibuffer-mode-hook-extender))
+  (add-hook 'ibuffer-mode-hook 'ibuffer-mode-hook-extender))
 
 ;; ]
 
 ;; [ emacs lisp mode
 
-(defun mp-elisp-preprocessor()
+(defun elisp-preprocessor()
   "Process emacs lisp template file and replace place holder."
   (let* ((filename (buffer-name))
          (description (read-from-minibuffer "Description: "))
@@ -728,16 +692,16 @@ TODO: Untested"
       (while (search-forward "KEYWORDS" nil t)
         (replace-match keywords t) ) ) ) )
 
-(add-to-list 'auto-insert-alist '(".*\\.el$" . [ "template.el" mp-elisp-preprocessor] ) )
+(add-to-list 'auto-insert-alist '(".*\\.el$" . [ "template.el" elisp-preprocessor] ) )
 
-(defun mp-mark-init.el-paragraph ()
+(defun mark-init.el-paragraph ()
   "Mark the entire paragraph around point."
   (interactive)
   (re-search-forward paragraph-separate nil t)
   (set-mark (point))
   (re-search-backward paragraph-start nil t))
 
-(defun mp-dotemacs-mode-hook ()
+(defun dotemacs-mode-hook ()
   (local-set-key (kbd "C-S-n") 'forward-paragraph)
   (local-set-key (kbd "C-S-p") 'backward-paragraph)
   (local-set-key (kbd "C-#") 'imenu)
@@ -751,24 +715,24 @@ TODO: Untested"
         paragraph-separate ";; ]")
   (setq imenu-generic-expression 
         (list '(nil "^;; \\[ \\(.+\\)$" 1)))
-  (add-to-list 'er/try-expand-list 'mp-mark-init.el-paragraph)
+  (add-to-list 'er/try-expand-list 'mark-init.el-paragraph)
   (setq-local imenu-create-index-function 'imenu-default-create-index-function) )
 
 (defun byte-compile-current-buffer ()
   (interactive)
   (byte-compile-file (buffer-file-name)))
 
-(defun mp-emacs-lisp-mode-hook ()
+(defun emacs-lisp-mode-setup ()
 
   (when (string= (buffer-name) "init.el")
-    (mp-dotemacs-mode-hook))
+    (dotemacs-mode-hook))
 
   (local-set-key (kbd "C-/") 'comment-dwim)
   (local-set-key (kbd "C-c C-c") 'byte-compile-current-buffer)
 
   (electric-pair-mode) )
 
-(add-hook 'emacs-lisp-mode-hook 'mp-emacs-lisp-mode-hook)
+(add-hook 'emacs-lisp-mode-hook 'emacs-lisp-mode-setup)
 
 (use-package elisp-slime-nav
   :config
@@ -796,9 +760,9 @@ TODO: Untested"
 
   :config
 
-  (defconst mp-snippet-dir "~/.emacs.d/snippets/")
+  (defconst snippet-dir "~/.emacs.d/snippets/")
 
-  (setq yas-snippet-dirs (list mp-snippet-dir))
+  (setq yas-snippet-dirs (list snippet-dir))
 
   (dolist (snippet-dir yas-snippet-dirs)
     (add-to-list 'auto-mode-alist (cons (concat ".*" snippet-dir ".*") 'snippet-mode))
@@ -835,7 +799,7 @@ TODO: Untested"
       " */" \n \n \n )
     indent-buffer ] )
 
-(defun mp-qunit-test-for-current-buffer ()
+(defun qunit-test-for-current-buffer ()
   (interactive)
   (let ((test-html-file (replace-regexp-in-string (regexp-quote ".js") "-test.html" (buffer-name)))
         (test-js-file (replace-regexp-in-string (regexp-quote ".js") "-test.js" (buffer-name))))
@@ -865,11 +829,11 @@ TODO: Untested"
 
 (add-to-list 'Info-default-directory-list "~/.emacs.d/info")
 
-(defun mp-Info-mode-hook ()
+(defun Info-mode-setup ()
   "Personal info mode hook."
   (define-key Info-mode-map (kbd "C-s") 'isearch-forward-regexp) )
 
-(add-hook 'Info-mode-hook 'mp-Info-mode-hook)
+(add-hook 'Info-mode-hook 'Info-mode-setup)
 
 ;; ]
 
@@ -896,7 +860,7 @@ TODO: Untested"
 ;;    C-S-<up/down> (org-clock-timestamps-up/down)
 ;;    S-M-<up/down> (org-timestamp-up-down)
 
-(defun mp-org-clone-and-narrow-to-block ()
+(defun org-clone-and-narrow-to-block ()
   (interactive)
   (if (one-window-p)
       (progn
@@ -904,7 +868,7 @@ TODO: Untested"
         (org-narrow-to-block) )
     (message "This function is only applicable for frames that show a single window.") ) )
 
-(defun mp-org-mode-hook ()
+(defun org-mode-setup ()
   (flyspell-mode)
   (add-to-list 'org-file-apps '("\\.png\\'" . default))
   (add-to-list 'auto-mode-alist '("organizer\\'" . org-mode))
@@ -928,7 +892,7 @@ TODO: Untested"
 
   (local-set-key (kbd "<return>") 'org-return-indent)
   (local-set-key (kbd "M-<return>") 'org-open-at-point)
-  (local-set-key (kbd "C-x n c") 'mp-org-clone-and-narrow-to-block)
+  (local-set-key (kbd "C-x n c") 'org-clone-and-narrow-to-block)
 
   (setenv "GRAPHVIZ_DOT" "/usr/bin/dot")
 
@@ -961,7 +925,7 @@ TODO: Untested"
               ("p" "Phone call" entry (file org-capture-file)
                "** PHONE %? :PHONE:\n%U" :clock-in t :clock-resume t) ) ) )
 
-(add-hook 'org-mode-hook 'mp-org-mode-hook)
+(add-hook 'org-mode-hook 'org-mode-setup)
 
 ;; ]
 
@@ -972,31 +936,31 @@ TODO: Untested"
 (use-package prodigy
   :config
 
-  (defvar mp-prodigy-service-root
+  (defvar prodigy-service-root
     "~/.emacs.d/services/"
     "Root directory for various services bundled with init.el." )
 
-  (defvar mp-prodigy-python-interpreter
+  (defvar prodigy-python-interpreter
     "/usr/bin/python3"
     "Location of python interpreter used by prodigy.  Default just grabs one from PATH.")
 
-  (defvar mp-prodigy-tomcat-root-dir
+  (defvar prodigy-tomcat-root-dir
     "~/opt/apache-tomcat-8.5.4/"
     "Root directory of tomcat installation")
 
-  (defvar mp-prodigy-tomcat-start-script
-    (concat mp-prodigy-tomcat-root-dir "bin/catalina.sh")
+  (defvar prodigy-tomcat-start-script
+    (concat prodigy-tomcat-root-dir "bin/catalina.sh")
     "Path to script that starts Tomcat.")
 
-  (defvar mp-prodigy-wildfly-root-dir
+  (defvar prodigy-wildfly-root-dir
     "~/opt/wildfly-10.1.0.Final/"
     "Root directory of wildfly installation")
 
-  (defvar mp-prodigy-wildfly-start-script
-    (concat mp-prodigy-tomcat-root-dir "bin/standalone.sh")
-    "Path to script that starts Wildfly. Path is relative to mp-prodigy-wildfly-root-dir.")
+  (defvar prodigy-wildfly-start-script
+    (concat prodigy-tomcat-root-dir "bin/standalone.sh")
+    "Path to script that starts Wildfly. Path is relative to prodigy-wildfly-root-dir.")
 
-  (defun mp-prodigy-setup-frame ()
+  (defun prodigy-setup-frame ()
     (interactive)
     (let ((frame-parameters '((name . "Prodigy")
                               (height . 25)
@@ -1008,7 +972,7 @@ TODO: Untested"
   
   ;;  (advice-add 'prodigy-start-service :after #'prodigy-display-process)
 
-  (defun mp-prodigy-next-line ()
+  (defun prodigy-next-line ()
     (interactive)
     (next-line)
     (when (looking-at ".*Running.*")
@@ -1017,7 +981,7 @@ TODO: Untested"
         (select-window (get-buffer-window "*prodigy*")))))
 
 
-  (defun mp-prodigy-previous-line ()
+  (defun prodigy-previous-line ()
     (interactive)
     (previous-line)
     (when (looking-at ".*Running.*")
@@ -1025,45 +989,45 @@ TODO: Untested"
         (prodigy-display-process)
         (select-window (get-buffer-window "*prodigy*")))))
 
-  (defun mp-prodigy-mode-extender ()
-    (local-set-key (kbd "C-n") 'mp-prodigy-next-line)
-    (local-set-key (kbd "C-p") 'mp-prodigy-previous-line))
+  (defun prodigy-mode-setup ()
+    (local-set-key (kbd "C-n") 'prodigy-next-line)
+    (local-set-key (kbd "C-p") 'prodigy-previous-line))
 
-  (add-hook 'prodigy-mode-hook 'mp-prodigy-mode-extender)
+  (add-hook 'prodigy-mode-hook 'prodigy-mode-setup)
 
-  (global-set-key (kbd "<f5>") #'mp-prodigy-setup-frame)
+  (global-set-key (kbd "<f5>") #'prodigy-setup-frame)
 
   (prodigy-define-service
     :name "Tomcat 8.5.4"
-    :command mp-prodigy-tomcat-start-script
+    :command prodigy-tomcat-start-script
     :args '("run")
-    :cwd mp-prodigy-tomcat-root-dir)
+    :cwd prodigy-tomcat-root-dir)
 
   (prodigy-define-service
     :name "Wildfly 10.1.0"
-    :command mp-prodigy-wildfly-start-script
+    :command prodigy-wildfly-start-script
     :args '("run")
-    :cwd mp-prodigy-wildfly-root-dir)
+    :cwd prodigy-wildfly-root-dir)
 
   (prodigy-define-service
     :name "Date Server (14002)"
-    :command mp-prodigy-python-interpreter
+    :command prodigy-python-interpreter
     :args '("date.py" "14002")
     :stop-signal 'int
-    :cwd (concat mp-prodigy-service-root "date/"))
+    :cwd (concat prodigy-service-root "date/"))
 
   (prodigy-define-service
     :name "Network Log-Receiver"
     :command "/usr/bin/python2"
     :args '("logwebmon.py")
-    :cwd (concat mp-prodigy-service-root "loghost/"))
+    :cwd (concat prodigy-service-root "loghost/"))
 
   (prodigy-define-service
     :name "Echo Server (14001)"
-    :command mp-prodigy-python-interpreter
+    :command prodigy-python-interpreter
     :args '("echo.py" "14001")
     :stop-signal 'int
-    :cwd (concat mp-prodigy-service-root "echo/") ) )
+    :cwd (concat prodigy-service-root "echo/") ) )
 
 ;; ]
 
@@ -1095,7 +1059,7 @@ TODO: Untested"
 
 ;; TODO Change window handling for xref popups
 
-(mp-add-standard-display-buffer-entry "*xref*")
+(add-standard-display-buffer-entry "*xref*")
 
 (defun close-window-by-buffer-name (name)
   (interactive "b")
@@ -1109,7 +1073,7 @@ TODO: Untested"
     (when (windowp buffer-window)
       (delete-window buffer-window))))
 
-(defun mp-close-xref-buffer ()
+(defun close-xref-buffer ()
   (close-window-by-buffer-name "*xref"))
 
 (setq tags-file-name nil
@@ -1195,7 +1159,16 @@ current frame has more windows -> open terminal in new frame"
 
 ;; [ C/C++
 
-(defun mp-mark-def-undef-block ()
+(defgroup c++
+  nil "All things related to C++ development"
+  :group 'development)
+
+(defcustom openssl-dictionary-location
+  "~/.emacs.d/dictionaries/openssl.txt"
+  "Location of a file with openssl function names."
+  :group 'c++)
+
+(defun mark-def-undef-block ()
   "Mark block from #define to #undef."
   (interactive)
   (let ((tagname nil))
@@ -1204,7 +1177,7 @@ current frame has more windows -> open terminal in new frame"
     (set-mark (point))
     (re-search-backward (concat "^#define " tagname) nil t)))
 
-(defun mp-mark-if-endif-block ()
+(defun mark-if-endif-block ()
   "Mark block from #define to #undef."
   (interactive)
   (let ((tagname nil))
@@ -1212,21 +1185,21 @@ current frame has more windows -> open terminal in new frame"
     (set-mark (point))
     (re-search-backward (concat "^#ifdef " tagname) nil t)))
 
-(defun mp-openssl-help ()
+(defun openssl-help ()
   (interactive)
   (browse-url-firefox (concat 
                        "https://www.openssl.org/docs/manmaster/man3/"
                        (thing-at-point 'symbol))
                       t))
 
-(defun mp-c++-help ()
+(defun c++-help ()
   (interactive)
   (browse-url-firefox (concat 
                        "http://www.cplusplus.com/reference/"
                        (thing-at-point 'symbol))
                       t) )
 
-(defun mp-c-mode-hook ()
+(defun c-mode-setup ()
   "Personal c mode hook extender."
   (let ((add-openssl-dict nil))
     (save-excursion 
@@ -1235,16 +1208,16 @@ current frame has more windows -> open terminal in new frame"
         (setq add-openssl-dict t)))
     (when add-openssl-dict
       (progn
-        (local-set-key (kbd "C-h o") 'mp-openssl-help))))
-  (local-set-key (kbd "C-h c") 'mp-c++-help)
+        (local-set-key (kbd "C-h o") 'openssl-help))))
+  (local-set-key (kbd "C-h c") 'c++-help)
   (local-set-key (kbd "C-x a") 'align-regexp)
-  (add-to-list 'er/try-expand-list 'mp-mark-def-undef-block)
-  (add-to-list 'er/try-expand-list 'mp-mark-if-endif-block)
+  (add-to-list 'er/try-expand-list 'mark-def-undef-block)
+  (add-to-list 'er/try-expand-list 'mark-if-endif-block)
   (local-set-key (kbd "C-c C-c") 'compile)
   (local-set-key (kbd "C-M-j") 'imenu))
 
-(add-hook 'c++-mode-hook 'mp-c-mode-hook)
-(add-hook 'c-mode-hook 'mp-c-mode-hook)
+(add-hook 'c++-mode-hook 'c-mode-setup)
+(add-hook 'c-mode-hook 'c-mode-setup)
 
 ;; ]
 
@@ -1262,7 +1235,7 @@ current frame has more windows -> open terminal in new frame"
 
 (winner-mode)
 
-(defun mp-detach-window (arg)
+(defun detach-window (arg)
   "Iff current frame hosts at least two windows, close current window
 and display corresponding buffer in new frame."
   (interactive "P")
@@ -1316,7 +1289,7 @@ and display corresponding buffer in new frame."
         (switch-to-buffer buf-1) )
     (message "This function only works when the current frame holds two windows.") ) )
 
-(global-set-key (kbd "<f1>") #'mp-detach-window)
+(global-set-key (kbd "<f1>") #'detach-window)
 (global-set-key (kbd "<f2>") #'make-frame)
 (global-set-key (kbd "<f3>") #'delete-frame)
 (global-set-key (kbd "C-x 2") #'split-window-below)
@@ -1337,7 +1310,7 @@ and display corresponding buffer in new frame."
 
 (add-hook 'ediff-after-quit-hook-internal 'winner-undo)
 
-(defun mp-ediff-this ()
+(defun ediff-this ()
   "If current frame hosts exactly two windows. ediff the two window buffers."
   (interactive)
   (if (eq 2 (length (window-list)))
@@ -1369,16 +1342,16 @@ and display corresponding buffer in new frame."
   (interactive)
   (scroll-down 1) )
 
-(defun mp-man-mode-hook ()
+(defun man-mode-setup ()
   (define-key Man-mode-map (kbd "C-n") 'scroll-up-one-line)
   (define-key Man-mode-map (kbd "C-p") 'scroll-down-one-line) )
 
-(add-hook 'Man-mode-hook 'mp-man-mode-hook)
+(add-hook 'Man-mode-hook 'man-mode-setup)
 
-(defun mp-help-mode-setup ()
+(defun help-mode-setup ()
   (local-set-key (kbd "q") 'winner-undo))
 
-(add-hook 'help-mode-hook 'mp-help-mode-setup)
+(add-hook 'help-mode-hook 'help-mode-setup)
 
 (require 'man)
 
@@ -1388,6 +1361,20 @@ and display corresponding buffer in new frame."
 ;; ]
 
 ;; [ java mode
+
+(defgroup java
+  nil "All things related to java development"
+  :group 'development)
+
+(defcustom java-project-root
+  ""
+  "New java projects are stored in this directory."
+  :group 'java)
+
+(defcustom jdk-location
+  ""
+  "Location of JDK"
+  :group 'java)
 
 (use-package jtags
   :config
@@ -1467,7 +1454,7 @@ With prefix argument insert classname with package name. Otherwise omit package 
         (newline-and-indent)
         (insert (format "import %s;" name))))))
 
-(defun mp-start-new-web-application (group-id artifact-id version-number)
+(defun start-new-web-application (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
   (let* ((project-path java-project-root)
          (live-buffer-name "*mvn*")
@@ -1499,12 +1486,12 @@ With prefix argument insert classname with package name. Otherwise omit package 
           (other-window 1)
           (split-window-below -8)
           (find-file (concat project-path "/" artifact-id "/pom.xml"))
-          (mp-copy-template "web-3.0.xml" target-web-xml
+          (copy-template "web-3.0.xml" target-web-xml
                             (list 
                              (list 'DISPLAY-NAME (format "%s %s" artifact-id version-number))))))
       (goto-char (point-max)) ) ) )
 
-(defun mp-guess-package-name-for-current-buffer ()
+(defun guess-package-name-for-current-buffer ()
   "See if this is a maven project with standard directory layout.
 If so calculate pacakge name from current directory name."
   (let* ((dirname (file-name-directory (buffer-file-name)))
@@ -1525,16 +1512,16 @@ If so calculate pacakge name from current directory name."
       (setq package-name (replace-regexp-in-string "\\.\\." "." package-name))
       package-name)))
 
-(defun mp-java-preprocessor()
+(defun java-preprocessor()
   (let ((classname (file-name-sans-extension (buffer-name)))
-        (packagename (mp-guess-package-name-for-current-buffer)))
+        (packagename (guess-package-name-for-current-buffer)))
     (while (search-forward "CLASSNAME" nil t)
       (replace-match classname t))
     (goto-char (point-min))
     (while (search-forward "PACKAGE" nil t)
       (replace-match packagename t) ) ) )
 
-(defun mp-copy-template (filename target-file alist)
+(defun copy-template (filename target-file alist)
   "Copy FILENAME to TARGET-FILE. Then replace keys with values looked up in ALIST"
   (with-temp-buffer
     (insert-file (concat "~/.emacs.d/templates/" filename))
@@ -1548,7 +1535,7 @@ If so calculate pacakge name from current directory name."
     (write-file target-file nil) 
     (kill-buffer) ) )
 
-(defun mp-start-new-java-project (group-id artifact-id version-number)
+(defun start-new-java-project (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
   (let* ((project-root (concat (expand-file-name java-project-root) artifact-id))
          (target-pom (concat project-root "/pom.xml"))
@@ -1565,7 +1552,7 @@ If so calculate pacakge name from current directory name."
     (when (not (file-exists-p project-root))
       (make-directory project-root t))
 
-    (mp-copy-template "pom.xml" target-pom
+    (copy-template "pom.xml" target-pom
                       (list (list 'GROUP-ID group-id)
                             (list 'ARTIFACT-ID artifact-id)
                             (list 'VERSION version-number)))
@@ -1578,7 +1565,7 @@ If so calculate pacakge name from current directory name."
     (save-buffer)
     (neotree-dir project-root)) )
 
-(defun mp-java-mode-hook()
+(defun java-mode-setup()
   (setq-local comment-auto-fill-only-comments t)
   (subword-mode)
   (local-set-key (kbd "C-h j") 'javadoc-lookup)
@@ -1586,10 +1573,10 @@ If so calculate pacakge name from current directory name."
   (local-set-key (kbd "C-M-j") 'imenu)
   (local-set-key (kbd "C-x c") 'java-insert-classname-completing-read))
 
-(add-hook 'java-mode-hook 'mp-java-mode-hook)
+(add-hook 'java-mode-hook 'java-mode-setup)
 
 ;; preprocessor for interactively generating files from templates
-(add-to-list 'auto-insert-alist '(".*\\.java$" . [ "template.java" mp-java-preprocessor] ) )
+(add-to-list 'auto-insert-alist '(".*\\.java$" . [ "template.java" java-preprocessor] ) )
 
 ;; ]
 
@@ -1605,7 +1592,7 @@ If so calculate pacakge name from current directory name."
    (dired-toggle-marks)
    (dired-do-kill-lines))
 
-(defun mp-dired-2pane-copy-over ()
+(defun dired-2pane-copy-over ()
   (interactive)
   (when (eq 2 (length (window-list)))
     (let ((other-directory nil)
@@ -1648,7 +1635,7 @@ If so calculate pacakge name from current directory name."
             (define-key dired-mode-map "e" 'ora-ediff-files)
             (define-key dired-mode-map (kbd "<backspace>")
               (lambda () (interactive) (find-alternate-file "..")))
-            (define-key dired-mode-map (kbd "c") 'mp-dired-2pane-copy-over)
+            (define-key dired-mode-map (kbd "c") 'dired-2pane-copy-over)
             (define-key dired-mode-map (kbd "TAB") 'other-window)))
 
 (put 'dired-find-alternate-file 'disabled nil)
@@ -1676,9 +1663,9 @@ If so calculate pacakge name from current directory name."
 ;; optional key bindings, easier than hs defaults
 (define-key nxml-mode-map (kbd "C--") 'hs-toggle-hiding)
 
-(defun mp-nxml-mode-setup ())
+(defun nxml-mode-setup ())
 
-(add-hook 'nxml-mode-hook 'mp-nxml-mode-setup)
+(add-hook 'nxml-mode-hook 'nxml-mode-setup)
 
 (add-to-list 'auto-insert-alist '("pom.xml$" . [ "pom.xml" ]))
 
@@ -1687,19 +1674,19 @@ If so calculate pacakge name from current directory name."
 (dolist (mode xml-modes)
   (add-to-list 'auto-mode-alist (cons mode 'xml-mode)))
 
-(defun mp-maven-integration ()
+(defun maven-integration ()
   (interactive)
   (when (string= "pom.xml" (buffer-name))
     (progn
       (setq compile-command "mvn clean install")
       (local-set-key (kbd "C-c C-c") 'compile))))
 
-(defun mp-schema-validation-setup ()
+(defun schema-validation-setup ()
   (add-to-list 'rng-schema-locating-files
                "~/.emacs.d/schemas/schemas.xml"))
 
-(add-hook 'nxml-mode-hook 'mp-maven-integration)
-(add-hook 'nxml-mode-hook 'mp-schema-validation-setup)
+(add-hook 'nxml-mode-hook 'maven-integration)
+(add-hook 'nxml-mode-hook 'schema-validation-setup)
 
 ;; ]
 
@@ -1718,19 +1705,19 @@ If so calculate pacakge name from current directory name."
 
 ;; [ Where was I [editing text]?
 
-(defun mp-store-lot-position ()
+(defun store-lot-position ()
   (when (not (or 
               (string-prefix-p "*" (buffer-name))
               (string-prefix-p " " (buffer-name))))
     (point-to-register ?z)))
 
-(defun mp-goto-lot-position ()
+(defun goto-lot-position ()
   (interactive)
-  (jump-to-register ?z))
+  (juto-register ?z))
 
-(add-hook 'post-self-insert-hook 'mp-store-lot-position)
+(add-hook 'post-self-insert-hook 'store-lot-position)
 
-(global-set-key (kbd "C-c l") 'mp-goto-lot-position)
+(global-set-key (kbd "C-c l") 'goto-lot-position)
 
 ;; ]
 
@@ -1742,26 +1729,26 @@ If so calculate pacakge name from current directory name."
 
 (use-package jedi-core)
 
-(defun mp-electric-= ()
+(defun electric-= ()
   (interactive)
   (when (not (eq font-lock-string-face (face-at-point t)))
     (when (not (looking-back " "))
       (insert " ") )
     (insert "= ") ) )
 
-(defun mp-python-mode-hook ()
+(defun python-mode-setup ()
   "Personal python mode hook extension."
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
   (setq elpy-rpc-backend "jedi"
         python-indent-offset 4)
   (local-set-key (kbd "M-;") 'comment-dwim)
-  (local-set-key (kbd "=") 'mp-electric-=)
+  (local-set-key (kbd "=") 'electric-=)
   (elpy-mode))
 
 (use-package elpy
   :config
-  (add-hook 'python-mode-hook 'mp-python-mode-hook)
+  (add-hook 'python-mode-hook 'python-mode-setup)
   (add-to-list 'auto-mode-alist '("\\.py\\'" . python-mode))
   (add-to-list 'auto-mode-alist '("\\.py2\\'" . python-mode))
   (add-to-list 'auto-mode-alist '("\\.py3\\'" . python-mode))
@@ -1793,14 +1780,22 @@ If so calculate pacakge name from current directory name."
 
 ;; [ html editing web mode
 
+(defgroup web
+  nil "All things related to web development"
+  :group 'development)
+
+(defcustom web-project-root
+  "~/public_html/"
+  "New web projects are stored in this directory."
+  :group 'web)
 
 (use-package web-mode
   :config
-  (add-hook 'web-mode-hook 'mp-web-mode-extension)
+  (add-hook 'web-mode-hook 'web-mode-extension)
   ;; TODO: Not tested
   (defalias 'html-mode 'web-mode "Use web-mode instead of html-mode."))
 
-(defun mp-web-mode-extension ()
+(defun web-mode-extension ()
   (interactive)
   (setq indent-tabs-mode nil
         web-mode-markup-indent-offset 4)
@@ -1819,7 +1814,7 @@ If so calculate pacakge name from current directory name."
 
 (define-key web-mode-map (kbd "C--") 'hs-toggle-hiding)
 
-(defun mp-html-post-processing ()
+(defun html-post-processing ()
   "This method looks for a couple of key-strings and replaces them with some meaningful values."
   (save-excursion
     (goto-char (point-min))
@@ -1849,7 +1844,7 @@ If so calculate pacakge name from current directory name."
       "</body>\n"
       "</html>\n" )
     indent-buffer 
-    mp-html-post-processing ] )
+    html-post-processing ] )
 
 ;; this auto-insert must be defined *after* the one for *.html files
 (define-auto-insert '("-test.html\\'" . "HTML5 Skeleton for QUnit test")
@@ -1870,9 +1865,9 @@ If so calculate pacakge name from current directory name."
       "</body>\n"
       "</html>\n" )
     indent-buffer 
-    mp-html-post-processing ] )
+    html-post-processing ] )
 
-(defun mp-html-project-post-processing (name)
+(defun html-project-post-processing (name)
   "This method looks for strings %CSSFILE% and %TITLE% and replaces them with some meaningful values ."
   (save-excursion
     (goto-char (point-min))
@@ -1882,7 +1877,7 @@ If so calculate pacakge name from current directory name."
     (when (re-search-forward "%CSSFILE%" nil t)
       (replace-match (replace-regexp-in-string (regexp-quote ".html") ".css" (buffer-name) 'fixedcase) 'fixedcase))))
 
-(defun mp-start-web-project (name)
+(defun start-web-project (name)
   "Create a new web project with NAME.  Create initial html, js, css file."
   (interactive "MProjectname? ")
   (let ((projectroot (concat web-project-root name)))
@@ -1906,40 +1901,40 @@ If so calculate pacakge name from current directory name."
     (copy-file "~/.emacs.d/templates/qunit-2.0.1.js" (concat projectroot "/"))
     (copy-file "~/.emacs.d/templates/qunit-2.0.1.css" (concat projectroot "/"))
     (switch-to-buffer (concat name ".html"))
-    (mp-html-project-post-processing name)))
+    (html-project-post-processing name)))
 
-(global-set-key (kbd "C-c 4") #'mp-start-web-project)
+(global-set-key (kbd "C-c 4") #'start-web-project)
 
-(defun mp-css-mode-hook ()
+(defun css-mode-setup ()
   "Personal css mode hook extender."
   )
 
-(add-hook 'css-mode-hook' mp-css-mode-hook)
+(add-hook 'css-mode-hook' 'css-mode-setup)
 
 ;; ]
 
 ;; [ php mode
 
-(defun mp-php-preprocessor ()
+(defun php-preprocessor ()
   ;; does nothing yet
   t)
 
-;; (add-to-list 'auto-insert-alist '(".*\\.php$" . [ "template.php" mp-php-preprocessor ] ) )
+;; (add-to-list 'auto-insert-alist '(".*\\.php$" . [ "template.php" php-preprocessor ] ) )
 
-(defun mp-php-mode-extension ()
+(defun php-mode-extension ()
   (setq indent-tabs-mode nil
         c-basic-offset 4
         php-template-compatibility nil) )
 
 (use-package php-mode
   :config
-  (add-hook 'php-mode-hook 'mp-php-mode-extension) )
+  (add-hook 'php-mode-hook 'php-mode-extension) )
 
 ;; ]
 
 ;; [ shell script mode
 
-(defun mp-elisp-post-processor ()
+(defun elisp-post-processor ()
   (interactive)
   (let ((match-found t))
     (progn
@@ -1948,12 +1943,12 @@ If so calculate pacakge name from current directory name."
         (replace-match "") ) ) ) )
 
 (add-to-list 'auto-insert-alist
-             '(".*\\.sh$" . [ "template.sh" mp-elisp-post-processor ] ) )
+             '(".*\\.sh$" . [ "template.sh" elisp-post-processor ] ) )
 
-(defun mp-shell-mode-extender ()
+(defun shell-mode-setup ()
   (interactive) )
 
-(add-hook 'shell-mode-hook 'mp-shell-mode-extender)
+(add-hook 'shell-mode-hook 'shell-mode-setup)
 
 ;; ]
 
@@ -1991,8 +1986,6 @@ If so calculate pacakge name from current directory name."
 ;; this is a global minor mode and displays the name
 ;; of the function that surrounds point. To look into
 ;; how it works look at which-func-* variables.
-;; TODO: Want to do this:
-;; http://emacs.stackexchange.com/questions/28104/customize-in-which-func-mode
 
 (which-function-mode)
 
@@ -2014,7 +2007,7 @@ If so calculate pacakge name from current directory name."
 
   :config
 
-  (defun mp-magit-status (arg)
+  (defun magit-status-wrapper (arg)
     "Start magit. With prefix argument start magit in new frame."
     (interactive "P")
     (when arg
@@ -2023,7 +2016,7 @@ If so calculate pacakge name from current directory name."
     (when arg
       (delete-other-windows) ) )
 
-  (global-set-key (kbd "<f12>") 'mp-magit-status) )
+  (global-set-key (kbd "<f12>") 'magit-status-wrapper) )
 
 ;; ]
 
@@ -2050,7 +2043,7 @@ If so calculate pacakge name from current directory name."
                                 (propertize "%03l") ","
                                 (propertize "%c")
                                 "]"
-;;                                (mp-sunrise-sunset-for-modeline)
+;;                                (sunrise-sunset-for-modeline)
                                 mode-line-misc-info))
 
 ;; ]
@@ -2085,7 +2078,7 @@ If so calculate pacakge name from current directory name."
 
 ;; [ linum mode
 
-(defun mp-profile-forward-line ()
+(defun profile-forward-line ()
   (interactive)
   (profiler-start 'cpu+mem)
   (let ((count 0))
@@ -2195,13 +2188,13 @@ not correct as they are cut after some chars and ... is appended."
 
 ;; [ compilation
 
-(mp-add-standard-display-buffer-entry "*compilation")
+(add-standard-display-buffer-entry "*compilation*")
 
-(defun mp-compilation-mode-hook-extender ()
+(defun compilation-mode-setup ()
   ;; (next-error-follow-minor-mode)
   (local-set-key (kbd "q") 'winner-undo))
 
-(add-hook 'compilation-mode-hook 'mp-compilation-mode-hook-extender)
+(add-hook 'compilation-mode-hook 'compilation-mode-setup)
 
 (use-package auto-compile
   :config
