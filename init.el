@@ -431,8 +431,11 @@ TODO: Untested"
             (apply 'solar-time-string (car l))
             (apply 'solar-time-string (cadr l)))))
 
-(require 'material-theme)
-(load-theme 'material-light)
+(use-package material-theme
+  :config
+  (load-theme 'material-light)
+  ;; (load-theme 'material)
+  )
 
 (use-package volatile-highlights
   :init
@@ -782,14 +785,10 @@ of the file is like this:
 (defun js2-mode-setup ()
   (setq indent-tabs-mode nil
         js-indent-level 4)
-  ;;  (idle-highlight-mode 1)
-  ;; writing longer comments
   (setq-local comment-auto-fill-only-comments t)
   (auto-fill-mode 1)
   (setq-local comment-multi-line t)
-  (local-set-key (kbd "RET") 'c-indent-new-comment-line) 
-  (add-to-list #'js2-imenu-extras-mode)
-)
+  (local-set-key (kbd "RET") 'c-indent-new-comment-line))
 
 (define-auto-insert '("\\.js\\'" . "Javscript Skeleton")
   [ '(nil
@@ -1386,7 +1385,7 @@ and display corresponding buffer in new frame."
 
 (use-package javadoc-lookup)
 
-(defvar java-classpath nil)
+(defvar java-classpath nil "Java classpath. This will be set by .dir-locals.el (hopefully).")
 
 (defun java-read-classes-from-classpath ()
   "Iterate over classpath and gather classes from jar files.
@@ -1418,8 +1417,6 @@ Evaluates into one large list containing all classes."
               (beginning-of-line))
             (erase-buffer)))))
     result))
-
-(defvar java-classes-cache nil "Cache list of classes")
 
 (defun insert-import-statement ()
   (interactive)
@@ -1456,7 +1453,7 @@ With prefix argument insert classname with package name. Otherwise omit package 
 
 (defun start-new-web-application (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
-  (let* ((project-path java-project-root)
+  (let* ((project-path java-new-projects-repo)
          (live-buffer-name "*mvn*")
          (live-buffer (get-buffer-create live-buffer-name))
          (target-web-xml (concat project-path "/" artifact-id "/src/main/webapp/WEB-INF/web.xml"))
@@ -1537,7 +1534,7 @@ If so calculate pacakge name from current directory name."
 
 (defun start-new-java-project (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
-  (let* ((project-root (concat (expand-file-name java-project-root) artifact-id))
+  (let* ((project-root (concat (expand-file-name java-new-projects-repo) artifact-id))
          (target-pom (concat project-root "/pom.xml"))
          (src-dir (concat project-root "/src/main/java/"))
          (main-class (concat src-dir
@@ -1565,14 +1562,34 @@ If so calculate pacakge name from current directory name."
     (save-buffer)
     (neotree-dir project-root)) )
 
+(defvar java-classpath-caches nil "A hashtable mapping project roots to list of classes. Not yet cleaned up at any time.")
+(defvar java-project-root nil "This variable will be set buffer locally from .dir-locals.el")
+
+(defun java-mode-process-dir-locals ()
+  (when (derived-mode-p 'java-mode
+                        (progn
+                          (when (stringp java-project-root) ;; sell the stock from emacs-maven-plugin:
+                            (progn
+                              (when (null java-classpath-caches)
+                                (setq java-classpath-caches (make-hash-table)))
+                              (defvar-local java-classpath-cache nil "Cached list of classes for current project")  
+                              (let ((my-cache (gethash java-project-root java-classpath-caches)))
+                                (when (null my-cache)
+                                  (setq my-cache (java-read-classes-from-classpath))
+                                  (puthash java-project-root my-cache java-classpath-caches))
+                                (setq-local java-classpath-cache my-cache))
+                              (local-set-key (kbd "C-x c") 'java-insert-classname-completing-read)))))))
+
 (defun java-mode-setup()
   (setq-local comment-auto-fill-only-comments t)
+  (setq-local comment-multi-line t)
   (subword-mode)
   (local-set-key (kbd "C-h j") 'javadoc-lookup)
   (setq-local comment-multi-line t)
   (local-set-key (kbd "C-M-j") 'imenu)
   (local-set-key (kbd "C-x c") 'java-insert-classname-completing-read))
 
+(add-hook 'hack-local-variables-hook 'java-mode-process-dir-locals)
 (add-hook 'java-mode-hook 'java-mode-setup)
 
 ;; preprocessor for interactively generating files from templates
@@ -2174,11 +2191,13 @@ not correct as they are cut after some chars and ... is appended."
 
 ;; [ ffip
 
+(add-to-list 'ffip-project-file "pom.xml")
+
 (defun find-file-dispatcher (arg)
   (interactive "P")
-  (if arg 
-      (call-interactively 'ffip)
-    (call-interactively 'find-file)))
+      (call-interactively   (if arg 
+				'ffip
+			      'find-file)))
 
 (use-package find-file-in-project
   :config
