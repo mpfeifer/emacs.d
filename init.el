@@ -218,8 +218,8 @@
     available ) )
 
 (defun notify (msg)
-  (if notify-available-p
-      (start-process "notify-send" nil "notify-send" "-t" "3000" msg)
+  (if (notify-available-p)
+      (start-process "notify-send" nil "notify-send" "-t" "5000" msg)
     (message msg) ) )
 
 ;; Show keystrokes immediatly
@@ -250,7 +250,7 @@
 ;; Tabs - no.
 (setq-default indent-tabs-mode nil)
 
-;; Tempaltes - yes.
+;; Templates - yes.
 (setq auto-insert-directory "~/.emacs.d/templates/"
       auto-insert-query nil)
 
@@ -286,10 +286,29 @@
 
 (global-set-key (kbd "M-Z") #'zap-up-to-char)
 
+;; ]
+
+;; [ marks and navigation
+
 ;; use C-u C-SPC to pop mark positions
 ;; and C-x C-SPC to pop global mark position
 
 (setq set-mark-command-repeat-pop t)
+
+(defun unpop-global-mark ()
+  "Unpop off mark ring. Does nothing if mark ring is empty."
+  (interactive)
+  (when global-mark-ring
+    (setq global-mark-ring (cons (copy-marker (mark-marker)) global-mark-ring))
+    (set-marker (mark-marker) (car (last global-mark-ring)) (current-buffer))
+    (when (null (mark t)) (ding))
+    (setq global-mark-ring (nbutlast global-mark-ring))
+    (goto-char (marker-position (car (last global-mark-ring))))))
+
+(global-set-key (kbd "C-c k") 'pop-global-mark)
+(global-set-key (kbd "C-c j") 'unpop-global-mark)
+
+;; ]
 
 ;; ]
 
@@ -1713,7 +1732,12 @@ If so calculate pacakge name from current directory name."
   :config
   (setq ivy-fixed-height-minibuffer t
         ivy-mode t
-        ivy-use-virtual-buffers t) )
+        ivy-use-virtual-buffers t)
+  (ivy-mode)
+ )
+
+(use-package swiper
+  :bind ("C-s" . swiper))
 
 (use-package avy
   :bind ("C-S-j" . avy-goto-word-or-subword-1) )
@@ -1730,7 +1754,7 @@ If so calculate pacakge name from current directory name."
 
 (defun goto-lot-position ()
   (interactive)
-  (juto-register ?z))
+  (jump-to-register ?z))
 
 (add-hook 'post-self-insert-hook 'store-lot-position)
 
@@ -1932,6 +1956,13 @@ If so calculate pacakge name from current directory name."
 
 ;; [ php mode
 
+(defun mp-php-online-help ()
+  (interactive)
+  (browse-url-firefox (concat 
+                       "http://php.net/manual/de/"
+                       (concat "function." (thing-at-point 'symbol) ".php"))
+                      t) )
+
 (defun php-preprocessor ()
   ;; does nothing yet
   t)
@@ -1944,6 +1975,7 @@ If so calculate pacakge name from current directory name."
         php-template-compatibility nil) )
 
 (use-package php-mode
+  :bind ("C-h o" . mp-php-online-help) 
   :config
   (add-hook 'php-mode-hook 'php-mode-extension) )
 
@@ -2191,8 +2223,6 @@ not correct as they are cut after some chars and ... is appended."
 
 ;; [ ffip
 
-(add-to-list 'ffip-project-file "pom.xml")
-
 (defun find-file-dispatcher (arg)
   (interactive "P")
       (call-interactively   (if arg 
@@ -2201,6 +2231,7 @@ not correct as they are cut after some chars and ... is appended."
 
 (use-package find-file-in-project
   :config
+  (add-to-list 'ffip-project-file "pom.xml")
   (global-set-key (kbd "C-x C-f") 'find-file-dispatcher) )
 
 ;; ]
@@ -2258,3 +2289,5 @@ not correct as they are cut after some chars and ... is appended."
 ;; C-x p s    save bookmars list
 
 ;; ]
+
+(notify "[Emacs] init.el fully loaded")
