@@ -865,10 +865,20 @@ of the file is like this:
 
 ;; [ org mode
 
-(global-set-key (kbd "C-x c") #'org-capture)
+;; examples https://github.com/zweifisch/ob-http
+(use-package ob-http
+  :config
+  (require 'ob-http))
 
-(require 'ob-plantuml)
-(require 'ob-python)
+(use-package ob-plantuml
+  :config
+  (require 'ob-plantuml))
+
+(use-package ob-python
+  :config
+  (require 'ob-python))
+
+(global-set-key (kbd "C-x c") #'org-capture)
 
 ;; useful clocking commands
 ;;    C-c C-x C-i (org-clock-in)
@@ -909,7 +919,6 @@ of the file is like this:
         org-todo-keywords (quote ((sequence "TODO(t)" "WAIT(w)" "DONE(d)" "CANCEL(c)"))))
 
   (local-set-key (kbd "<return>") 'org-return-indent)
-  (local-set-key (kbd "M-<return>") 'org-open-at-point)
   (local-set-key (kbd "C-x n c") 'org-clone-and-narrow-to-block)
 
   (setenv "GRAPHVIZ_DOT" "/usr/bin/dot")
@@ -925,6 +934,7 @@ of the file is like this:
      (gnuplot . t)
      (java . t)
      (perl . t)
+     (http . t)
      (shell . t) ) ) )
 
 (org-clock-persistence-insinuate)
