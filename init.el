@@ -1391,7 +1391,7 @@ and display corresponding buffer in new frame."
   :group 'development)
 
 (defcustom java-project-root
-  ""
+  "~/src/java/"
   "New java projects are stored in this directory."
   :group 'java)
 
@@ -1478,7 +1478,7 @@ With prefix argument insert classname with package name. Otherwise omit package 
 
 (defun start-new-web-application (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
-  (let* ((project-path java-new-projects-repo)
+  (let* ((project-path java-project-root)
          (live-buffer-name "*mvn*")
          (live-buffer (get-buffer-create live-buffer-name))
          (target-web-xml (concat project-path "/" artifact-id "/src/main/webapp/WEB-INF/web.xml"))
@@ -1559,7 +1559,7 @@ If so calculate pacakge name from current directory name."
 
 (defun start-new-java-project (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
-  (let* ((project-root (concat (expand-file-name java-new-projects-repo) artifact-id))
+  (let* ((project-root (concat (expand-file-name java-project-root) artifact-id))
          (target-pom (concat project-root "/pom.xml"))
          (src-dir (concat project-root "/src/main/java/"))
          (main-class (concat src-dir
@@ -1588,7 +1588,6 @@ If so calculate pacakge name from current directory name."
     (neotree-dir project-root)) )
 
 (defvar java-classpath-caches nil "A hashtable mapping project roots to list of classes. Not yet cleaned up at any time.")
-(defvar java-project-root nil "This variable will be set buffer locally from .dir-locals.el")
 
 (defun java-mode-process-dir-locals ()
   (when (derived-mode-p 'java-mode
