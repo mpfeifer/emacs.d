@@ -1411,6 +1411,7 @@ and display corresponding buffer in new frame."
 (use-package javadoc-lookup)
 
 (defvar java-classpath nil "Java classpath. This will be set by .dir-locals.el (hopefully).")
+(defvar java-current-project-root nil "Buffer local location of current project root.")
 
 (defun java-read-classes-from-classpath ()
   "Iterate over classpath and gather classes from jar files.
@@ -1592,15 +1593,16 @@ If so calculate pacakge name from current directory name."
 (defun java-mode-process-dir-locals ()
   (when (derived-mode-p 'java-mode
                         (progn
-                          (when (stringp java-project-root) ;; sell the stock from emacs-maven-plugin:
+                          (when (stringp java-current-project-root) ;; sell the stock from emacs-maven-plugin:
                             (progn
+                              ;; init java-classpath-caches
                               (when (null java-classpath-caches)
                                 (setq java-classpath-caches (make-hash-table)))
-                              (defvar-local java-classpath-cache nil "Cached list of classes for current project")  
-                              (let ((my-cache (gethash java-project-root java-classpath-caches)))
+                              (defvar-local java-classpath-cache nil "Cached list of classes for current project")
+                              (let ((my-cache (gethash java-current-project-root java-classpath-caches)))
                                 (when (null my-cache)
                                   (setq my-cache (java-read-classes-from-classpath))
-                                  (puthash java-project-root my-cache java-classpath-caches))
+                                  (puthash java-current-project-root my-cache java-classpath-caches))
                                 (setq-local java-classpath-cache my-cache))
                               (local-set-key (kbd "C-x c") 'java-insert-classname-completing-read)))))))
 
