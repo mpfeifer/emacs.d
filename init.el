@@ -417,8 +417,7 @@
 ;; [ global appearence
 
 (defun add-standard-display-buffer-entry (name)
-  "Add an entry to display-buffer-alist for buffers called NAME.
-TODO: Untested"
+  "Add an entry to display-buffer-alist for buffers called NAME."
   (add-to-list 'display-buffer-alist
                `(,(regexp-quote name)
                  (display-buffer-at-bottom
