@@ -325,8 +325,8 @@
 
   (global-set-key (kbd "C--") 'hs-hide-block)
   (global-set-key (kbd "C-+") 'hs-show-block)
-  (global-set-key (kbd "C-M--") 'hs-hide-all)
-  (global-set-key (kbd "C-M-+") 'hs-show-all) )
+  (global-set-key (kbd "M--") 'hs-hide-all)
+  (global-set-key (kbd "M-+") 'hs-show-all) )
 
 ;; ]
 
@@ -427,7 +427,7 @@
                  (side            . bottom)
                  (window-height   . 0.3))))
 
-(setq frame-title-format '("%b [" (:eval (symbol-to-string major-mode)) "]"))
+(setq frame-title-format '("Emacs: %b [" (:eval (symbol-to-string major-mode)) "]"))
 
 (global-hl-line-mode)
 
@@ -472,7 +472,7 @@
   (add-hook 'org-mode-hook 'volatile-highlights-mode))
 
 ;; visualize matching paren
-(show-paren-mode)
+(show-paren-mode 1)
 
 ;; ]
  
@@ -501,8 +501,7 @@
 (defadvice imenu-recenter-advice (after imenu-center activate)
   (recenter-top-bottom 2))
 
-
-
+(global-set-key (kbd "C-'") 'imenu)
 
 ;; ]
 
@@ -725,7 +724,6 @@ of the file is like this:
 (defun dotemacs-mode-hook ()
   (local-set-key (kbd "C-S-n") 'forward-paragraph)
   (local-set-key (kbd "C-S-p") 'backward-paragraph)
-  (local-set-key (kbd "C-#") 'imenu)
   (auto-fill-mode 1)
   (setq imenu-prev-index-position-function nil)
   (setq-local comment-auto-fill-only-comments t)
@@ -1371,10 +1369,10 @@ and display corresponding buffer in new frame."
 
 (add-hook 'Man-mode-hook 'man-mode-setup)
 
-(defun help-mode-setup ()
+(defun my-help-mode-setup ()
   (local-set-key (kbd "q") 'winner-undo))
 
-(add-hook 'help-mode-hook 'help-mode-setup)
+(add-hook 'help-mode-hook 'my-help-mode-setup)
 
 (require 'man)
 
@@ -2067,7 +2065,7 @@ If so calculate pacakge name from current directory name."
     (interactive "P")
     (when arg
       (select-frame (make-frame '((name . "Magit")))))
-    (magit-status)
+    (call-interactively 'magit-status)
     (when arg
       (delete-other-windows) ) )
 
