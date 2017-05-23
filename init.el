@@ -2152,7 +2152,8 @@ If so calculate pacakge name from current directory name."
   (setq popup-edit-menu-mode-menus-down-flag t)
   (easy-menu-add-item nil '("edit") ["--" nil t])
   (easy-menu-add-item nil '("edit") ["base64-encode" base64-encode-region t])
-  (easy-menu-add-item nil '("edit") ["base64-decode" base64-decode-region t]))
+  (easy-menu-add-item nil '("edit") ["base64-decode" base64-decode-region t])
+  (easy-menu-add-item nil '("edit") ["detach window" detach-window t]))
 
 ;; ]
 
