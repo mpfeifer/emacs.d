@@ -25,4 +25,12 @@ minibuffer
 .org-id-locations
 desktop
 custom.el
+.emacs.desktop
+.emacs.desktop.lock
+cookies
+custom.el-not-working
+elpa/
+projectile-bookmarks.eld
+projectile.cache
+projectile/
 

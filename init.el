@@ -1114,7 +1114,7 @@ of the file is like this:
 
 (add-hook 'cperl-mode-hook '(lambda ()
                               (interactive)
-                              (local-set-key (kbd "C-h f") 'cperl-perldoc-at-point)))
+                              (local-set-key (kbd "C-h c") 'cperl-perldoc-at-point)))
 
 ;; ]
 
@@ -1964,8 +1964,11 @@ If so calculate pacakge name from current directory name."
   (interactive)
   (browse-url-firefox (concat 
                        "http://php.net/manual/de/"
-                       (concat "function." (thing-at-point 'symbol) ".php"))
+                       (concat "function." (php-prepare-url (thing-at-point 'symbol)) ".php"))
                       t) )
+
+(defun php-prepare-url (args)
+  (replace-regexp-in-string "_" "-" args))
 
 (defun php-preprocessor ()
   ;; does nothing yet
