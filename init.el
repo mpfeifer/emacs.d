@@ -2264,24 +2264,6 @@ not correct as they are cut after some chars and ... is appended."
 
 ;; [ projectile
 
-(defun mavenize-current-project ()
-  (interactive)
-  (puthash (projectile-project-root)
-           (prin1 '(lambda ()
-                     "Run unittest using maven"
-                     (interactive)                     
-                     (let ((default-directory (projectile-project-root)))
-                       (call-process "mvn" nil "run-test" t
-                                      "test"))))
-           projectile-test-cmd-map)
-  (puthash (projectile-project-root)
-           (print1 '(lambda ()
-                      "Invoke maven package target"
-                      (interactive)
-                      (let ((default-directory (projectile-project-root)))
-                        (call-process "mvn" nil "run-package" t
-                                      "package"))))))
-
 ;; To view key bindings do "C-c p C-h"
 ;; Also see http://batsov.com/projectile/
 
