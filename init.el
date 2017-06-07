@@ -1768,28 +1768,19 @@ If so calculate pacakge name from current directory name."
 
 ;; [ elpy python jedi
 
-;; This still needs testing 
-(setenv "PATH" (concat (getenv "PATH") ":~/.local/bin/"))
-(setq exec-path (append exec-path '("~/.local/bin")))
-
-(use-package jedi-core)
-
-(defun electric-= ()
-  (interactive)
-  (when (not (eq font-lock-string-face (face-at-point t)))
-    (when (not (looking-back " "))
-      (insert " ") )
-    (insert "= ") ) )
+(use-package jedi)
 
 (defun python-mode-setup ()
   "Personal python mode hook extension."
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
   (setq elpy-rpc-backend "jedi"
-        python-indent-offset 4)
-  (local-set-key (kbd "M-;") 'comment-dwim)
-  (local-set-key (kbd "=") 'electric-=)
-  (elpy-mode))
+        python-indent-offset 4
+        elpy-syntax-check-command "flake8")
+  (local-set-key (kbd "M-#") 'comment-dwim)
+  (jedi:setup)
+  (elpy-enable)
+  (pyvenv-activate "~/.emacs.d/.python-environments/default/"))
 
 (use-package elpy
   :config
@@ -1797,7 +1788,6 @@ If so calculate pacakge name from current directory name."
   (add-to-list 'auto-mode-alist '("\\.py\\'" . python-mode))
   (add-to-list 'auto-mode-alist '("\\.py2\\'" . python-mode))
   (add-to-list 'auto-mode-alist '("\\.py3\\'" . python-mode))
-
   (add-to-list 'auto-insert-alist '(".*\\.py3?$" . [ "template.py3" ] ) )
   (add-to-list 'auto-insert-alist '(".*\\.py2$" . [ "template.py" ] ) ))
 
