@@ -742,13 +742,11 @@ of the file is like this:
   (byte-compile-file (buffer-file-name)))
 
 (defun emacs-lisp-mode-setup ()
-
   (when (string= (buffer-name) "init.el")
     (dotemacs-mode-hook))
-
   (local-set-key (kbd "C-/") 'comment-dwim)
   (local-set-key (kbd "C-c C-c") 'byte-compile-current-buffer)
-
+  (linum-mode)
   (electric-pair-mode) )
 
 (add-hook 'emacs-lisp-mode-hook 'emacs-lisp-mode-setup)
