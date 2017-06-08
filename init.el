@@ -910,12 +910,9 @@ of the file is like this:
         org-special-ctrl-a/e t
         org-special-ctrl-k t
         org-todo-keywords (quote ((sequence "TODO(t)" "WAIT(w)" "DONE(d)" "CANCEL(c)"))))
-
   (local-set-key (kbd "<return>") 'org-return-indent)
   (local-set-key (kbd "C-x n c") 'org-clone-and-narrow-to-block)
-
   (setenv "GRAPHVIZ_DOT" "/usr/bin/dot")
-
   (org-babel-do-load-languages
    'org-babel-load-languages
    '((plantuml . t)
@@ -932,19 +929,20 @@ of the file is like this:
 
 (org-clock-persistence-insinuate)
 
-(defconst org-capture-file "~/org/capture.org" "Locate of file where to store org capture notes.")
+(defconst org-capture-file "~/org/capture.org" "Location of file where to store org capture notes.")
+
+;; capture templates are documented at
+;; http://orgmode.org/manual/Capture.html
 
 (setq org-capture-templates
-      (quote (("t" "todo" entry (file org-capture-file)
-               "** TODO %?\n%U\n%a\n" :clock-in t :clock-resume t)
-              ("r" "respond" entry (file org-capture-file)
-               "** NEXT Respond to %:from on %:subject\nSCHEDULED: %t\n%U\n%a\n" :clock-in t :clock-resume t :immediate-finish t)
-              ("n" "note" entry (file org-capture-file)
-               "** %? :NOTE:\n%U\n%a\n" :clock-in t :clock-resume t)
-              ("m" "Meeting" entry (file org-capture-file)
-               "** MEETING with %? :MEETING:\n%U" :clock-in t :clock-resume t)
-              ("p" "Phone call" entry (file org-capture-file)
-               "** PHONE %? :PHONE:\n%U" :clock-in t :clock-resume t) ) ) )
+      (quote (("t" "todo" entry (file+headline org-capture-file "Inbox")
+               "** TODO %?\n%U\n%a\n" :kill-buffer t :clock-in t :clock-resume t)
+              ("n" "note" entry (file+headline org-capture-file "Inbox")
+               "** %? :NOTE:\n%U\n%a\n" :kill-buffer t :clock-in t :clock-resume t)
+              ("m" "Meeting" entry (file+headline org-capture-file "Inbox")
+               "** MEETING with %? :MEETING:\n%U" :kill-buffer t :clock-in t :clock-resume t)
+              ("p" "Phone call" entry (file+headline org-capture-file "Inbox")
+               "** PHONE %? :PHONE:\n%U" :kill-buffer t :clock-in t :clock-resume t) ) ) )
 
 (add-hook 'org-mode-hook 'org-mode-setup)
 
