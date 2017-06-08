@@ -888,6 +888,7 @@ of the file is like this:
     (message "This function is only applicable for frames that show a single window.") ) )
 
 (defun org-mode-setup ()
+  (org-hide-block-all)
   (flyspell-mode)
   (add-to-list 'org-file-apps '("\\.png\\'" . default))
   (add-to-list 'auto-mode-alist '("organizer\\'" . org-mode))
