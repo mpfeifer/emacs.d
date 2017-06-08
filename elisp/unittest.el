@@ -80,7 +80,6 @@
 ;; run tests interactively
 
 (when nil
-  ;; really just run interactively
   (call-interactively 'ert))
 
 ;; these tests should succeed
@@ -90,6 +89,8 @@
                   'test-always-succeed))
 
 (ert-run-test (ert-get-test 'test-method-x-1))
+
+
 (ert-run-test (ert-get-test 'test-always-succeed))
 
 (ert-deftest test-divide-by-zero ()
