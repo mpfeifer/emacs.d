@@ -1,16 +1,12 @@
 #!/usr/bin/python3
 
 import argparse
-import configparser
-import getopt
 import logging
 import logging.handlers
-import os
 import selectors
 import signal
 import socket
 import sys
-import time
 
 # Author     : Matthias
 # Description: Python script template
