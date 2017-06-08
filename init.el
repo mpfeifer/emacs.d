@@ -893,6 +893,7 @@ of the file is like this:
   (flyspell-mode)
   (add-to-list 'org-file-apps '("\\.png\\'" . default))
   (add-to-list 'auto-mode-alist '("organizer\\'" . org-mode))
+  (company-mode -1) ;; disabled, since it looks broken
   (setq org-agenda-span 7
         org-agenda-comact-blocks t
         org-agenda-show-all-dates t
