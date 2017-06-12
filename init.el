@@ -774,22 +774,16 @@ of the file is like this:
 ;; [ yasnippet
 
 (use-package yasnippet
-
+  :defer 15
   :config
-
   (defconst snippet-dir "~/.emacs.d/snippets/")
-
   (setq yas-snippet-dirs (list snippet-dir))
-
   (dolist (snippet-dir yas-snippet-dirs)
     (add-to-list 'auto-mode-alist (cons (concat ".*" snippet-dir ".*") 'snippet-mode))
     (yas-load-directory snippet-dir))
-
   (require 'warnings)
-
   ;; do not complain when snippets change buffer contents
   (add-to-list 'warning-suppress-types '(yasnippet backquote-change))
-
   (yas-global-mode 1) )
 
 ;; ]
@@ -1134,15 +1128,7 @@ of the file is like this:
 
 (use-package term
   :config
-  (add-to-list 'display-buffer-alist
-               `(,(regexp-quote "*terminal*")
-                 (display-buffer-at-bottom
-                  display-buffer-reuse-window
-                  display-buffer-in-side-window)
-                 (reusable-frames . visible)
-                 (side            . bottom)
-                 (window-height   . 0.3)))
-
+  (add-standard-display-buffer-entry "*terminal*")
   (defun open-terminal (prefix-arg)
     "PREFIX-ARG -> open terminal in new frame
 current buffer is terminal buffer -> close buffer
@@ -1795,7 +1781,7 @@ If so calculate pacakge name from current directory name."
 
 (use-package restclient
   :config
-  (add-to-list 'auto-mode-alist '("\\.rcm\\'" . restclient-mode)))
+  (add-to-list 'auto-insert-alist '(".*\\.rst?$" . [ "template.rst" ] ) ))
 
 ;; ]
 
