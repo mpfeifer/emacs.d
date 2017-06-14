@@ -34,3 +34,4 @@ projectile-bookmarks.eld
 projectile.cache
 projectile/
 .python-environments/
+.cache

@@ -1044,11 +1044,12 @@ of the file is like this:
 
 ;; ]
 
-;; [ speedbar neotree
+;; [ speedbar neotree treemacs
 
 (use-package sr-speedbar
   :bind ("<f6>" . sr-speedbar-toggle)
   :config
+  :disabled
   (setq speedbar-fetch-etags-arguments (quote ("--declarations" "-D" "-I" "-o" "-"))
         speedbar-sort-tags t
         speedbar-ag-hierarchy-method (quote (speedbar-sort-tag-hierarchy))
@@ -1061,6 +1062,26 @@ of the file is like this:
   (defadvice sr-speedbar-toggle (after select-speedbar activate)
     (let ((window (get-buffer-window "*SPEEDBAR*")))
       (when window (select-window window)))))
+
+(use-package treemacs
+  :ensure t
+  :defer t
+  :config
+  (setq treemacs-header-function            #'treemacs--create-header-projectile
+        treemacs-follow-after-init          t
+        treemacs-width                      35
+        treemacs-indentation                2
+        treemacs-git-integration            t
+        treemacs-change-root-without-asking nil
+        treemacs-sorting                    'alphabetic-desc
+        treemacs-show-hidden-files          nil
+        treemacs-never-persist              nil)
+  (treemacs-follow-mode t)
+  (treemacs-filewatch-mode t)
+  :bind
+  (:map global-map
+        ([f6]        . treemacs-toggle)))
+
 
 ;; (modify-frame-parameters nil (list '( name . "Emacs" )
 
@@ -1714,13 +1735,13 @@ If so calculate pacakge name from current directory name."
 
 ;; ]
 
-;; [ ivy, avy, ido & co
+;; [ ivy,avy,ido&co
 
 (use-package ivy
   :config
   (setq ivy-fixed-height-minibuffer t
-        ivy-mode t
-        ivy-use-virtual-buffers t)
+        ivy-use-virtual-buffers t
+        ivy-count-format "[%d|%d]--[")
   (ivy-mode)
  )
 
@@ -1781,6 +1802,8 @@ If so calculate pacakge name from current directory name."
 
 (use-package restclient
   :config
+  (add-to-list 'auto-mode-alist '("\\.rst\\'" . restclient-mode))
+  (add-to-list 'auto-mode-alist '("\\.rcm\\'" . restclient-mode))
   (add-to-list 'auto-insert-alist '(".*\\.rst?$" . [ "template.rst" ] ) ))
 
 ;; ]
@@ -2052,28 +2075,30 @@ If so calculate pacakge name from current directory name."
 
 ;; [ the mode line
 
-(use-package powerline
-  :disabled)
+(set-face-attribute 'mode-line nil :background "red")
 
 (setq-default mode-line-format (list
                                 ;; These setting provide four characters:
                                 ;; encoding line-endings read/write modified
                                 ;; eg [U:**] 
-                                ;; - unicode encoding (U)
-                                ;; with unix line endings (:)
-                                ;; read-write (*)
-                                ;; modified (*)
+                                ;; U - unicode encoding
+                                ;; : -  unix line endings
+                                ;; * - read-write
+                                ;; * - modified
                                 "%e" "[" mode-line-mule-info mode-line-client mode-line-modified "]"
+                                "   "
                                 '(:eval
-                                  (format " {%s}/%s "
+                                  (format "[%s/%s]"
                                           (projectile-project-name)
                                           (propertize "%b" 'help-echo (buffer-file-name))))
                                 ;; line and column
+                                "   "
                                 "[" ;; '%02' to set to 2 chars at least; prevents flickering
                                 (propertize "%03l") ","
                                 (propertize "%c")
                                 "]"
-;;                                (sunrise-sunset-for-modeline)
+                                ;;                                (sunrise-sunset-for-modeline)
+                                "   "
                                 mode-line-misc-info))
 
 ;; ]

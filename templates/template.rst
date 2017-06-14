@@ -13,12 +13,17 @@
 #
 # You declare a variable like this:
 #
-# :myvar = the value
-#
-#or like this:
-#
-# :myvar := (some (artbitrary 'elisp)
-#
+
+:url = https://httpbin.org/ip
+
+GET :url
+
+# with embedded emacs lisp
+
+:url := (format "%s://%s:/%s" "https" "httpbin.org" "ip")
+
+GET :url
+
 #In second form, the value of variable is evaluated as Emacs Lisp form immediately. Evaluation of variables is done from top to bottom. Only one one-line form for each variable is allowed, so use (progn ...) and some virtual line wrap mode if you need more. There's no way to reference earlier declared restclient variables, but you can always use setq to save state.
 #
 #Variables can be multiline too:
@@ -119,3 +124,7 @@
 #    I'm not sure if it handles different encodings, I suspect it won't play well with anything non-ascii. I'm yet to figure it out.
 #    Variable usages are not highlighted
 #    Due to a bug in Emacs/url.el, some GET requests to localhost might fail. As a workaround you can use 127.0.0.1 instead of localhost until this is fixed.
+
+
+
+
