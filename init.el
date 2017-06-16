@@ -854,6 +854,16 @@ of the file is like this:
 
 ;; [ org mode
 
+(use-package org-gcal
+  :config
+  (setq org-gcal-client-id ""
+	org-gcal-client-secret ""
+	org-gcal-file-alist '(("mpfeifer77@gmail.com" .  "~/Dropbox/gcal.org")))
+  (add-hook 'org-agenda-mode-hook (lambda () (org-gcal-sync) ))
+  (add-hook 'org-capture-after-finalize-hook (lambda () (org-gcal-sync) ))
+  )
+
+
 ;; examples https://github.com/zweifisch/ob-http
 (use-package ob-http
   :config
@@ -865,7 +875,7 @@ of the file is like this:
 
 (global-set-key (kbd "C-x c") #'org-capture)
 
-;; useful clocking commands
+;; clocking commands
 ;;    C-c C-x C-i (org-clock-in)
 ;;    C-c C-x C-o (org-clock-out)
 ;;    C-c C-x C-q (org-clock-cancel)
@@ -873,13 +883,15 @@ of the file is like this:
 ;;    C-S-<up/down> (org-clock-timestamps-up/down)
 ;;    S-M-<up/down> (org-timestamp-up-down)
 
-(defun org-clone-and-narrow-to-block ()
-  (interactive)
-  (if (one-window-p)
-      (progn
-        (clone-indirect-buffer-other-window nil t)
-        (org-narrow-to-block) )
-    (message "This function is only applicable for frames that show a single window.") ) )
+;; agenda commands
+;;    C-c C-s    Schedule item for date
+;;    C-c C-d    Set deadline for item
+;;    Want timestamps? Add manually so that marker string looks
+;;    like this: <2016-02-28 Sa 14:00-15:30>
+;;    Timestamp magic:
+;;    <2016-02-28 Sa 14:00-15:30 +1w>   repeat every week
+;;    <2016-02-28 Sa 14:00-15:30 ++1w>  next item is always in the future
+;;    <2016-02-28 Sa 14:00-15:30 .+4w>  timedistance is added to today
 
 (defun org-mode-setup ()
   (org-hide-block-all)
@@ -890,12 +902,12 @@ of the file is like this:
   (setq org-agenda-span 7
         org-agenda-comact-blocks t
         org-agenda-show-all-dates t
-        org-agenda-files '("~/org/organizer" "~/org/family.org")
+        org-agenda-files '("~/Dropbox/gcal.org" "~/Dropbox/organizer")
         org-babel-python-command "python"
         org-clock-into-drawer t
         org-clock-persist 'history
         org-confirm-babel-evaluate nil
-        org-default-notes-file "~/org/organizer"
+        org-default-notes-file "~/Dropbox/organizer"
         org-directory "~/org/"
         org-ellipsis "…"
         org-log-done (quote note)
@@ -905,7 +917,6 @@ of the file is like this:
         org-special-ctrl-k t
         org-todo-keywords (quote ((sequence "TODO(t)" "WAIT(w)" "DONE(d)" "CANCEL(c)"))))
   (local-set-key (kbd "<return>") 'org-return-indent)
-  (local-set-key (kbd "C-x n c") 'org-clone-and-narrow-to-block)
   (setenv "GRAPHVIZ_DOT" "/usr/bin/dot")
   (org-babel-do-load-languages
    'org-babel-load-languages
@@ -923,13 +934,15 @@ of the file is like this:
 
 (org-clock-persistence-insinuate)
 
-(defconst org-capture-file "~/org/capture.org" "Location of file where to store org capture notes.")
+(defconst org-capture-file "~/Dropbox/organizer" "Location of file where to store org capture notes.")
 
 ;; capture templates are documented at
 ;; http://orgmode.org/manual/Capture.html
 
 (setq org-capture-templates
-      (quote (("t" "todo" entry (file+headline org-capture-file "Inbox")
+      (quote (("a" "Appointment" entry (file  org-capture-file)
+	       "* %?\n\n%^T\n\n:PROPERTIES:\n\n:END:\n\n")
+              ("t" "todo" entry (file+headline org-capture-file "Inbox")
                "** TODO %?\n%U\n%a\n" :kill-buffer t :clock-in t :clock-resume t)
               ("n" "note" entry (file+headline org-capture-file "Inbox")
                "** %? :NOTE:\n%U\n%a\n" :kill-buffer t :clock-in t :clock-resume t)
@@ -1946,12 +1959,6 @@ If so calculate pacakge name from current directory name."
     (html-project-post-processing name)))
 
 (global-set-key (kbd "C-c 4") #'start-web-project)
-
-(defun css-mode-setup ()
-  "Personal css mode hook extender."
-  )
-
-(add-hook 'css-mode-hook' 'css-mode-setup)
 
 ;; ]
 
