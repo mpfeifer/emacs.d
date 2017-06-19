@@ -856,13 +856,12 @@ of the file is like this:
 
 (use-package org-gcal
   :config
-  (setq org-gcal-client-id ""
-	org-gcal-client-secret ""
-	org-gcal-file-alist '(("mpfeifer77@gmail.com" .  "~/Dropbox/gcal.org")))
+
   (add-hook 'org-agenda-mode-hook (lambda () (org-gcal-sync) ))
   (add-hook 'org-capture-after-finalize-hook (lambda () (org-gcal-sync) ))
   )
 
+(require 'org-gcal-secrets)
 
 ;; examples https://github.com/zweifisch/ob-http
 (use-package ob-http

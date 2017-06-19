@@ -35,3 +35,4 @@ projectile.cache
 projectile/
 .python-environments/
 .cache
+org-gcal-secrets.el
