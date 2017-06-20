@@ -856,10 +856,8 @@ of the file is like this:
 
 (use-package org-gcal
   :config
-
   (add-hook 'org-agenda-mode-hook (lambda () (org-gcal-sync) ))
-  (add-hook 'org-capture-after-finalize-hook (lambda () (org-gcal-sync) ))
-  )
+  (add-hook 'org-capture-after-finalize-hook (lambda () (org-gcal-sync) )))
 
 (require 'org-gcal-secrets)
 
@@ -882,6 +880,17 @@ of the file is like this:
 ;;    C-S-<up/down> (org-clock-timestamps-up/down)
 ;;    S-M-<up/down> (org-timestamp-up-down)
 
+
+(defun visit-org-files ()
+  "Visit any of the files in org-agenda-files or org-default-notes-file."
+  (interactive)
+  (let ((org-file (completing-read
+                   "File to visit: "
+                   (cons org-default-notes-file org-agenda-files))))
+        (find-file-other-frame org-file)))
+
+(global-set-key (kbd "C-c o") 'visit-org-files)
+
 ;; agenda commands
 ;;    C-c C-s    Schedule item for date
 ;;    C-c C-d    Set deadline for item
@@ -889,7 +898,7 @@ of the file is like this:
 ;;    like this: <2016-02-28 Sa 14:00-15:30>
 ;;    Timestamp magic:
 ;;    <2016-02-28 Sa 14:00-15:30 +1w>   repeat every week
-;;    <2016-02-28 Sa 14:00-15:30 ++1w>  next item is always in the future
+;;    <2016-02-28 Sa 14:00-15:30 ++1w>  next item will always be in the future
 ;;    <2016-02-28 Sa 14:00-15:30 .+4w>  timedistance is added to today
 
 (defun org-mode-setup ()
@@ -1753,7 +1762,7 @@ If so calculate pacakge name from current directory name."
   :config
   (setq ivy-fixed-height-minibuffer t
         ivy-use-virtual-buffers t
-        ivy-count-format "[%d|%d]--[")
+        ivy-count-format "[%d|%d] - ")
   (ivy-mode)
  )
 
