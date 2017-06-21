@@ -775,24 +775,25 @@ of the file is like this:
 
 (defun pre-process-kill-ring-element (element)
   (replace-regexp-in-string "^[[:space:]]+" ""
-                            (replace-regexp-in-string "[[:space:]]+$" "" element)))
+                            (replace-regexp-in-string "[[:space:]]+$" ""
+                                                      (substring-no-properties element))))
 
 (defun preprocess-kill-ring ()
   (let ((result nil)
         (element nil))
     (dolist (element kill-ring)
       (progn
-        (setq element (pre-process-kill-ring-element (substring-no-properties element)))
+        (setq element (pre-process-kill-ring-element element))
         (when (not (or
                     (eq 0 (length element))
                     (string-match-p "[\r\n]+" element)))
           (setq result (cons element result)))))
-    result))
+    (reverse result)))
 
 (defun browse-kill-ring ()
   (interactive)
   (completing-read "Pick an element: "
-                   (reverse (preprocess-kill-ring))))
+                   (preprocess-kill-ring)))
 
 (global-set-key (kbd "C-M-y") 'browse-kill-ring)
 
