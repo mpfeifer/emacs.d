@@ -771,6 +771,33 @@ of the file is like this:
 
 ;; ]
 
+;; [ the kill ring
+
+(defun pre-process-kill-ring-element (element)
+  (replace-regexp-in-string "^[[:space:]]+" ""
+                            (replace-regexp-in-string "[[:space:]]+$" "" element)))
+
+(defun preprocess-kill-ring ()
+  (let ((result nil)
+        (element nil))
+    (dolist (element kill-ring)
+      (progn
+        (setq element (pre-process-kill-ring-element (substring-no-properties element)))
+        (when (not (or
+                    (eq 0 (length element))
+                    (string-match-p "[\r\n]+" element)))
+          (setq result (cons element result)))))
+    result))
+
+(defun browse-kill-ring ()
+  (interactive)
+  (completing-read "Pick an element: "
+                   (reverse (preprocess-kill-ring))))
+
+(global-set-key (kbd "C-M-y") 'browse-kill-ring)
+
+;; ]
+
 ;; [ yasnippet
 
 (use-package yasnippet
@@ -925,6 +952,7 @@ of the file is like this:
         org-special-ctrl-k t
         org-todo-keywords (quote ((sequence "TODO(t)" "WAIT(w)" "DONE(d)" "CANCEL(c)"))))
   (local-set-key (kbd "<return>") 'org-return-indent)
+  (local-set-key (kbd "C-'") 'imenu)
   (setenv "GRAPHVIZ_DOT" "/usr/bin/dot")
   (org-babel-do-load-languages
    'org-babel-load-languages
@@ -1796,6 +1824,8 @@ If so calculate pacakge name from current directory name."
 
 (use-package jedi)
 
+(elpy-enable)
+
 (defun python-mode-setup ()
   "Personal python mode hook extension."
   (setq-local comment-auto-fill-only-comments t)
@@ -1805,7 +1835,7 @@ If so calculate pacakge name from current directory name."
         elpy-syntax-check-command "flake8")
   (local-set-key (kbd "M-#") 'comment-dwim)
   (jedi:setup)
-  (elpy-enable)
+
   (pyvenv-activate "~/.emacs.d/.python-environments/default/"))
 
 (use-package elpy
@@ -1815,7 +1845,17 @@ If so calculate pacakge name from current directory name."
   (add-to-list 'auto-mode-alist '("\\.py2\\'" . python-mode))
   (add-to-list 'auto-mode-alist '("\\.py3\\'" . python-mode))
   (add-to-list 'auto-insert-alist '(".*\\.py3?$" . [ "template.py3" ] ) )
-  (add-to-list 'auto-insert-alist '(".*\\.py2$" . [ "template.py" ] ) ))
+  (add-to-list 'auto-insert-alist '(".*\\.py2$" . [ "template.py" ] ) )
+  (setq elpy-modules (quote
+                      (elpy-module-eldoc
+                       elpy-module-flymake
+                       elpy-module-pyvenv
+                       elpy-module-highlight-indentation
+                       elpy-module-yasnippet
+                       elpy-module-sane-defaults))
+        elpy-rpc-backend nil
+        elpy-rpc-error-timeout 15
+        elpy-syntax-check-command "flake8") )
 
 ;; ]
 
@@ -2172,60 +2212,113 @@ If so calculate pacakge name from current directory name."
 
 ;; ]
 
+
+;; [ auto-complete
+
+;; TODO - want per mode and per file dictionary files
+
+(use-package ac-etags
+  :config
+  :disabled
+  (ac-etags-setup))
+
+(use-package ac-php
+  :disabled)
+
+(use-package auto-complete
+  :disabled
+  :config
+  
+  (require 'auto-complete)
+  (require 'auto-complete-config)
+
+  (setq
+   ac-auto-show-menu 2
+   ac-auto-start 0.1
+
+   ac-comphist-file "~/.emacs.d/ac-comphist.dat"
+   ac-dictionary-directories (quote ("~/.emacs.d/dictionaries/"))   ;; mode specific dictionaries
+   ac-dictionary-files (quote ("~/.emacs.d/dictionaries/personal")) ;; personal dictionary
+   ac-quick-help-delay 0.2
+   ac-use-fuzzy t
+   ac-dwim t
+   ac-use-menu-map t
+   ac-use-quick-help nil
+   ac-user-dictionary (quote ("")))
+
+  (global-set-key (kbd "C-c C-<SPC>") 'auto-complete)
+
+  (define-key ac-menu-map "\C-n" 'ac-next)
+  (define-key ac-menu-map "\C-p" 'ac-previous)
+  (define-key ac-menu-map "\C-s" 'ac-isearch)
+  (define-key ac-mode-map (kbd "C-x /") 'ac-complete-filename)
+
+  (add-to-list 'ac-modes 'web-mode)
+
+  (dolist (mode (list 'xml-mode 'web-mode 'sh-mode
+                      'emacs-lisp-mode 'java-mode))
+    (add-to-list 'ac-modes mode))
+
+  ;; Just in case linum mode and ac interfer
+  (ac-linum-workaround)
+
+  (defun mp-ac-setup-for-emacs-lisp ()
+    "Turn on auto-complete mode and set ac-sources for emacs-lisp-mode."
+    (setq ac-sources '(ac-source-yasnippet
+                       ac-source-filename
+                       ac-source-files-in-current-dir))
+    (auto-complete-mode t) )
+
+  (add-hook 'emacs-lisp-mode-hook 'mp-ac-setup-for-emacs-lisp)
+
+  (defun mp-ac-setup-for-c-mode ()
+    "Turn on auto-complete mode and set ac-sources for c/c++-mode."
+    (setq ac-sources  (list
+                       'ac-source-yasnippet
+                       'ac-source-etags
+                       'ac-source-dictionary
+                       'ac-source-words-in-same-mode-buffers))
+    (auto-complete-mode 1) )
+
+  (add-hook 'c-mode-hook 'mp-ac-setup-for-c-mode)
+  (add-hook 'c++-mode-hook 'mp-ac-setup-for-c-mode)
+
+  (defun mp-ac-setup-for-java-mode ()
+    "Turn on auto-complete mode and set ac-sources for java-mode."
+    (auto-complete-mode 1)
+    (setq ac-sources '(ac-source-etags
+                       ac-source-yasnippet
+                       ac-source-classpath
+                       ac-source-dictionary
+                       ac-source-words-in-same-mode-buffers)))
+
+  (defun mp-ac-setup-for-php-mode ()
+    "Turn on auto-complete mode and set ac-sources for ac-php."
+    (require 'ac-php)    
+    (setq ac-sources  (list
+                       'ac-source-yasnippet
+                       'ac-source-php
+                       'ac-source-words-in-same-mode-buffers) )
+    (auto-complete-mode 1))
+
+  (add-hook 'php-mode-hook 'mp-ac-setup-for-php-mode)
+
+  (defun mp-ac-setup-for-shell-mode ()
+    "Turn on auto-complete mode and set ac-sources for shell-mode."
+    (define-key ac-mode-map (kbd "C-c /") 'ac-complete-filename) 
+    (auto-complete-mode 1) )
+
+  (add-hook 'shell-mode-hook 'mp-ac-setup-for-shell-mode) ) ;; end of use-package
+
+;; ]
+
 ;; [ company
 
 (require 'cl-lib)
 (require 'company)
 
-(setq package-list-cache nil)
-
-(defun get-package-names-from-packages-buffer ()
-  "Read package names from *Packges* buffer.
-
-Just go over buffer line by line and collect package names in the way they
-are displayed. The drawback is that the names provided in the buffer are
-not correct as they are cut after some chars and ... is appended."
-
-  (when (not (get-buffer "*Packages*"))
-    (save-excursion
-      (package-list-packages-no-fetch)))
-  (with-current-buffer "*Packages*"
-    (let ((result nil))
-      (goto-char (point-min))
-      (while (looking-at ".*\\(available\\|installed\\|dependency\\|built-in\\).*")
-        (forward-char 2)
-        (let ((beginning (point))
-              (end nil)
-              (package-name nil))
-          (search-forward " ")
-          (backward-char 1)
-          (setq end (point))
-          (setq package-name (buffer-substring-no-properties beginning end))
-          (setq result (cons package-name result)))
-        (forward-line 1)
-        (beginning-of-line))
-      result)))
-
-(defun company-use-package (command &optional arg &rest ignored)
-  "Complete arg to possible package names."
-  (interactive (list 'interactive))
-  (cl-case command
-    (interactive (company-begin-backend 'company-sample-backend))
-    (prefix
-     (and (eq major-mode 'emacs-lisp-mode)
-          (or (company-grab-symbol) 'stop)))
-    (candidates
-     (let ((completion-ignore-case nil)
-           (symbols package-list-cache))
-       (all-completions arg symbols)))
-    (sorted t)
-    (init (progn
-            (when (null package-list-cache)
-              (setq package-list-cache
-                    (sort
-                     (get-package-names-from-packages-buffer) 'string-lessp)))))))
-
 (use-package company-php
+  :disabled
   :config
   (add-hook 'php-mode-hook
             '(lambda ()
@@ -2238,8 +2331,7 @@ not correct as they are cut after some chars and ... is appended."
   :config
   ;; see company-backends for company backends
   (make-variable-buffer-local 'company-backends)
-  (require 'company-template)
-  (global-company-mode))
+  (require 'company-template))
 
 ;; ]
 
@@ -2283,6 +2375,9 @@ not correct as they are cut after some chars and ... is appended."
 
 (use-package projectile
   :config
+  (setq projectile-completion-system (quote ivy)
+        projectile-enable-caching t
+        projectile-tags-command "etags -a TAGS \"%s\"")
   (projectile-mode))
 
 ;; ]
