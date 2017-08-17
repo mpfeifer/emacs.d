@@ -746,7 +746,6 @@ of the file is like this:
     (dotemacs-mode-hook))
   (local-set-key (kbd "C-/") 'comment-dwim)
   (local-set-key (kbd "C-c C-c") 'byte-compile-current-buffer)
-  (linum-mode)
   (electric-pair-mode) )
 
 (add-hook 'emacs-lisp-mode-hook 'emacs-lisp-mode-setup)
@@ -792,11 +791,11 @@ of the file is like this:
 
 (defun browse-kill-ring ()
   (interactive)
-  (completing-read "Pick an element: "
-                   (preprocess-kill-ring)))
+  (insert (completing-read "Pick an element: "
+                   (preprocess-kill-ring))))
 
 (global-set-key (kbd "C-M-y") 'browse-kill-ring)
-
+ 
 ;; ]
 
 ;; [ yasnippet
@@ -1114,8 +1113,6 @@ of the file is like this:
       (when window (select-window window)))))
 
 (use-package treemacs
-  :ensure t
-  :defer t
   :config
   (setq treemacs-header-function            #'treemacs--create-header-projectile
         treemacs-follow-after-init          t
@@ -1796,7 +1793,7 @@ If so calculate pacakge name from current directory name."
  )
 
 (use-package swiper
-  :bind ("C-s" . swiper))
+  :bind ("C-M-s" . swiper))
 
 (use-package avy
   :bind ("C-S-j" . avy-goto-word-or-subword-1) )
@@ -1806,7 +1803,8 @@ If so calculate pacakge name from current directory name."
 ;; [ Where was I [editing text]?
 
 (defun store-lot-position ()
-  (when (not (or 
+  (when (not (or
+              (window-minibuffer-p)
               (string-prefix-p "*" (buffer-name))
               (string-prefix-p " " (buffer-name))))
     (point-to-register ?z)))
@@ -2112,20 +2110,21 @@ If so calculate pacakge name from current directory name."
 
 ;; [ magit
 
-(use-package magit
+(when (not (string= (system-name) "ThinkCentre-M57"))
+  (use-package magit
 
-  :config
+    :config
 
-  (defun magit-status-wrapper (arg)
-    "Start magit. With prefix argument start magit in new frame."
-    (interactive "P")
-    (when arg
-      (select-frame (make-frame '((name . "Magit")))))
-    (call-interactively 'magit-status)
-    (when arg
-      (delete-other-windows) ) )
+    (defun magit-status-wrapper (arg)
+      "Start magit. With prefix argument start magit in new frame."
+      (interactive "P")
+      (when arg
+        (select-frame (make-frame '((name . "Magit")))))
+      (call-interactively 'magit-status)
+      (when arg
+        (delete-other-windows) ) )
 
-  (global-set-key (kbd "<f12>") 'magit-status-wrapper) )
+    (global-set-key (kbd "<f12>") 'magit-status-wrapper)))
 
 ;; ]
 
@@ -2175,7 +2174,6 @@ If so calculate pacakge name from current directory name."
 ;; [ messages mode buffer
 
 (with-current-buffer "*Messages*"
-  (linum-mode)
   (visual-line-mode)
   t)
 
@@ -2313,28 +2311,28 @@ If so calculate pacakge name from current directory name."
 
 ;; ]
 
-;; [ company
+;; ;; [ company
 
-(require 'cl-lib)
-(require 'company)
+;; (require 'cl-lib)
+;; (require 'company)
 
-(use-package company-php
-  :disabled
-  :config
-  (add-hook 'php-mode-hook
-            '(lambda ()
-               (require 'company-php)
-               (setq company-backends '(company-ac-php-backend )))))
+;; (use-package company-php
+;;   :disabled
+;;   :config
+;;   (add-hook 'php-mode-hook
+;;             '(lambda ()
+;;                (require 'company-php)
+;;                (setq company-backends '(company-ac-php-backend )))))
 
-;;(use-package company-statistics)
+;; ;;(use-package company-statistics)
 
-(use-package company
-  :config
-  ;; see company-backends for company backends
-  (make-variable-buffer-local 'company-backends)
-  (require 'company-template))
+;; (use-package company
+;;   :config
+;;   ;; see company-backends for company backends
+;;   (make-variable-buffer-local 'company-backends)
+;;   (require 'company-template))
 
-;; ]
+;; ;; ]
 
 ;; [ ffip
 
