@@ -1826,6 +1826,10 @@ If so calculate pacakge name from current directory name."
 
 ;; [ elpy python jedi
 
+;; do not forget python dependencies: rope, jedi, flake8, importmagic,
+;; autopep8, yapf, epc
+;; to obtain dependencies use for example: "python -m pip install importmagic"
+
 (use-package jedi)
 
 (defun python-mode-setup ()
@@ -2217,8 +2221,6 @@ If so calculate pacakge name from current directory name."
 
 
 ;; [ auto-complete
-
-;; TODO - want per mode and per file dictionary files
 
 (use-package ac-etags
   :config
