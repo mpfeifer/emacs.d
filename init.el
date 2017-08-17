@@ -28,7 +28,9 @@
 
 (setq custom-file "~/.emacs.d/custom.el")
 
-(load custom-file)
+(if (file-exists-p custom-file)
+    (load custom-file)
+  (message "No custom.el file found."))
 
 ;; ]
 
@@ -886,7 +888,8 @@ of the file is like this:
   (add-hook 'org-agenda-mode-hook (lambda () (org-gcal-sync) ))
   (add-hook 'org-capture-after-finalize-hook (lambda () (org-gcal-sync) )))
 
-(require 'org-gcal-secrets)
+(when (not (require 'org-gcal-secrets nil 'noerror))
+  (message "org gcal secrets are not available!"))
 
 ;; examples https://github.com/zweifisch/ob-http
 (use-package ob-http
@@ -1823,8 +1826,6 @@ If so calculate pacakge name from current directory name."
 
 (use-package jedi)
 
-(elpy-enable)
-
 (defun python-mode-setup ()
   "Personal python mode hook extension."
   (setq-local comment-auto-fill-only-comments t)
@@ -1839,6 +1840,7 @@ If so calculate pacakge name from current directory name."
 
 (use-package elpy
   :config
+  (elpy-enable)
   (add-hook 'python-mode-hook 'python-mode-setup)
   (add-to-list 'auto-mode-alist '("\\.py\\'" . python-mode))
   (add-to-list 'auto-mode-alist '("\\.py2\\'" . python-mode))
