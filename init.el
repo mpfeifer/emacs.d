@@ -1458,12 +1458,13 @@ and display corresponding buffer in new frame."
 
 (setq tags-table-list (list (concat jdk-location "src/")))
 
-;; (setq tags-revert-without-query 't)
+(setq tags-revert-without-query 't)
 
 (use-package javadoc-lookup)
 
 (defvar java-classpath nil "Java classpath. This will be set by .dir-locals.el (hopefully).")
 (defvar java-current-project-root nil "Buffer local location of current project root.")
+(defvar java-classes-cache nil "Cache for the current classpath classes.")
 
 (defun java-read-classes-from-classpath ()
   "Iterate over classpath and gather classes from jar files.
@@ -1477,7 +1478,7 @@ Evaluates into one large list containing all classes."
         (progn
           (setq jarfile (car jarfiles)
                 jarfiles (cdr jarfiles))
-          (call-process "/usr/bin/unzip" nil t nil "-l" jarfile)
+          (call-process "/usr/bin/unzip" nil t nil "-l" (expand-file-name jarfile))
           (goto-char (point-min))
           (let ((end 0)
                 (classname ""))
@@ -1520,14 +1521,22 @@ With prefix argument insert classname with package name. Otherwise omit package 
 
 (defun java-assert-import (name)
   "Insert import statement for class NAME if it does not yet exist. "
-  (save-excursion
-    (goto-char (point-min))
-    (when (not (re-search-forward (format "^import %s;" name) nil t))
-      (progn
-        (while (re-search-forward "^import.*" nil t))
-        (end-of-line)
-        (newline-and-indent)
-        (insert (format "import %s;" name))))))
+  (push-mark)
+  (goto-char (point-min))
+  (when (not (re-search-forward (format "^import %s;" name) nil t))
+    (progn
+      (while (re-search-forward "^import.*" nil t))
+      (end-of-line)
+      (newline-and-indent)
+      (insert (format "import %s;" name)))))
+
+(defun java-add-import ()
+  (interactive)
+  (let* ((classes (progn (when (not java-classes-cache)
+                           (setq java-classes-cache (java-read-classes-from-classpath)))
+                         java-classes-cache))
+         (classname (completing-read "Class: " classes)))
+    (java-assert-import classname)))
 
 (defun start-new-web-application (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
@@ -1665,6 +1674,7 @@ If so calculate pacakge name from current directory name."
   (local-set-key (kbd "C-h j") 'javadoc-lookup)
   (setq-local comment-multi-line t)
   (local-set-key (kbd "C-M-j") 'imenu)
+  (local-set-key (kbd "C-?") 'java-add-import)
   (local-set-key (kbd "C-x c") 'java-insert-classname-completing-read))
 
 (add-hook 'hack-local-variables-hook 'java-mode-process-dir-locals)
