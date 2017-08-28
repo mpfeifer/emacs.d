@@ -840,13 +840,12 @@ of the file is like this:
   (interactive)
   (let ((test-html-file (replace-regexp-in-string (regexp-quote ".js") "-test.html" (buffer-name)))
         (test-js-file (replace-regexp-in-string (regexp-quote ".js") "-test.js" (buffer-name))))
-    (when (eq 1 (length (window-list)))
-      (progn
-        (find-file test-html-file)
-        (goto-char (point-min))
-        (split-window (selected-window) 15)
-        (other-window 1)
-        (find-file test-js-file)))))
+    (progn
+      (find-file test-html-file)
+      (goto-char (point-min))
+      (split-window (selected-window) 15)
+      (other-window 1)
+      (find-file test-js-file))))
 
 (use-package js2-mode
   :mode "\\.js\\'"
@@ -941,7 +940,7 @@ of the file is like this:
   (setq org-agenda-span 7
         org-agenda-comact-blocks t
         org-agenda-show-all-dates t
-        org-agenda-files '("~/Dropbox/gcal.org" "~/Dropbox/organizer")
+        org-agenda-files '("~/.emacs.d/org/schedule.org")
         org-babel-python-command "python"
         org-clock-into-drawer t
         org-clock-persist 'history
