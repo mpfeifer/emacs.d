@@ -839,13 +839,12 @@ of the file is like this:
   (interactive)
   (let ((test-html-file (replace-regexp-in-string (regexp-quote ".js") "-test.html" (buffer-name)))
         (test-js-file (replace-regexp-in-string (regexp-quote ".js") "-test.js" (buffer-name))))
-    (when (eq 1 (length (window-list)))
-      (progn
-        (find-file test-html-file)
-        (goto-char (point-min))
-        (split-window (selected-window) 15)
-        (other-window 1)
-        (find-file test-js-file)))))
+    (progn
+      (find-file test-html-file)
+      (goto-char (point-min))
+      (split-window (selected-window) 15)
+      (other-window 1)
+      (find-file test-js-file))))
 
 (use-package js2-mode
   :mode "\\.js\\'"
@@ -2390,6 +2389,20 @@ If so calculate pacakge name from current directory name."
         projectile-enable-caching t
         projectile-tags-command "etags -a TAGS \"%s\"")
   (projectile-mode))
+
+;; ]
+
+;; [ ensime
+
+(use-package ensime
+  :config
+  (setq ensime-startup-notification nil))
+
+(use-package scala-mode)
+
+(use-package sbt-mode
+  :interpreter
+  ("scala" . scala-mode))
 
 ;; ]
 
