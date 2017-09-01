@@ -748,7 +748,6 @@ of the file is like this:
     (dotemacs-mode-hook))
   (local-set-key (kbd "C-/") 'comment-dwim)
   (local-set-key (kbd "C-c C-c") 'byte-compile-current-buffer)
-  (linum-mode)
   (electric-pair-mode) )
 
 (add-hook 'emacs-lisp-mode-hook 'emacs-lisp-mode-setup)
@@ -794,11 +793,11 @@ of the file is like this:
 
 (defun browse-kill-ring ()
   (interactive)
-  (completing-read "Pick an element: "
-                   (preprocess-kill-ring)))
+  (insert (completing-read "Pick an element: "
+                   (preprocess-kill-ring))))
 
 (global-set-key (kbd "C-M-y") 'browse-kill-ring)
-
+ 
 ;; ]
 
 ;; [ yasnippet
@@ -1116,8 +1115,6 @@ of the file is like this:
       (when window (select-window window)))))
 
 (use-package treemacs
-  :ensure t
-  :defer t
   :config
   (setq treemacs-header-function            #'treemacs--create-header-projectile
         treemacs-follow-after-init          t
@@ -1460,12 +1457,13 @@ and display corresponding buffer in new frame."
 
 (setq tags-table-list (list (concat jdk-location "src/")))
 
-;; (setq tags-revert-without-query 't)
+(setq tags-revert-without-query 't)
 
 (use-package javadoc-lookup)
 
 (defvar java-classpath nil "Java classpath. This will be set by .dir-locals.el (hopefully).")
 (defvar java-current-project-root nil "Buffer local location of current project root.")
+(defvar java-classes-cache nil "Cache for the current classpath classes.")
 
 (defun java-read-classes-from-classpath ()
   "Iterate over classpath and gather classes from jar files.
@@ -1479,7 +1477,7 @@ Evaluates into one large list containing all classes."
         (progn
           (setq jarfile (car jarfiles)
                 jarfiles (cdr jarfiles))
-          (call-process "/usr/bin/unzip" nil t nil "-l" jarfile)
+          (call-process "/usr/bin/unzip" nil t nil "-l" (expand-file-name jarfile))
           (goto-char (point-min))
           (let ((end 0)
                 (classname ""))
@@ -1522,14 +1520,22 @@ With prefix argument insert classname with package name. Otherwise omit package 
 
 (defun java-assert-import (name)
   "Insert import statement for class NAME if it does not yet exist. "
-  (save-excursion
-    (goto-char (point-min))
-    (when (not (re-search-forward (format "^import %s;" name) nil t))
-      (progn
-        (while (re-search-forward "^import.*" nil t))
-        (end-of-line)
-        (newline-and-indent)
-        (insert (format "import %s;" name))))))
+  (push-mark)
+  (goto-char (point-min))
+  (when (not (re-search-forward (format "^import %s;" name) nil t))
+    (progn
+      (while (re-search-forward "^import.*" nil t))
+      (end-of-line)
+      (newline-and-indent)
+      (insert (format "import %s;" name)))))
+
+(defun java-add-import ()
+  (interactive)
+  (let* ((classes (progn (when (not java-classes-cache)
+                           (setq java-classes-cache (java-read-classes-from-classpath)))
+                         java-classes-cache))
+         (classname (completing-read "Class: " classes)))
+    (java-assert-import classname)))
 
 (defun start-new-web-application (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
@@ -1667,6 +1673,7 @@ If so calculate pacakge name from current directory name."
   (local-set-key (kbd "C-h j") 'javadoc-lookup)
   (setq-local comment-multi-line t)
   (local-set-key (kbd "C-M-j") 'imenu)
+  (local-set-key (kbd "C-?") 'java-add-import)
   (local-set-key (kbd "C-x c") 'java-insert-classname-completing-read))
 
 (add-hook 'hack-local-variables-hook 'java-mode-process-dir-locals)
@@ -1798,7 +1805,7 @@ If so calculate pacakge name from current directory name."
  )
 
 (use-package swiper
-  :bind ("C-s" . swiper))
+  :bind ("C-M-s" . swiper))
 
 (use-package avy
   :bind ("C-S-j" . avy-goto-word-or-subword-1) )
@@ -1808,7 +1815,8 @@ If so calculate pacakge name from current directory name."
 ;; [ Where was I [editing text]?
 
 (defun store-lot-position ()
-  (when (not (or 
+  (when (not (or
+              (window-minibuffer-p)
               (string-prefix-p "*" (buffer-name))
               (string-prefix-p " " (buffer-name))))
     (point-to-register ?z)))
@@ -2117,20 +2125,21 @@ If so calculate pacakge name from current directory name."
 
 ;; [ magit
 
-(use-package magit
+(when (not (string= (system-name) "ThinkCentre-M57"))
+  (use-package magit
 
-  :config
+    :config
 
-  (defun magit-status-wrapper (arg)
-    "Start magit. With prefix argument start magit in new frame."
-    (interactive "P")
-    (when arg
-      (select-frame (make-frame '((name . "Magit")))))
-    (call-interactively 'magit-status)
-    (when arg
-      (delete-other-windows) ) )
+    (defun magit-status-wrapper (arg)
+      "Start magit. With prefix argument start magit in new frame."
+      (interactive "P")
+      (when arg
+        (select-frame (make-frame '((name . "Magit")))))
+      (call-interactively 'magit-status)
+      (when arg
+        (delete-other-windows) ) )
 
-  (global-set-key (kbd "<f12>") 'magit-status-wrapper) )
+    (global-set-key (kbd "<f12>") 'magit-status-wrapper)))
 
 ;; ]
 
@@ -2180,7 +2189,6 @@ If so calculate pacakge name from current directory name."
 ;; [ messages mode buffer
 
 (with-current-buffer "*Messages*"
-  (linum-mode)
   (visual-line-mode)
   t)
 
@@ -2316,28 +2324,28 @@ If so calculate pacakge name from current directory name."
 
 ;; ]
 
-;; [ company
+;; ;; [ company
 
-(require 'cl-lib)
-(require 'company)
+;; (require 'cl-lib)
+;; (require 'company)
 
-(use-package company-php
-  :disabled
-  :config
-  (add-hook 'php-mode-hook
-            '(lambda ()
-               (require 'company-php)
-               (setq company-backends '(company-ac-php-backend )))))
+;; (use-package company-php
+;;   :disabled
+;;   :config
+;;   (add-hook 'php-mode-hook
+;;             '(lambda ()
+;;                (require 'company-php)
+;;                (setq company-backends '(company-ac-php-backend )))))
 
-;;(use-package company-statistics)
+;; ;;(use-package company-statistics)
 
-(use-package company
-  :config
-  ;; see company-backends for company backends
-  (make-variable-buffer-local 'company-backends)
-  (require 'company-template))
+;; (use-package company
+;;   :config
+;;   ;; see company-backends for company backends
+;;   (make-variable-buffer-local 'company-backends)
+;;   (require 'company-template))
 
-;; ]
+;; ;; ]
 
 ;; [ ffip
 
@@ -2383,6 +2391,20 @@ If so calculate pacakge name from current directory name."
         projectile-enable-caching t
         projectile-tags-command "etags -a TAGS \"%s\"")
   (projectile-mode))
+
+;; ]
+
+;; [ ensime
+
+(use-package ensime
+  :config
+  (setq ensime-startup-notification nil))
+
+(use-package scala-mode)
+
+(use-package sbt-mode
+  :interpreter
+  ("scala" . scala-mode))
 
 ;; ]
 
