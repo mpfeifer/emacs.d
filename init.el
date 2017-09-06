@@ -361,14 +361,20 @@
 
 ;; ]
 
-;; [ server mode
+;; [ server mode edit server
 
 (setq server-use-tcp nil
+      server-host "localhost"
       server-auth-dir "~/.emacs.d/"
       server-port 39246)
 
 (server-start)
 
+(use-package edit-server
+  :config
+  (edit-server-start t)
+  
+  )
 ;; ]
 
 ;; [ isearch
