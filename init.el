@@ -363,18 +363,17 @@
 
 ;; [ server mode edit server
 
-(setq server-use-tcp nil
-      server-host "localhost"
-      server-auth-dir "~/.emacs.d/"
-      server-port 39246)
+;; (setq server-use-tcp nil
+;;       server-host "localhost"
+;;       server-auth-dir "~/.emacs.d/"
+;;       server-port 39246)
 
-(server-start)
+;; (server-start)
 
 (use-package edit-server
   :config
-  (edit-server-start t)
-  
-  )
+  (edit-server-start t))
+
 ;; ]
 
 ;; [ isearch
@@ -457,11 +456,7 @@
             (apply 'solar-time-string (car l))
             (apply 'solar-time-string (cadr l)))))
 
-(use-package material-theme
-  :config
-  (load-theme 'material-light)
-  ;; (load-theme 'material)
-  )
+(load-theme 'adwaita)
 
 (use-package volatile-highlights
   :init
@@ -543,14 +538,14 @@ of the file is like this:
 (defun ibuffer-previous-line ()
   "Move point to last buffer when going before first buffer."
   (interactive)
-  (previous-line)
+  (forward-line -1)
   (if (<= (line-number-at-pos) 2)
       (goto-line (- (count-lines (point-min) (point-max)) 2))))
 
 (defun ibuffer-next-line ()
   "Wrap point to first buffer when going after last buffer."
   (interactive)
-  (next-line)
+  (forward-line)
   (if (>= (line-number-at-pos)
           (- (count-lines (point-min) (point-max)) 1))
       (goto-line 3)))
@@ -602,25 +597,23 @@ of the file is like this:
            (buffer-mode (symbol-to-string (with-current-buffer buffer
                                             major-mode)))
            (buf-file-name (buffer-file-name buffer))
-           (dircomponents nil))
-      (when (and buf-file-name
-                 (file-exists-p buf-file-name))
-        (setq dirname (file-name-directory buf-file-name))
-        (when (stringp dirname)
-          (progn
-            ;; there should be to empty strings at the begining
-            ;; and the end of the dirparts
-            (setq dirparts (reverse (split-string dirname "/")))
-            (setq result (if (> (length dirparts) 6)
-                             (concat "…/"
-                                     (nth 4 dirparts) "/"
-                                     (nth 3 dirparts) "/"
-                                     (nth 2 dirparts) "/"
-                                     (nth 1 dirparts) "/")
-                           (file-name-directory buf-file-name))))))
+           (dircomponents nil)
+           (dir-name (if (and buf-file-name
+                             (file-exists-p buf-file-name))
+                        (file-name-directory buf-file-name)
+                      nil)))
+      (when dir-name
+        (setq dirparts (reverse (split-string dir-name "/"))
+              result (if (> (length dirparts) 6)
+                         (concat "…/"
+                                 (nth 4 dirparts) "/"
+                                 (nth 3 dirparts) "/"
+                                 (nth 2 dirparts) "/"
+                                 (nth 1 dirparts) "/")
+                       (file-name-directory buf-file-name))))
       (if result
-          (concat "" result)
-        (concat "" buffer-mode))))
+          result
+        buffer-mode)))
 
   (setq ibuffer-show-empty-filter-groups nil
         ibuffer-formats '(( mark (git-status-mini) modified read-only "|"
@@ -1053,7 +1046,7 @@ of the file is like this:
 
   (defun prodigy-previous-line ()
     (interactive)
-    (previous-line)
+    (forward-line -1)
     (when (looking-at ".*Running.*")
       (progn
         (prodigy-display-process)
@@ -1314,7 +1307,7 @@ current frame has more windows -> open terminal in new frame"
   (global-set-key (kbd "C-<right>") 'windmove-right)
   (global-set-key (kbd "C-<left>") 'windmove-left))
 
-(winner-mode)
+;; (winner-mode)
 
 (defun detach-window (arg)
   "Iff current frame hosts at least two windows, close current window
@@ -1430,7 +1423,8 @@ and display corresponding buffer in new frame."
 (add-hook 'Man-mode-hook 'man-mode-setup)
 
 (defun my-help-mode-setup ()
-  (local-set-key (kbd "q") 'winner-undo))
+  (local-set-key (kbd "q") 'kill-buffer)  
+  (local-set-key (kbd "C-q") 'kill-buffer-and-window))
 
 (add-hook 'help-mode-hook 'my-help-mode-setup)
 
@@ -1613,7 +1607,7 @@ If so calculate pacakge name from current directory name."
 (defun copy-template (filename target-file alist)
   "Copy FILENAME to TARGET-FILE. Then replace keys with values looked up in ALIST"
   (with-temp-buffer
-    (insert-file (concat "~/.emacs.d/templates/" filename))
+    (insert-file-contents (concat "~/.emacs.d/templates/" filename))
     (dolist (key-value alist)
       (goto-char (point-min))
       (let ((key (symbol-to-string (car key-value)))
@@ -2266,6 +2260,8 @@ If so calculate pacakge name from current directory name."
 
   (global-set-key (kbd "C-c C-<SPC>") 'auto-complete)
 
+  ;; Test for git gutter mode
+  
   (define-key ac-menu-map "\C-n" 'ac-next)
   (define-key ac-menu-map "\C-p" 'ac-previous)
   (define-key ac-menu-map "\C-s" 'ac-isearch)
@@ -2374,7 +2370,8 @@ If so calculate pacakge name from current directory name."
 
 (defun compilation-mode-setup ()
   ;; (next-error-follow-minor-mode)
-  (local-set-key (kbd "q") 'winner-undo))
+  (local-set-key (kbd "q") 'kill-buffer)  
+  (local-set-key (kbd "C-q") 'kill-buffer-and-window))
 
 (add-hook 'compilation-mode-hook 'compilation-mode-setup)
 
@@ -2387,10 +2384,8 @@ If so calculate pacakge name from current directory name."
 (require 'ansi-color)
 
 (defun colorize-compilation-buffer ()
-  (toggle-read-only)
-  ;; TODO: Try this (ansi-color-apply-on-region compilation-filter-start (point))
-  (ansi-color-apply-on-region (point-min) (point-max))
-  (toggle-read-only))
+  (let (inhibit-read-only nil)
+    (ansi-color-apply-on-region (point-min) (point-max))))
 
 (add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
 
@@ -2432,3 +2427,5 @@ If so calculate pacakge name from current directory name."
 ;; ]
 
 (notify "[Emacs] init.el fully loaded")
+
+ 
