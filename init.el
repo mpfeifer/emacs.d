@@ -26,6 +26,8 @@
 
 ;; [ custom set variables
 
+(load "~/.emacs.d/customx.el")
+
 (setq custom-file "~/.emacs.d/custom.el")
 
 (if (file-exists-p custom-file)
@@ -186,6 +188,9 @@
 ;; ]
 
 ;; [ General Emacs Behaviour
+
+(auto-fill-mode)
+(setq fill-column 72)
 
 (defgroup mp 
   nil "All things related to my customization"
@@ -363,15 +368,16 @@
 
 ;; [ server mode edit server
 
-;; (setq server-use-tcp nil
-;;       server-host "localhost"
-;;       server-auth-dir "~/.emacs.d/"
-;;       server-port 39246)
+(setq server-use-tcp nil
+      server-host "localhost"
+      server-auth-dir "~/.emacs.d/"
+      server-port 39246)
 
-;; (server-start)
+(server-start)
 
 (use-package edit-server
   :config
+  ;; default port for edit server is 9292
   (edit-server-start t))
 
 ;; ]
@@ -513,15 +519,6 @@
 (defgroup ibuffer
   nil "All things related to ibuffer"
   :group 'mp)
-
-(defcustom ibuffer-project-file
-  "~/.emacs.d/ibuffer-projects"
-  "A file describing a list of project directories for ibuffer. Format
-of the file is like this:
- projectname,projectdir
- projectname,projectdir
- …"
-  :group 'ibuffer)
 
 (defadvice ibuffer (around ibuffer-point-to-most-recent) ()
            "Open ibuffer with cursor pointed to most recent (non-minibuffer) buffer name"
@@ -725,7 +722,6 @@ of the file is like this:
 (defun dotemacs-mode-hook ()
   (local-set-key (kbd "C-S-n") 'forward-paragraph)
   (local-set-key (kbd "C-S-p") 'backward-paragraph)
-  (auto-fill-mode 1)
   (setq imenu-prev-index-position-function nil)
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
@@ -846,7 +842,6 @@ of the file is like this:
       (find-file test-js-file))))
 
 (use-package js2-mode
-  :mode "\\.js\\'"
   :config
   (add-to-list 'auto-mode-alist '("\\.js\\'" . js2-mode))
   (add-hook 'js2-mode-hook 'js2-mode-setup))
@@ -1006,23 +1001,7 @@ of the file is like this:
   (defvar prodigy-python-interpreter
     "/usr/bin/python3"
     "Location of python interpreter used by prodigy.  Default just grabs one from PATH.")
-
-  (defvar prodigy-tomcat-root-dir
-    "~/opt/apache-tomcat-8.5.4/"
-    "Root directory of tomcat installation")
-
-  (defvar prodigy-tomcat-start-script
-    (concat prodigy-tomcat-root-dir "bin/catalina.sh")
-    "Path to script that starts Tomcat.")
-
-  (defvar prodigy-wildfly-root-dir
-    "~/opt/wildfly-10.1.0.Final/"
-    "Root directory of wildfly installation")
-
-  (defvar prodigy-wildfly-start-script
-    (concat prodigy-tomcat-root-dir "bin/standalone.sh")
-    "Path to script that starts Wildfly. Path is relative to prodigy-wildfly-root-dir.")
-
+  
   (defun prodigy-setup-frame ()
     (interactive)
     (let ((frame-parameters '((name . "Prodigy")
@@ -1061,16 +1040,10 @@ of the file is like this:
   (global-set-key (kbd "<f5>") #'prodigy-setup-frame)
 
   (prodigy-define-service
-    :name "Tomcat 8.5.4"
-    :command prodigy-tomcat-start-script
+    :name "Tomcat"
+    :command tomcat-start-script
     :args '("run")
-    :cwd prodigy-tomcat-root-dir)
-
-  (prodigy-define-service
-    :name "Wildfly 10.1.0"
-    :command prodigy-wildfly-start-script
-    :args '("run")
-    :cwd prodigy-wildfly-root-dir)
+    :cwd tomcat-root-dir)
 
   (prodigy-define-service
     :name "Date Server (14002)"
@@ -1130,10 +1103,10 @@ of the file is like this:
   (:map global-map
         ([f6]        . treemacs-toggle)))
 
-
 ;; (modify-frame-parameters nil (list '( name . "Emacs" )
 
-(use-package neotree)
+(use-package neotree
+  :disabled)
 
 ;; ]
 
@@ -1232,15 +1205,6 @@ current frame has more windows -> open terminal in new frame"
 ;; ]
 
 ;; [ C/C++
-
-(defgroup c++
-  nil "All things related to C++ development"
-  :group 'development)
-
-(defcustom openssl-dictionary-location
-  "~/.emacs.d/dictionaries/openssl.txt"
-  "Location of a file with openssl function names."
-  :group 'c++)
 
 (defun mark-def-undef-block ()
   "Mark block from #define to #undef."
@@ -1437,19 +1401,31 @@ and display corresponding buffer in new frame."
 
 ;; [ java mode
 
-(defgroup java
-  nil "All things related to java development"
-  :group 'development)
+(when (getenv "M2_HOME")
+  (message
+   (concat
+    "Overwriting M2_HOME environment variable with custom value \""
+    (expand-file-name mvn-home) "\"")))
 
-(defcustom java-project-root
-  "~/src/java/"
-  "New java projects are stored in this directory."
-  :group 'java)
+(setenv "M2_HOME" (expand-file-name mvn-home))
+(setenv "PATH"
+        (concat (expand-file-name mvn-home) "/bin"
+                path-separator
+                (getenv "PATH")))
 
-(defcustom jdk-location
-  ""
-  "Location of JDK"
-  :group 'java)
+(defconst maven (concat (expand-file-name mvn-home) "/bin/mvn"))
+
+(when (getenv "JAVA_HOME")
+  (message
+   (concat
+    "Overwriting JAVA_HOME environment variable with custom value "
+    (expand-file-name jdk-location))))
+
+(setenv "JAVA_HOME" (expand-file-name jdk-location))
+(setenv "PATH"
+        (concat (expand-file-name jdk-location) "/bin"
+                path-separator
+                (getenv "PATH")))
 
 (use-package jtags
   :config
@@ -1539,7 +1515,7 @@ With prefix argument insert classname with package name. Otherwise omit package 
 
 (defun start-new-web-application (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
-  (let* ((project-path java-project-root)
+  (let* ((project-path web-application-root)
          (live-buffer-name "*mvn*")
          (live-buffer (get-buffer-create live-buffer-name))
          (target-web-xml (concat project-path "/" artifact-id "/src/main/webapp/WEB-INF/web.xml"))
@@ -1554,7 +1530,7 @@ With prefix argument insert classname with package name. Otherwise omit package 
       (when (string= (buffer-name) live-buffer-name)
         (erase-buffer))
       (cd project-path)
-      (call-process "mvn" nil live-buffer-name t "archetype:generate"
+      (call-process maven nil live-buffer-name t "archetype:generate"
                     (format "-DgroupId=%s" group-id)
                     (format "-DartifactId=%s" artifact-id)
                     (format "-Dversion=%s" version-number)
@@ -1782,7 +1758,7 @@ If so calculate pacakge name from current directory name."
   (interactive)
   (when (string= "pom.xml" (buffer-name))
     (progn
-      (setq compile-command "mvn clean install")
+      (setq compile-command (concat maven " package"))
       (local-set-key (kbd "C-c C-c") 'compile))))
 
 (defun schema-validation-setup ()
@@ -1805,6 +1781,9 @@ If so calculate pacakge name from current directory name."
  )
 
 (use-package swiper
+  ;; I really don't like it, but next time I change my mind about it
+  ;; I just want to have this snippet of emacs lisp code available.
+  :disabled
   :bind ("C-M-s" . swiper))
 
 (use-package avy
@@ -1897,20 +1876,11 @@ If so calculate pacakge name from current directory name."
 
 ;; [ html editing web mode
 
-(defgroup web
-  nil "All things related to web development"
-  :group 'development)
-
-(defcustom web-project-root
-  "~/public_html/"
-  "New web projects are stored in this directory."
-  :group 'web)
+(add-to-list 'auto-mode-alist '("\.html\\'" . web-mode))
 
 (use-package web-mode
   :config
-  (add-hook 'web-mode-hook 'web-mode-extension)
-  ;; TODO: Not tested
-  (defalias 'html-mode 'web-mode "Use web-mode instead of html-mode."))
+  (add-hook 'web-mode-hook 'web-mode-extension))
 
 (defun web-mode-extension ()
   (interactive)
@@ -2377,7 +2347,6 @@ If so calculate pacakge name from current directory name."
 
 (use-package auto-compile
   :config
-  ;; Watch out! Files are auto-compiled only if compiled file exists
   (auto-compile-on-load-mode)
   (auto-compile-on-save-mode))
 
@@ -2405,15 +2374,18 @@ If so calculate pacakge name from current directory name."
 
 ;; ]
 
-;; [ ensime
+;; [ ensime scala
 
 (use-package ensime
+  :pin melpa
   :config
   (setq ensime-startup-notification nil))
 
-(use-package scala-mode)
+(use-package scala-mode
+  :pin melpa)
 
 (use-package sbt-mode
+  :pin melpa
   :interpreter
   ("scala" . scala-mode))
 

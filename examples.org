@@ -28,3 +28,15 @@ graph {
 
 #+RESULTS:
 [[file:test-dot.png]]
+
+* An example plantuml file
+  In org babel plantuml "code" is living in a SRC block. A :file
+  property has to be specified to name a file for the result.
+  #+BEGIN_SRC plantuml :file /tmp/plantuml-test.png
+Alice -> Bob: Authentication Request
+Bob --> Alice: Authentication Response
+John --> Alice: another Authentication Request
+Alice --> John: another Authentication Response
+  #+END_SRC  
+  Evaluating the block creates a RESULTS section that contains a link
+  to the specified file.
