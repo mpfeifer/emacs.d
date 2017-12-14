@@ -274,7 +274,7 @@
 (defalias 'string-to-symbol 'intern)
 
 ;; 
-(recentf-mode 1)
+(recentf-mode)
 
 ;; here goes my personal emacs extension files
 (add-to-list 'load-path "~/.emacs.d/elisp/")
@@ -319,7 +319,7 @@
 
 ;; ]
 
-;; [ hideshow minor mode
+;; [ narrow widen hideshow minor mode
 
 ;; Restrict visible portion of buffer to certain blocks
 ;; Contract anything between start/end to '...'
@@ -329,7 +329,7 @@
   (add-hook 'c-mode-common-hook 'hs-minor-mode)
   (add-hook 'emacs-lisp-mode-hook 'hs-minor-mode)
   (add-hook 'python-mode-hook 'hs-minor-mode)
-
+  (add-hook 'java-mode-hook 'hs-minor-mode)
   (global-set-key (kbd "C--") 'hs-hide-block)
   (global-set-key (kbd "C-+") 'hs-show-block)
   (global-set-key (kbd "M--") 'hs-hide-all)
@@ -674,6 +674,25 @@
 
 ;; [ emacs lisp mode
 
+;; todo: make it a global minor mode
+;;   1. backup original value of debug-ignored-errors
+;;   2. set debug-on-error and debug-ignored-errors
+;;   3. when mode is disabled restore original values
+
+(defvar mpl-debug-ignored-errors nil
+  "Keep backup of DEBUG-IGNORED-ERRORS erros before overwriting variable")
+
+(defun mpl-debug-on-error (arg)
+  (interactive "P")
+  (if arg
+      (setq debug-on-error nil
+            debug-ignored-errors mpl-debug-ignored-errors)
+    (setq mpl-debug-ignored-errors debug-ignored-errors
+          debug-on-error t
+          debug-ignored-errors nil)))
+
+(global-set-key (kbd "C-c d") 'mpl-debug-on-error)
+
 (defun elisp-preprocessor()
   "Process emacs lisp template file and replace place holder."
   (let* ((filename (buffer-name))
@@ -933,12 +952,12 @@
   (setq org-agenda-span 7
         org-agenda-comact-blocks t
         org-agenda-show-all-dates t
-        org-agenda-files '("~/.emacs.d/org/schedule.org")
+        org-agenda-files '("~/org/organizer")
         org-babel-python-command "python"
         org-clock-into-drawer t
         org-clock-persist 'history
         org-confirm-babel-evaluate nil
-        org-default-notes-file "~/Dropbox/organizer"
+        org-default-notes-file "~/org/organizer"
         org-directory "~/org/"
         org-ellipsis "…"
         org-log-done (quote note)
@@ -946,10 +965,11 @@
         org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
         org-special-ctrl-a/e t
         org-special-ctrl-k t
-        org-todo-keywords (quote ((sequence "TODO(t)" "WAIT(w)" "DONE(d)" "CANCEL(c)"))))
-  (local-set-key (kbd "<return>") 'org-return-indent)
-  (local-set-key (kbd "C-'") 'imenu)
-  (setenv "GRAPHVIZ_DOT" "/usr/bin/dot")
+        org-todo-keywords (quote ((sequence "TODO(t)" "WAITING(w)" "DONE(d)" "CANCEL(c)"))))
+  (local-set-key (kbd "<return>") #'org-return-indent)
+  (local-set-key (kbd "C-'") #'imenu)
+  (local-set-key (kbd "C-c t") #'org-set-tags)
+;;  (setenv "GRAPHVIZ_DOT" "/usr/bin/dot")
   (org-babel-do-load-languages
    'org-babel-load-languages
    '((plantuml . t)
@@ -1114,7 +1134,7 @@
 
 ;; TODO Change window handling for xref popups
 
-(add-standard-display-buffer-entry "*xref*")
+;;(add-standard-display-buffer-entry "*xref*")
 
 (defun close-window-by-buffer-name (name)
   (interactive "b")
@@ -1131,9 +1151,7 @@
 (defun close-xref-buffer ()
   (close-window-by-buffer-name "*xref"))
 
-(setq tags-file-name nil
-      tags-table-list nil
-      tags-revert-without-query t)
+(setq tags-revert-without-query t)
 
 ;; use C-o in xref buffer to display match in other window
 
@@ -1423,7 +1441,7 @@ and display corresponding buffer in new frame."
 
 (setenv "JAVA_HOME" (expand-file-name jdk-location))
 (setenv "PATH"
-        (concat (expand-file-name jdk-location) "/bin"
+        (concat (expand-file-name jdk-location) "bin/"
                 path-separator
                 (getenv "PATH")))
 
@@ -1435,19 +1453,27 @@ and display corresponding buffer in new frame."
 
 (setq tags-revert-without-query 't)
 
-(use-package javadoc-lookup)
+(use-package javadoc-lookup
+  :config
+  (javadoc-add-roots (concat jdk-location "docs/"))
+;;  (javadoc-add-artifacts [org.springframework spring-core "4.3.2-RELEASE"])
+  (setq browser-url-browser-function 'browse-url-chromium))
 
-(defvar java-classpath nil "Java classpath. This will be set by .dir-locals.el (hopefully).")
-(defvar java-current-project-root nil "Buffer local location of current project root.")
-(defvar java-classes-cache nil "Cache for the current classpath classes.")
+(defvar-local java-classpath nil "Java classpath. This will be set by .dir-locals.el (hopefully).")
+(defvar-local java-project-root nil "Buffer local location of current project root.")
+(defvar-local java-classes-cache nil "Cache for the current classpath classes.")
 
 (defun java-read-classes-from-classpath ()
   "Iterate over classpath and gather classes from jar files.
 Evaluates into one large list containing all classes."
-  (let* ((jarfiles (cons (concat jdk-location "jre/lib/rt.jar")
-                         java-classpath))
+  (let* ((jarfiles nil)
          (jarfile nil)
          (result '()))
+    (progn
+      (dolist (file (directory-files (concat jdk-location "jre/lib/") t "\.\*.jar\$"))
+        (setq jarfiles (cons file jarfiles)))
+      (dolist (file (reverse java-classpath))
+        (setq jarfiles (cons file jarfiles))))
     (with-temp-buffer
       (while jarfiles
         (progn
@@ -1475,24 +1501,18 @@ Evaluates into one large list containing all classes."
 (defun insert-import-statement ()
   (interactive)
   (let* ((default (thing-at-point 'symbol))
-         (classes (progn (when (not java-classes-cache)
-                           (setq java-classes-cache (java-read-classes-from-classpath)))
-                         java-classes-cache))
-         (classname (completing-read "Class: " classes)))
+         (classname (completing-read "Class: " java-classes-cache)))
     (insert "import " classname ";")))
 
-(defun java-insert-classname-completing-read (prefix-arg)
+(defun java-insert-classname-completing-read (prefix)
   "Query the user for a class name.
 With prefix argument insert classname with package name. Otherwise omit package name."
-  (interactive "P")
-  (let* ((default (thing-at-point 'symbol))
-         (classes (progn (when (not java-classes-cache)
-                           (setq java-classes-cache (java-read-classes-from-classpath)))
-                         java-classes-cache))
-         (classname (completing-read "Class: " classes)))
-    (if prefix-arg
-        (insert classname)
-      (insert (replace-regexp-in-string ".*\\." "" classname)))))
+       (interactive "P")
+       (let* ((default (thing-at-point 'symbol))
+              (classname (completing-read "Class: " java-classes-cache)))
+         (if prefix
+             (insert classname)
+           (insert (replace-regexp-in-string ".*\\." "" classname)))))
 
 (defun java-assert-import (name)
   "Insert import statement for class NAME if it does not yet exist. "
@@ -1507,10 +1527,7 @@ With prefix argument insert classname with package name. Otherwise omit package 
 
 (defun java-add-import ()
   (interactive)
-  (let* ((classes (progn (when (not java-classes-cache)
-                           (setq java-classes-cache (java-read-classes-from-classpath)))
-                         java-classes-cache))
-         (classname (completing-read "Class: " classes)))
+  (let* ((classname (completing-read "Class: " java-classes-cache)))
     (java-assert-import classname)))
 
 (defun start-new-web-application (group-id artifact-id version-number)
@@ -1624,33 +1641,51 @@ If so calculate pacakge name from current directory name."
     (save-buffer)
     (neotree-dir project-root)) )
 
-(defvar java-classpath-caches nil "A hashtable mapping project roots to list of classes. Not yet cleaned up at any time.")
-
 (defun java-mode-process-dir-locals ()
   (when (derived-mode-p 'java-mode
                         (progn
-                          (when (stringp java-current-project-root) ;; sell the stock from emacs-maven-plugin:
+                          (when (stringp java-project-root)
+                            ;; sell the stock from emacs-maven-plugin:
                             (progn
-                              ;; init java-classpath-caches
-                              (when (null java-classpath-caches)
-                                (setq java-classpath-caches (make-hash-table)))
-                              (defvar-local java-classpath-cache nil "Cached list of classes for current project")
-                              (let ((my-cache (gethash java-current-project-root java-classpath-caches)))
-                                (when (null my-cache)
-                                  (setq my-cache (java-read-classes-from-classpath))
-                                  (puthash java-current-project-root my-cache java-classpath-caches))
-                                (setq-local java-classpath-cache my-cache))
-                              (local-set-key (kbd "C-x c") 'java-insert-classname-completing-read)))))))
+                              (setq-local java-classes-cache (java-read-classes-from-classpath)))
+                            (local-set-key (kbd "C-x c") 'java-insert-classname-completing-read))))))
 
 (defun java-mode-setup()
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
+  (setq-local comment-multi-line t)
   (subword-mode)
   (local-set-key (kbd "C-h j") 'javadoc-lookup)
-  (setq-local comment-multi-line t)
-  (local-set-key (kbd "C-M-j") 'imenu)
-  (local-set-key (kbd "C-?") 'java-add-import)
-  (local-set-key (kbd "C-x c") 'java-insert-classname-completing-read))
+  (local-set-key (kbd "C-?") 'java-add-import) ;; TODO Have a handy keymap for your java functions like "C-c j"
+  (mp-ac-setup-for-java-mode))
+
+(defun mpj-create-tags ()
+  "Create tags file in maven project."
+  (let ((default-directory (projectile-project-root)))
+    (eshell-command 
+     (format (concat "find %s -name \\*.java -type f "
+                     "| etags"
+                     " -o " (projectile-project-root) "TAGS"
+                     " --include /home/matthias/opt/jdk/src/TAGS"
+                     " -")
+             (projectile-project-root)))))
+
+;; slightly modified for xref-find-definition from emacswiki article
+(defadvice xref-find-definitions (around refresh-etags activate)
+  "Rerun etags and reload tags if tag not found and redo find-tag.              
+   If buffer is modified, ask about save before running etags."
+  (let ((extension (file-name-extension (buffer-file-name))))
+    (condition-case err
+        ad-do-it
+      (error (and (buffer-modified-p)
+                  (not (ding))
+                  (y-or-n-p "Buffer is modified, save it? ")
+                  (save-buffer))
+             (when (member #'etags--xref-backend xref-backend-functions)
+               (let ((tags-revert-without-query t))
+                 (mpj-create-tags)
+                 (visit-tags-table (projectile-project-root) nil))
+               ad-do-it)))))
 
 (add-hook 'hack-local-variables-hook 'java-mode-process-dir-locals)
 (add-hook 'java-mode-hook 'java-mode-setup)
@@ -1772,9 +1807,12 @@ If so calculate pacakge name from current directory name."
 
 ;; [ ivy,avy,ido&co
 
+;; see http://oremacs.com/swiper/ for manual
+
 (use-package ivy
   :config
   (setq ivy-fixed-height-minibuffer t
+        ;; add recentf and bookmarks to ivy-switch-buffer completion candidates
         ivy-use-virtual-buffers t
         ivy-count-format "[%d|%d] - ")
   (ivy-mode)
@@ -1827,8 +1865,12 @@ If so calculate pacakge name from current directory name."
         elpy-syntax-check-command "flake8")
   (local-set-key (kbd "M-#") 'comment-dwim)
   (jedi:setup)
+  (when auto-complete-mode
+    (auto-complete-mode -1))
+  (company-mode)
+)
 
-  (pyvenv-activate "~/.emacs.d/.python-environments/default/"))
+;;  (pyvenv-activate "~/.emacs.d/.python-environments/default/"))
 
 (use-package elpy
   :config
@@ -1842,7 +1884,6 @@ If so calculate pacakge name from current directory name."
   (setq elpy-modules (quote
                       (elpy-module-eldoc
                        elpy-module-flymake
-                       elpy-module-pyvenv
                        elpy-module-highlight-indentation
                        elpy-module-yasnippet
                        elpy-module-sane-defaults))
@@ -2095,21 +2136,22 @@ If so calculate pacakge name from current directory name."
 
 ;; [ magit
 
-(when (not (string= (system-name) "ThinkCentre-M57"))
-  (use-package magit
+(use-package magit
 
-    :config
+  :config
 
-    (defun magit-status-wrapper (arg)
-      "Start magit. With prefix argument start magit in new frame."
-      (interactive "P")
-      (when arg
-        (select-frame (make-frame '((name . "Magit")))))
-      (call-interactively 'magit-status)
-      (when arg
-        (delete-other-windows) ) )
+  (setq magit-completing-read-function 'ivy-completing-read)
 
-    (global-set-key (kbd "<f12>") 'magit-status-wrapper)))
+  (defun magit-status-wrapper (arg)
+    "Start magit. With prefix argument start magit in new frame."
+    (interactive "P")
+    (when arg
+      (select-frame (make-frame '((name . "Magit")))))
+    (call-interactively 'magit-status)
+    (when arg
+      (delete-other-windows) ) )
+
+  (global-set-key (kbd "<f12>") 'magit-status-wrapper))
 
 ;; ]
 
@@ -2208,16 +2250,13 @@ If so calculate pacakge name from current directory name."
   :disabled)
 
 (use-package auto-complete
-  :disabled
   :config
-  
   (require 'auto-complete)
   (require 'auto-complete-config)
 
   (setq
-   ac-auto-show-menu 2
-   ac-auto-start 0.1
-
+   ac-auto-show-menu 0.2
+   ac-auto-start 0.2
    ac-comphist-file "~/.emacs.d/ac-comphist.dat"
    ac-dictionary-directories (quote ("~/.emacs.d/dictionaries/"))   ;; mode specific dictionaries
    ac-dictionary-files (quote ("~/.emacs.d/dictionaries/personal")) ;; personal dictionary
@@ -2267,11 +2306,20 @@ If so calculate pacakge name from current directory name."
   (add-hook 'c-mode-hook 'mp-ac-setup-for-c-mode)
   (add-hook 'c++-mode-hook 'mp-ac-setup-for-c-mode)
 
+  (defvar ac-source-classpath-cache nil)
+
+  (defun ac-source-classpath-init ()
+    (setq ac-source-classpath-cache java-read-classes-from-classpath))
+
+  (defvar ac-source-classpath
+    '((init . ac-source-classpath-init)
+      (candidates . ac-source-classpath-cache)
+      (prefix . "^import \\(.*\\)")))
+
   (defun mp-ac-setup-for-java-mode ()
     "Turn on auto-complete mode and set ac-sources for java-mode."
     (auto-complete-mode 1)
-    (setq ac-sources '(ac-source-etags
-                       ac-source-yasnippet
+    (setq ac-sources '(ac-source-yasnippet
                        ac-source-classpath
                        ac-source-dictionary
                        ac-source-words-in-same-mode-buffers)))
@@ -2296,41 +2344,34 @@ If so calculate pacakge name from current directory name."
 
 ;; ]
 
-;; ;; [ company
+;; [ company
 
 ;; (require 'cl-lib)
 ;; (require 'company)
 
-;; (use-package company-php
-;;   :disabled
-;;   :config
-;;   (add-hook 'php-mode-hook
-;;             '(lambda ()
-;;                (require 'company-php)
-;;                (setq company-backends '(company-ac-php-backend )))))
+(use-package company-php
+  :disabled
+  :config
+  (add-hook 'php-mode-hook
+            '(lambda ()
+               (require 'company-php)
+               (setq company-backends '(company-ac-php-backend )))))
 
-;; ;;(use-package company-statistics)
+;;(use-package company-statistics)
 
-;; (use-package company
-;;   :config
-;;   ;; see company-backends for company backends
-;;   (make-variable-buffer-local 'company-backends)
-;;   (require 'company-template))
+(use-package company
+  :config
+  ;; see company-backends for company backends
+  (make-variable-buffer-local 'company-backends)
+  (require 'company-template))
 
-;; ;; ]
+;; ]
 
 ;; [ ffip
 
-(defun find-file-dispatcher (arg)
-  (interactive "P")
-      (call-interactively   (if arg 
-				'ffip
-			      'find-file)))
-
 (use-package find-file-in-project
   :config
-  (add-to-list 'ffip-project-file "pom.xml")
-  (global-set-key (kbd "C-x C-f") 'find-file-dispatcher) )
+  (add-to-list 'ffip-project-file "pom.xml"))
 
 ;; ]
 
@@ -2367,10 +2408,18 @@ If so calculate pacakge name from current directory name."
 
 (use-package projectile
   :config
-  (setq projectile-completion-system (quote ivy)
+  (setq projectile-completion-system 'ivy
         projectile-enable-caching t
-        projectile-tags-command "etags -a TAGS \"%s\"")
+        projectile-tags-command "etags --include /home/matthias/opt/jdk/src/TAGS -a TAGS \"%s\"")
   (projectile-mode))
+
+(defun find-file-dispatcher (arg)
+  (interactive "P")
+  (call-interactively   (if arg 
+			    'find-file
+			  'projectile-find-file)))
+
+(global-set-key (kbd "C-x C-f") 'find-file-dispatcher)
 
 ;; ]
 

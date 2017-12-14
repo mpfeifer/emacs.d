@@ -1,7 +1,7 @@
 ;; Extensions to the custom system for init.el
 
 (defcustom ibuffer-project-file
-  "~/.emacs.d/ibuffer-projects"
+  "/home/matthias/.emacs.d/ibuffer-projects"
   "A file describing a list of project directories for ibuffer. Format
 of the file is like this:
  projectname,projectdir
@@ -14,7 +14,7 @@ of the file is like this:
   :group 'development)
 
 (defcustom openssl-dictionary-location
-  "~/.emacs.d/dictionaries/openssl.txt"
+  "/home/matthias/.emacs.d/dictionaries/openssl.txt"
   "Location of a file with openssl function names."
   :group 'c++)
 
@@ -23,7 +23,7 @@ of the file is like this:
   :group 'development)
 
 (defcustom java-project-root
-  "~/src/"
+  "/home/matthias/src/"
   "New java projects are stored in this directory."
   :group 'java)
 
@@ -33,12 +33,12 @@ of the file is like this:
   :group 'java)
 
 (defcustom mvn-home
-  "~/opt/apache-maven"
+  "/home/matthias/opt/apache-maven"
   "Value for M2_HOME"
   :group 'java)
 
 (defcustom tomcat-root-dir
-  "~/opt/apache-tomcat"
+  "/home/matthias/opt/apache-tomcat"
   "Root directory of tomcat installation.")
 
 (defcustom tomcat-start-script
@@ -50,7 +50,7 @@ of the file is like this:
   :group 'development)
 
 (defcustom web-project-root
-  "~/public_html/"
+  "/home/matthias/public_html/"
   "New web projects are stored in this directory."
   :group 'web)
 
