@@ -72,7 +72,6 @@
 (defun update-package-guard ()
   "Write current time to pacakge-guard file"
   (with-temp-buffer
-    (insert ";; (prin1-to-string (current-time))\r\n")
     (insert (prin1-to-string (current-time)))
     (write-file fn-package-guard)))
 
@@ -88,7 +87,8 @@
            (user-information "Will perform first time initialisation! Press enter."))
       (read-from-minibuffer user-information)
       (when (not (file-exists-p autosave-dir))
-        (make-directory autosave-dir)
+        (make-directory autosave-dir))
+      (when (not (file-exists-p autosave-dir))
         (make-directory desktop-dir))
       (update-package-guard)
       (package-refresh-contents)
@@ -112,7 +112,8 @@
 ;; TODO: Want diary view entries be called after moving date marker in calendar
 ;; TODO: Want tab to jump from one entry to the next (shift-tab to jump back)
 
-(global-set-key (kbd "<f4>") #'(lambda () (interactive)
+(global-set-key (kbd "<f4>") #'(lambda ()
+                                 (interactive)
                                  "Toggle calendar visibility"
                                  (let ((calendar-window
                                         (get-buffer-window "*Calendar*")))
@@ -204,10 +205,6 @@
 
 (setq stack-trace-on-error '(buffer-read-only))
 
-(defvar general-keymap 
-  (make-sparse-keymap)
-  "General purpose keymap.")
-
 (defsubst notify-available-p ()
   "Return true if notify-send is available in PATH. "
   (exists-in-path "notify-send") )
@@ -242,9 +239,7 @@
 (put 'narrow-to-region 'disabled nil) ;; C-x n n
 (put 'narrow-to-page 'disabled nil) ;; C-x n p
 (put 'scroll-left 'disabled nil) ;; C-<PgDown>, C-<PgUp>
-
-;; do not ask when erasing buffer
-(put 'erase-buffer 'disabled nil)
+(put 'erase-buffer 'disabled nil) ;; do not ask when erasing buffer
 
 ;; if file starts with #! make set exec bit after saving
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
@@ -264,7 +259,7 @@
 (auto-insert-mode)
 
 (put 'set-goal-column 'disabled nil)
-(put 'downcase-region 'disabled nil)
+(put 'downcase-region 'disabled nil) ; C-x C-l
 
 ;; yes or no is y or n
 (defalias 'yes-or-no-p 'y-or-n-p)
@@ -273,19 +268,17 @@
 (defalias 'symbol-to-string 'symbol-name)
 (defalias 'string-to-symbol 'intern)
 
-;; 
 (recentf-mode)
 
 ;; here goes my personal emacs extension files
 (add-to-list 'load-path "~/.emacs.d/elisp/")
 
-;; 
 (setq scroll-step 1
       scroll-conservatively 10000
       auto-window-vscroll nil
       delete-exited-processes t)
 
-;; Kill buffers when done (M-x #)
+;; Kill buffers when done (C-x #)
 (add-hook 'server-done-hook (lambda nil (kill-buffer nil)))
 
 (autoload 'zap-up-to-char "misc"
@@ -302,18 +295,7 @@
 
 (setq set-mark-command-repeat-pop t)
 
-(defun unpop-global-mark ()
-  "Unpop off mark ring. Does nothing if mark ring is empty."
-  (interactive)
-  (when global-mark-ring
-    (setq global-mark-ring (cons (copy-marker (mark-marker)) global-mark-ring))
-    (set-marker (mark-marker) (car (last global-mark-ring)) (current-buffer))
-    (when (null (mark t)) (ding))
-    (setq global-mark-ring (nbutlast global-mark-ring))
-    (goto-char (marker-position (car (last global-mark-ring))))))
-
 (global-set-key (kbd "C-c k") 'pop-global-mark)
-(global-set-key (kbd "C-c j") 'unpop-global-mark)
 
 ;; ]
 
@@ -330,6 +312,8 @@
   (add-hook 'emacs-lisp-mode-hook 'hs-minor-mode)
   (add-hook 'python-mode-hook 'hs-minor-mode)
   (add-hook 'java-mode-hook 'hs-minor-mode)
+  (add-hook 'perl-mode-hook 'hs-minor-mode)
+  (add-hook 'js2-mode-hook 'hs-minor-mode)
   (global-set-key (kbd "C--") 'hs-hide-block)
   (global-set-key (kbd "C-+") 'hs-show-block)
   (global-set-key (kbd "M--") 'hs-hide-all)
@@ -571,7 +555,7 @@
         (let* ((filename (buffer-file-name buf))
                (default-directory (file-name-directory filename))
                (just-filename (file-name-nondirectory filename)))
-          (call-process "/usr/bin/pwd" nil t nil)
+          (call-process "pwd" nil t nil)
           (setq lsoutput (buffer-substring-no-properties (point-min) (- (point-max) 1))))))
     (message lsoutput)))
 
@@ -664,7 +648,6 @@
     (hl-line-mode)
     (define-key ibuffer-mode-map (kbd "C-p") 'ibuffer-previous-line)
     (define-key ibuffer-mode-map (kbd "C-n") 'ibuffer-next-line)
-    (define-key ibuffer-mode-map (kbd "f") 'mp-ibuffer-show-filename)
     (define-key ibuffer-mode-map (kbd "p") 'ibuffer-show-file-path)
     (ibuffer-switch-to-saved-filter-groups "Projects"))
   
@@ -683,6 +666,8 @@
   "Keep backup of DEBUG-IGNORED-ERRORS erros before overwriting variable")
 
 (defun mpl-debug-on-error (arg)
+  "Do debug on error with no ignored errors at all. When prefix ARG is present
+restore former values for debug-on-error and debug-ignored-errors."
   (interactive "P")
   (if arg
       (setq debug-on-error nil
@@ -732,7 +717,9 @@
 (add-to-list 'auto-insert-alist '(".*\\.el$" . [ "template.el" elisp-preprocessor] ) )
 
 (defun mark-init.el-paragraph ()
-  "Mark the entire paragraph around point."
+  "This function is for the extend region package. 
+Mark the entire paragraph around point - where paragraph is defined
+by ;; [ and ;; ]."
   (interactive)
   (re-search-forward paragraph-separate nil t)
   (set-mark (point))
@@ -788,17 +775,11 @@
 
 ;; [ the kill ring
 
-(defun pre-process-kill-ring-element (element)
-  (replace-regexp-in-string "^[[:space:]]+" ""
-                            (replace-regexp-in-string "[[:space:]]+$" ""
-                                                      (substring-no-properties element))))
-
-(defun preprocess-kill-ring ()
+(defun pre-process-kill-ring ()
   (let ((result nil)
         (element nil))
     (dolist (element kill-ring)
       (progn
-        (setq element (pre-process-kill-ring-element element))
         (when (not (or
                     (eq 0 (length element))
                     (string-match-p "[\r\n]+" element)))
@@ -808,7 +789,7 @@
 (defun browse-kill-ring ()
   (interactive)
   (insert (completing-read "Pick an element: "
-                   (preprocess-kill-ring))))
+                   (pre-process-kill-ring))))
 
 (global-set-key (kbd "C-M-y") 'browse-kill-ring)
  
@@ -895,6 +876,7 @@
 
 ;; [ org mode
 
+;; TODO: This does not seem to work 
 (use-package org-gcal
   :config
   (add-hook 'org-agenda-mode-hook (lambda () (org-gcal-sync) ))
@@ -986,22 +968,25 @@
 
 (org-clock-persistence-insinuate)
 
-(defconst org-capture-file "~/Dropbox/organizer" "Location of file where to store org capture notes.")
+(defconst org-capture-file "~/org/organizer" "Location of file where to store org capture notes.")
 
 ;; capture templates are documented at
 ;; http://orgmode.org/manual/Capture.html
 
 (setq org-capture-templates
-      (quote (("a" "Appointment" entry (file  org-capture-file)
-	       "* %?\n\n%^T\n\n:PROPERTIES:\n\n:END:\n\n")
-              ("t" "todo" entry (file+headline org-capture-file "Inbox")
-               "** TODO %?\n%U\n%a\n" :kill-buffer t :clock-in t :clock-resume t)
-              ("n" "note" entry (file+headline org-capture-file "Inbox")
-               "** %? :NOTE:\n%U\n%a\n" :kill-buffer t :clock-in t :clock-resume t)
-              ("m" "Meeting" entry (file+headline org-capture-file "Inbox")
-               "** MEETING with %? :MEETING:\n%U" :kill-buffer t :clock-in t :clock-resume t)
-              ("p" "Phone call" entry (file+headline org-capture-file "Inbox")
-               "** PHONE %? :PHONE:\n%U" :kill-buffer t :clock-in t :clock-resume t) ) ) )
+      '(
+        ("P" "Project" entry (file+headline org-capture-file "Inbox")
+         "* %?\n\n%^T\n\n" :kill-buffer t :clock-in t :clock-resume)
+        ("a" "Appointment" entry (file  org-capture-file)
+	 "* %?\n\n%^T\n\n:PROPERTIES:\n\n:END:\n\n")
+        ("t" "todo" entry (file+headline org-capture-file "Inbox")
+         "** TODO %?\n%U\n%a\n" :kill-buffer t :clock-in t :clock-resume t)
+        ("n" "note" entry (file+headline org-capture-file "Inbox")
+         "** %? :NOTE:\n%U\n%a\n" :kill-buffer t :clock-in t :clock-resume t)
+        ("m" "Meeting" entry (file+headline org-capture-file "Inbox")
+         "** MEETING with %? :MEETING:\n%U" :kill-buffer t :clock-in t :clock-resume t)
+        ("p" "Phone call" entry (file+headline org-capture-file "Inbox")
+         "** PHONE %? :PHONE:\n%U" :kill-buffer t :clock-in t :clock-resume t) ) )
 
 (add-hook 'org-mode-hook 'org-mode-setup)
 
@@ -1641,6 +1626,7 @@ If so calculate pacakge name from current directory name."
     (save-buffer)
     (neotree-dir project-root)) )
 
+;; TODO Something is veery buggy here. Why is C-x c defined in emacs-lisp mode?
 (defun java-mode-process-dir-locals ()
   (when (derived-mode-p 'java-mode
                         (progn
