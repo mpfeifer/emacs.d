@@ -43,8 +43,7 @@
 (defconst fn-package-guard "~/.emacs.d/.package-guard")
 (defconst package-guard-renewal 604800) ;; this is one week. use 86400 for one day.
 
-(setq package-archives '(("gnu" . "https://elpa.gnu.org/packages/")
-                         ("melpa" . "http://melpa.org/packages/"))
+(setq package-archives '(("melpa" . "http://melpa.org/packages/"))
       package-enable-at-startup nil
       package-user-dir "~/.emacs.d/packages/")
 
@@ -1628,13 +1627,13 @@ If so calculate pacakge name from current directory name."
 
 ;; TODO Something is veery buggy here. Why is C-x c defined in emacs-lisp mode?
 (defun java-mode-process-dir-locals ()
-  (when (derived-mode-p 'java-mode
-                        (progn
-                          (when (stringp java-project-root)
-                            ;; sell the stock from emacs-maven-plugin:
-                            (progn
-                              (setq-local java-classes-cache (java-read-classes-from-classpath)))
-                            (local-set-key (kbd "C-x c") 'java-insert-classname-completing-read))))))
+  (when (derived-mode-p 'java-mode)
+    (progn
+      (when (stringp java-project-root)
+        ;; sell the stock from emacs-maven-plugin:
+        (progn
+          (setq-local java-classes-cache (java-read-classes-from-classpath)))
+        (local-set-key (kbd "C-x c") 'java-insert-classname-completing-read)))))
 
 (defun java-mode-setup()
   (setq-local comment-auto-fill-only-comments t)
