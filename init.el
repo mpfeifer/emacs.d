@@ -963,7 +963,7 @@ by ;; [ and ;; ]."
      (java . t)
      (perl . t)
      (http . t)
-     (shell . t) ) ) )
+     (sh . t) ) ) )
 
 (org-clock-persistence-insinuate)
 
