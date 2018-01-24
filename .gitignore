@@ -36,3 +36,4 @@ projectile/
 .python-environments/
 .cache
 org-gcal-secrets.el
+javadoc-cache

@@ -47,6 +47,8 @@
       package-enable-at-startup nil
       package-user-dir "~/.emacs.d/packages/")
 
+;; (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/") t)
+
 (package-initialize)
 
 ;; periodically refresh package contents
@@ -80,15 +82,18 @@
 ;; and if pacakge refresh is necessary (currently once in a week)
 
 (if (not (file-exists-p fn-package-guard))
-    (let* ((emacs-dir (expand-file-name "~/.emacs.d"))
+    (let* ((emacs-dir (expand-file-name user-emacs-directory))
            (autosave-dir (concat emacs-dir "/auto-save/"))
            (desktop-dir (concat emacs-dir "/desktop"))
+           (backup-dir (concat emacs-dir "/backups"))
            (user-information "Will perform first time initialisation! Press enter."))
       (read-from-minibuffer user-information)
       (when (not (file-exists-p autosave-dir))
         (make-directory autosave-dir))
-      (when (not (file-exists-p autosave-dir))
+      (when (not (file-exists-p desktop-dir))
         (make-directory desktop-dir))
+      (when (not (file-exists-p backup-dir))
+        (make-directory backup-dir))
       (update-package-guard)
       (package-refresh-contents)
       (package-install 'use-package))
@@ -435,19 +440,10 @@
   (tooltip-mode -1)
   (scroll-bar-mode -1))
 
-(require 'solar)
-(require 'calendar)
-
-(defun sunrise-sunset-for-modeline ()
-  (let ((calendar-time-display-form '(24-hours ":" minutes))
-        (l (solar-sunrise-sunset (calendar-current-date))))
-    (format "[↑%s, ↓%s]"
-            (apply 'solar-time-string (car l))
-            (apply 'solar-time-string (cadr l)))))
-
 (load-theme 'adwaita)
 
 (use-package volatile-highlights
+  :disabled
   :init
   (add-hook 'emacs-lisp-mode 'volatile-highlights-mode)
   (add-hook 'js2-mode-hook 'volatile-highlights-mode)
@@ -470,7 +466,13 @@
  
 ;; [ backups
 
-(setq backup-directory-alist '(("." . "~/.emacs.d/backups"))
+(defconst backup-directory (expand-file-name
+                                (concat user-emacs-directory "/backups")))
+
+(defconst auto-save-directory (expand-file-name
+                                (concat user-emacs-directory "/auto-save")))
+
+(setq backup-directory-alist (list (cons "." backup-directory))
       delete-old-versions t
       version-control t
       vc-make-backup-files t
@@ -479,7 +481,7 @@
       kept-new-versions 10
       delete-old-versions t
       vc-make-backup-files t
-      auto-save-file-name-transforms '((".*" "~/.emacs.d/auto-save/" t)))
+      auto-save-file-name-transforms (list (list ".*" auto-save-directory t)))
 
 ;; ]
 
@@ -503,7 +505,7 @@
   nil "All things related to ibuffer"
   :group 'mp)
 
-(defadvice ibuffer (around ibuffer-point-to-most-recent) ()
+(defadvice ibuffer-center-recent (around ibuffer-point-to-most-recent activate)
            "Open ibuffer with cursor pointed to most recent (non-minibuffer) buffer name"
            (let ((recent-buffer-name
                   (if (minibufferp (buffer-name))
@@ -512,23 +514,6 @@
                     (buffer-name (other-buffer)))))
              ad-do-it
              (ibuffer-jump-to-buffer recent-buffer-name)))
-
-(ad-activate 'ibuffer)
-
-(defun ibuffer-previous-line ()
-  "Move point to last buffer when going before first buffer."
-  (interactive)
-  (forward-line -1)
-  (if (<= (line-number-at-pos) 2)
-      (goto-line (- (count-lines (point-min) (point-max)) 2))))
-
-(defun ibuffer-next-line ()
-  "Wrap point to first buffer when going after last buffer."
-  (interactive)
-  (forward-line)
-  (if (>= (line-number-at-pos)
-          (- (count-lines (point-min) (point-max)) 1))
-      (goto-line 3)))
 
 (use-package ibuffer-git)
 
@@ -579,9 +564,9 @@
            (buf-file-name (buffer-file-name buffer))
            (dircomponents nil)
            (dir-name (if (and buf-file-name
-                             (file-exists-p buf-file-name))
-                        (file-name-directory buf-file-name)
-                      nil)))
+                              (file-exists-p buf-file-name))
+                         (file-name-directory buf-file-name)
+                       nil)))
       (when dir-name
         (setq dirparts (reverse (split-string dir-name "/"))
               result (if (> (length dirparts) 6)
@@ -605,50 +590,10 @@
                                 (name 16 -1)
                                 " " filename)))
 
-  (defun ibuffer-add-project (groupname projectname directory)
-    (let* ((group (assoc groupname ibuffer-saved-filter-groups))
-           (project (assoc projectname (cdr group))))
-      (if project
-          (setcdr project (list (cons 'filename directory)))
-        (setcdr group (cons (list
-                             projectname ;; might as well be directory
-                             (cons 'filename directory))
-                            (cdr group))))))
-
-  ;; use M-n, M-p to navigate between groups
-  (setq ibuffer-saved-filter-groups
-        (quote (("Projects"
-                 ("Emacs" (or
-                           (name . "^\\*scratch\\*$")
-                           (name . "^\\*Messages\\*$")
-                           (filename . "^.*/.emacs.d/.*$")))
-                 ("Emacs Lisp" (mode . emacs-lisp-mode))
-                 ("Customization" (name . "^\\*Customize.*"))
-                 ("Organizer" (mode . org-mode))))))
-
-  ;; Load list of project directories from ibuffer-project-file into
-  ;; saved filter-group named "Projects". Note that a buffer goes to 
-  ;; first matching group.
-  (when (file-exists-p ibuffer-project-file)
-    (with-temp-buffer
-      (insert-file-contents ibuffer-project-file)
-      (dolist (line (split-string (buffer-string) "\n" t " "))
-        (let ((project (split-string line "," t " "))
-              (projectname nil)
-              (projectdir nil) )
-          (when (eq (length project) 2)
-            (progn
-              (setq projectname (car project)
-                    projectdir (car (cdr project)))
-              (ibuffer-add-project "Projects" projectname projectdir)))))))
-
   (defun ibuffer-mode-hook-extender ()
     (ibuffer-auto-mode 1) ;; auto updates
     (hl-line-mode)
-    (define-key ibuffer-mode-map (kbd "C-p") 'ibuffer-previous-line)
-    (define-key ibuffer-mode-map (kbd "C-n") 'ibuffer-next-line)
-    (define-key ibuffer-mode-map (kbd "p") 'ibuffer-show-file-path)
-    (ibuffer-switch-to-saved-filter-groups "Projects"))
+    (define-key ibuffer-mode-map (kbd "p") 'ibuffer-show-file-path))
   
   (add-hook 'ibuffer-mode-hook 'ibuffer-mode-hook-extender))
 
@@ -661,21 +606,25 @@
 ;;   2. set debug-on-error and debug-ignored-errors
 ;;   3. when mode is disabled restore original values
 
-(defvar mpl-debug-ignored-errors nil
+(defvar elx-debug-ignored-errors nil
   "Keep backup of DEBUG-IGNORED-ERRORS erros before overwriting variable")
 
-(defun mpl-debug-on-error (arg)
+(defun elx-debug-on-error (arg)
   "Do debug on error with no ignored errors at all. When prefix ARG is present
 restore former values for debug-on-error and debug-ignored-errors."
   (interactive "P")
   (if arg
-      (setq debug-on-error nil
-            debug-ignored-errors mpl-debug-ignored-errors)
-    (setq mpl-debug-ignored-errors debug-ignored-errors
-          debug-on-error t
-          debug-ignored-errors nil)))
+      (progn
+        (setq debug-on-error nil
+              debug-ignored-errors elx-debug-ignored-errors)
+        (message "Debug on error disabled"))
+    (progn
+      (setq elx-debug-ignored-errors debug-ignored-errors
+            debug-on-error t
+            debug-ignored-errors nil)
+      (message "Debug on error enabled"))))
 
-(global-set-key (kbd "C-c d") 'mpl-debug-on-error)
+(global-set-key (kbd "C-c d") 'elx-debug-on-error)
 
 (defun elisp-preprocessor()
   "Process emacs lisp template file and replace place holder."
@@ -716,9 +665,7 @@ restore former values for debug-on-error and debug-ignored-errors."
 (add-to-list 'auto-insert-alist '(".*\\.el$" . [ "template.el" elisp-preprocessor] ) )
 
 (defun mark-init.el-paragraph ()
-  "This function is for the extend region package. 
-Mark the entire paragraph around point - where paragraph is defined
-by ;; [ and ;; ]."
+  "This function is for the expand region package."
   (interactive)
   (re-search-forward paragraph-separate nil t)
   (set-mark (point))
@@ -758,7 +705,9 @@ by ;; [ and ;; ]."
 
 ;; ]
 
-;; [ save history
+;; [ save history 
+;;
+;; Do save minibuffer history
 
 (setq savehist-file "~/.emacs.d/minibuffer"
       history-length t
@@ -774,40 +723,33 @@ by ;; [ and ;; ]."
 
 ;; [ the kill ring
 
-(defun pre-process-kill-ring ()
-  (let ((result nil)
-        (element nil))
-    (dolist (element kill-ring)
-      (progn
-        (when (not (or
-                    (eq 0 (length element))
-                    (string-match-p "[\r\n]+" element)))
-          (setq result (cons element result)))))
-    (reverse result)))
-
-(defun browse-kill-ring ()
+(defun elx-browse-kill-ring ()
   (interactive)
-  (insert (completing-read "Pick an element: "
-                   (pre-process-kill-ring))))
+  (insert (completing-read "Pick an element: " kill-ring)))
 
-(global-set-key (kbd "C-M-y") 'browse-kill-ring)
+(global-set-key (kbd "C-M-y") 'elx-browse-kill-ring)
  
 ;; ]
 
 ;; [ yasnippet
 
 (use-package yasnippet
-  :defer 15
+  :defer 2
   :config
   (defconst snippet-dir "~/.emacs.d/snippets/")
   (setq yas-snippet-dirs (list snippet-dir))
+
+  ;; Add snippet directory to auto-mode-alist
+  ;; so that files are opened in snipped-mode
   (dolist (snippet-dir yas-snippet-dirs)
     (add-to-list 'auto-mode-alist (cons (concat ".*" snippet-dir ".*") 'snippet-mode))
     (yas-load-directory snippet-dir))
+
   (require 'warnings)
   ;; do not complain when snippets change buffer contents
   (add-to-list 'warning-suppress-types '(yasnippet backquote-change))
-  (yas-global-mode 1) )
+  (add-hook 'emacs-lisp-mode-hook 'yas-minor-mode)
+  (add-hook 'js2-mode-hook 'yas-minor-mode))
 
 ;; ]
 
@@ -825,11 +767,11 @@ by ;; [ and ;; ]."
   [ '(nil
       "/*\n * "
       (file-name-nondirectory (buffer-file-name)) "\n"
-      " * Started on " (format-time-string "%A, %e %B %Y.") \n
+      " * File created on " (format-time-string "%A, %e %B %Y.") \n
       " */" \n \n \n )
     indent-buffer ] )
 
-(defun qunit-test-for-current-buffer ()
+(defun create-qunit-test-for-current-buffer ()
   (interactive)
   (let ((test-html-file (replace-regexp-in-string (regexp-quote ".js") "-test.html" (buffer-name)))
         (test-js-file (replace-regexp-in-string (regexp-quote ".js") "-test.js" (buffer-name))))
@@ -877,12 +819,13 @@ by ;; [ and ;; ]."
 
 ;; TODO: This does not seem to work 
 (use-package org-gcal
+  :disabled
   :config
   (add-hook 'org-agenda-mode-hook (lambda () (org-gcal-sync) ))
-  (add-hook 'org-capture-after-finalize-hook (lambda () (org-gcal-sync) )))
+  (add-hook 'org-capture-after-finalize-hook (lambda () (org-gcal-sync)))
 
-(when (not (require 'org-gcal-secrets nil 'noerror))
-  (message "org gcal secrets are not available!"))
+  (when (not (require 'org-gcal-secrets nil 'noerror))
+    (message "org gcal secrets are not available!")))
 
 ;; examples https://github.com/zweifisch/ob-http
 (use-package ob-http
@@ -895,14 +838,13 @@ by ;; [ and ;; ]."
 
 (global-set-key (kbd "C-x c") #'org-capture)
 
-;; clocking commands
+;; clocking commands:
 ;;    C-c C-x C-i (org-clock-in)
 ;;    C-c C-x C-o (org-clock-out)
 ;;    C-c C-x C-q (org-clock-cancel)
 ;;    C-c C-x C-d (org-clock-displa)
 ;;    C-S-<up/down> (org-clock-timestamps-up/down)
 ;;    S-M-<up/down> (org-timestamp-up-down)
-
 
 (defun visit-org-files ()
   "Visit any of the files in org-agenda-files or org-default-notes-file."
@@ -912,9 +854,7 @@ by ;; [ and ;; ]."
                    (cons org-default-notes-file org-agenda-files))))
         (find-file-other-frame org-file)))
 
-(global-set-key (kbd "C-c o") 'visit-org-files)
-
-;; agenda commands
+;; agenda commands:
 ;;    C-c C-s    Schedule item for date
 ;;    C-c C-d    Set deadline for item
 ;;    Want timestamps? Add manually so that marker string looks
@@ -950,6 +890,8 @@ by ;; [ and ;; ]."
   (local-set-key (kbd "<return>") #'org-return-indent)
   (local-set-key (kbd "C-'") #'imenu)
   (local-set-key (kbd "C-c t") #'org-set-tags)
+  (local-set-key (kbd "C-c i") #'org-clock-in)
+  (local-set-key (kbd "C-c o") #'org-clock-out)
 ;;  (setenv "GRAPHVIZ_DOT" "/usr/bin/dot")
   (org-babel-do-load-languages
    'org-babel-load-languages
@@ -1090,9 +1032,11 @@ by ;; [ and ;; ]."
     (let ((window (get-buffer-window "*SPEEDBAR*")))
       (when window (select-window window)))))
 
+(use-package treemacs-projectile)
+
 (use-package treemacs
   :config
-  (setq treemacs-header-function            #'treemacs--create-header-projectile
+  (setq ;; treemacs-header-function            #'treemacs--create-header-projectile
         treemacs-follow-after-init          t
         treemacs-width                      35
         treemacs-indentation                2
@@ -1425,7 +1369,7 @@ and display corresponding buffer in new frame."
 
 (setenv "JAVA_HOME" (expand-file-name jdk-location))
 (setenv "PATH"
-        (concat (expand-file-name jdk-location) "bin/"
+        (concat (expand-file-name jdk-location) "/bin"
                 path-separator
                 (getenv "PATH")))
 
@@ -1433,14 +1377,14 @@ and display corresponding buffer in new frame."
   :config
   (add-hook 'java-mode-hook 'jtags-mode))
 
-(setq tags-table-list (list (concat jdk-location "src/")))
+(setq tags-table-list (list (concat jdk-location "/src")))
 
 (setq tags-revert-without-query 't)
 
 (use-package javadoc-lookup
   :config
-  (javadoc-add-roots (concat jdk-location "docs/"))
-;;  (javadoc-add-artifacts [org.springframework spring-core "4.3.2-RELEASE"])
+  (javadoc-add-roots (concat jdk-location "/docs"))
+  ;;  (javadoc-add-artifacts [org.springframework spring-core "4.3.2-RELEASE"])
   (setq browser-url-browser-function 'browse-url-chromium))
 
 (defvar-local java-classpath nil "Java classpath. This will be set by .dir-locals.el (hopefully).")
@@ -1454,7 +1398,7 @@ Evaluates into one large list containing all classes."
          (jarfile nil)
          (result '()))
     (progn
-      (dolist (file (directory-files (concat jdk-location "jre/lib/") t "\.\*.jar\$"))
+      (dolist (file (directory-files (concat jdk-location "/jre/lib") t "\.\*.jar\$"))
         (setq jarfiles (cons file jarfiles)))
       (dolist (file (reverse java-classpath))
         (setq jarfiles (cons file jarfiles))))
@@ -1463,7 +1407,7 @@ Evaluates into one large list containing all classes."
         (progn
           (setq jarfile (car jarfiles)
                 jarfiles (cdr jarfiles))
-          (call-process "/usr/bin/unzip" nil t nil "-l" (expand-file-name jarfile))
+          (call-process "unzip" nil t nil "-l" (expand-file-name jarfile))
           (goto-char (point-min))
           (let ((end 0)
                 (classname ""))
@@ -1852,6 +1796,7 @@ If so calculate pacakge name from current directory name."
   (jedi:setup)
   (when auto-complete-mode
     (auto-complete-mode -1))
+  (setq company-backends '(elpy-company-backend))
   (company-mode)
 )
 
@@ -2122,7 +2067,7 @@ If so calculate pacakge name from current directory name."
 ;; [ magit
 
 (use-package magit
-
+  :disabled
   :config
 
   (setq magit-completing-read-function 'ivy-completing-read)
@@ -2164,7 +2109,6 @@ If so calculate pacakge name from current directory name."
                                 (propertize "%03l") ","
                                 (propertize "%c")
                                 "]"
-                                ;;                                (sunrise-sunset-for-modeline)
                                 "   "
                                 mode-line-misc-info))
 
@@ -2411,14 +2355,17 @@ If so calculate pacakge name from current directory name."
 ;; [ ensime scala
 
 (use-package ensime
+  :disabled
   :pin melpa
   :config
   (setq ensime-startup-notification nil))
 
 (use-package scala-mode
+  :disabled
   :pin melpa)
 
 (use-package sbt-mode
+  :disabled
   :pin melpa
   :interpreter
   ("scala" . scala-mode))
