@@ -364,6 +364,7 @@
 (server-start)
 
 (use-package edit-server
+  :disabled
   :config
   ;; default port for edit server is 9292
   (edit-server-start t))
@@ -505,7 +506,7 @@
   nil "All things related to ibuffer"
   :group 'mp)
 
-(defadvice ibuffer-center-recent (around ibuffer-point-to-most-recent activate)
+(defadvice ibuffer-center-recenter (around ibuffer-point-to-most-recent activate)
            "Open ibuffer with cursor pointed to most recent (non-minibuffer) buffer name"
            (let ((recent-buffer-name
                   (if (minibufferp (buffer-name))
@@ -864,11 +865,12 @@ restore former values for debug-on-error and debug-ignored-errors."
 ;;    <2016-02-28 Sa 14:00-15:30 ++1w>  next item will always be in the future
 ;;    <2016-02-28 Sa 14:00-15:30 .+4w>  timedistance is added to today
 
+(add-to-list 'auto-mode-alist '("organizer\\'" . org-mode))
+
 (defun org-mode-setup ()
   (org-hide-block-all)
   (flyspell-mode)
   (add-to-list 'org-file-apps '("\\.png\\'" . default))
-  (add-to-list 'auto-mode-alist '("organizer\\'" . org-mode))
   (company-mode -1) ;; disabled, since it looks broken
   (setq org-agenda-span 7
         org-agenda-comact-blocks t
@@ -1707,13 +1709,14 @@ If so calculate pacakge name from current directory name."
 ;; optional key bindings, easier than hs defaults
 (define-key nxml-mode-map (kbd "C--") 'hs-toggle-hiding)
 
-(defun nxml-mode-setup ())
+(defun nxml-mode-setup ()
+  (local-set-key (kbd "C-x <return>") 'sgml-close-tag))
 
 (add-hook 'nxml-mode-hook 'nxml-mode-setup)
 
 (add-to-list 'auto-insert-alist '("pom.xml$" . [ "pom.xml" ]))
 
-(setq xml-modes (list ".*\\.xul\\'" ".*\\..rdf\\'" ".*\\.xsd\\'" ".*\\.wsdl\\'"))
+(setq xml-modes (list ".*\\.wadl'" ".*\\.xul\\'" ".*\\..rdf\\'" ".*\\.xsd\\'" ".*\\.wsdl\\'"))
 
 (dolist (mode xml-modes)
   (add-to-list 'auto-mode-alist (cons mode 'xml-mode)))
