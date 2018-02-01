@@ -363,11 +363,11 @@
 
 (server-start)
 
-(use-package edit-server
-  :disabled
+(use-package atomic-chrome
   :config
-  ;; default port for edit server is 9292
-  (edit-server-start t))
+  (atomic-chrome-start-server))
+
+
 
 ;; ]
 
