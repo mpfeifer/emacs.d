@@ -19,9 +19,6 @@
 
 ;; [ personal information
 
-(setq user-full-name "Matthias"
-      user-mail-address "mpfeifer77@gmail.com")
-
 ;; ]
 
 ;; [ custom set variables
@@ -197,14 +194,6 @@
 (auto-fill-mode)
 (setq fill-column 72)
 
-(defgroup mp 
-  nil "All things related to my customization"
-  :group 'Emacs)
-
-(defgroup development
-  nil "All things related to development"
-  :group 'mp)
-
 ;; (toggle-debug-on-error)
 
 (setq stack-trace-on-error '(buffer-read-only))
@@ -303,28 +292,6 @@
 
 ;; ]
 
-;; ]
-
-;; [ narrow widen hideshow minor mode
-
-;; Restrict visible portion of buffer to certain blocks
-;; Contract anything between start/end to '...'
-
-(use-package hideshow
-  :config
-  (add-hook 'c-mode-common-hook 'hs-minor-mode)
-  (add-hook 'emacs-lisp-mode-hook 'hs-minor-mode)
-  (add-hook 'python-mode-hook 'hs-minor-mode)
-  (add-hook 'java-mode-hook 'hs-minor-mode)
-  (add-hook 'perl-mode-hook 'hs-minor-mode)
-  (add-hook 'js2-mode-hook 'hs-minor-mode)
-  (global-set-key (kbd "C--") 'hs-hide-block)
-  (global-set-key (kbd "C-+") 'hs-show-block)
-  (global-set-key (kbd "M--") 'hs-hide-all)
-  (global-set-key (kbd "M-+") 'hs-show-all) )
-
-;; ]
-
 ;; [ expand region
 
 ;; Very handy package. Sets er/try-expand-list on a per mode basis to
@@ -338,6 +305,17 @@
   (global-set-key (kbd "C-v") 'er/expand-region)
   (global-set-key (kbd "C-S-v") 'er/contract-region) )
 
+(defun mark-init.el-paragraph ()
+  "This function is for the expand region package."
+  (interactive)
+  (re-search-forward paragraph-separate nil t)
+  (set-mark (point))
+  (re-search-backward paragraph-start nil t))
+
+(add-hook 'emacs-lisp-mode 
+          '(lambda ()
+             (add-to-list 'er/try-expand-list 'mark-init.el-paragraph)))
+
 ;; ]
 
 ;; [ abbreviations
@@ -350,24 +328,15 @@
 (if (file-exists-p abbrev-file-name)
     (quietly-read-abbrev-file))
 
-;; (remove-hook 'post-self-insert-hook 'expand-abbrev)
-
 ;; ]
 
 ;; [ server mode edit server
 
 (setq server-use-tcp nil
       server-host "localhost"
-      server-auth-dir "~/.emacs.d/"
       server-port 39246)
 
 (server-start)
-
-(use-package atomic-chrome
-  :config
-  (atomic-chrome-start-server))
-
-
 
 ;; ]
 
@@ -383,23 +352,6 @@
 ;; 'C-M-s'   - isearch-forward-regexp
 ;; 'M-e'     - edit search string
 ;; C-s C-h b - show all isearch key bindings
-
-;; shamelessly stolen from http://goo.gl/JFRl1k to keep found string centered
-(defadvice isearch-update (before my-isearch-update activate)
-  (sit-for 0)
-  (if (and
-       ;; not the scrolling command
-       (not (eq this-command 'isearch-other-control-char))
-       ;; not the empty string
-       (> (length isearch-string) 0)
-       ;; not the first key (to lazy highlight all matches w/o recenter)
-       (> (length isearch-cmds) 2)
-       ;; the point in within the given window boundaries
-       (let ((line (count-screen-lines (point) (window-start))))
-         (or (> line (* (/ (window-height) 4) 3))
-             (< line (* (/ (window-height) 9) 1)))))
-      (let ((recenter-position 0.3))
-        (recenter '(4)))))
 
 ;; ]
 
@@ -431,8 +383,6 @@
 
 (setq frame-title-format '("Emacs: %b [" (:eval (symbol-to-string major-mode)) "]"))
 
-(global-hl-line-mode)
-
 (when window-system
   (when (eq system-type 'windows-nt)
     (horizontal-scroll-bar-mode -1))
@@ -446,7 +396,7 @@
 (use-package volatile-highlights
   :disabled
   :init
-  (add-hook 'emacs-lisp-mode 'volatile-highlights-mode)
+  (add-hook 'emacs-lisp-mode-hook 'volatile-highlights-mode)
   (add-hook 'js2-mode-hook 'volatile-highlights-mode)
   (add-hook 'cperl-mode-hook 'volatile-highlights-mode)
   (add-hook 'c-mode-hook 'volatile-highlights-mode)
@@ -501,10 +451,6 @@
 ;; ]
 
 ;; [ ibuffer
-
-(defgroup ibuffer
-  nil "All things related to ibuffer"
-  :group 'mp)
 
 (defadvice ibuffer-center-recenter (around ibuffer-point-to-most-recent activate)
            "Open ibuffer with cursor pointed to most recent (non-minibuffer) buffer name"
@@ -568,17 +514,18 @@
                               (file-exists-p buf-file-name))
                          (file-name-directory buf-file-name)
                        nil)))
-      (when dir-name
-        (setq dirparts (reverse (split-string dir-name "/"))
-              result (if (> (length dirparts) 6)
-                         (concat "…/"
-                                 (nth 4 dirparts) "/"
-                                 (nth 3 dirparts) "/"
-                                 (nth 2 dirparts) "/"
-                                 (nth 1 dirparts) "/")
-                       (file-name-directory buf-file-name))))
-      (if result
-          result
+      (if dir-name
+        (let* ((dirparts (reverse (split-string dir-name "/")))
+               (result (if (> (length dirparts) 6)
+                           (concat "…/"
+                                   (nth 4 dirparts) "/"
+                                   (nth 3 dirparts) "/"
+                                   (nth 2 dirparts) "/"
+                                   (nth 1 dirparts) "/")
+                         (file-name-directory buf-file-name))))
+          (if result
+              result
+            buffer-mode))
         buffer-mode)))
 
   (setq ibuffer-show-empty-filter-groups nil
@@ -602,11 +549,6 @@
 
 ;; [ emacs lisp mode
 
-;; todo: make it a global minor mode
-;;   1. backup original value of debug-ignored-errors
-;;   2. set debug-on-error and debug-ignored-errors
-;;   3. when mode is disabled restore original values
-
 (defvar elx-debug-ignored-errors nil
   "Keep backup of DEBUG-IGNORED-ERRORS erros before overwriting variable")
 
@@ -617,15 +559,18 @@ restore former values for debug-on-error and debug-ignored-errors."
   (if arg
       (progn
         (setq debug-on-error nil
-              debug-ignored-errors elx-debug-ignored-errors)
+              debug-ignored-errors elx-debug-ignored-errors
+              elx-debug-ignored-errors nil)
         (message "Debug on error disabled"))
     (progn
-      (setq elx-debug-ignored-errors debug-ignored-errors
+      (setq elx-debug-ignored-errors (if elx-debug-ignored-errors
+                                         elx-debug-ignored-errors
+                                       debug-ignored-errors)
             debug-on-error t
             debug-ignored-errors nil)
       (message "Debug on error enabled"))))
 
-(global-set-key (kbd "C-c d") 'elx-debug-on-error)
+(global-set-key (kbd "C-x C-d") 'elx-debug-on-error)
 
 (defun elisp-preprocessor()
   "Process emacs lisp template file and replace place holder."
@@ -665,13 +610,6 @@ restore former values for debug-on-error and debug-ignored-errors."
 
 (add-to-list 'auto-insert-alist '(".*\\.el$" . [ "template.el" elisp-preprocessor] ) )
 
-(defun mark-init.el-paragraph ()
-  "This function is for the expand region package."
-  (interactive)
-  (re-search-forward paragraph-separate nil t)
-  (set-mark (point))
-  (re-search-backward paragraph-start nil t))
-
 (defun dotemacs-mode-hook ()
   (local-set-key (kbd "C-S-n") 'forward-paragraph)
   (local-set-key (kbd "C-S-p") 'backward-paragraph)
@@ -684,7 +622,6 @@ restore former values for debug-on-error and debug-ignored-errors."
         paragraph-separate ";; ]")
   (setq imenu-generic-expression 
         (list '(nil "^;; \\[ \\(.+\\)$" 1)))
-  (add-to-list 'er/try-expand-list 'mark-init.el-paragraph)
   (setq-local imenu-create-index-function 'imenu-default-create-index-function) )
 
 (defun byte-compile-current-buffer ()
@@ -735,7 +672,6 @@ restore former values for debug-on-error and debug-ignored-errors."
 ;; [ yasnippet
 
 (use-package yasnippet
-  :defer 2
   :config
   (defconst snippet-dir "~/.emacs.d/snippets/")
   (setq yas-snippet-dirs (list snippet-dir))
@@ -750,7 +686,8 @@ restore former values for debug-on-error and debug-ignored-errors."
   ;; do not complain when snippets change buffer contents
   (add-to-list 'warning-suppress-types '(yasnippet backquote-change))
   (add-hook 'emacs-lisp-mode-hook 'yas-minor-mode)
-  (add-hook 'js2-mode-hook 'yas-minor-mode))
+  (add-hook 'js2-mode-hook 'yas-minor-mode)
+  (add-hook 'xml-mode-hook 'yas-minor-mode))
 
 ;; ]
 
@@ -875,7 +812,6 @@ restore former values for debug-on-error and debug-ignored-errors."
   (setq org-agenda-span 7
         org-agenda-comact-blocks t
         org-agenda-show-all-dates t
-        org-agenda-files '("~/org/organizer")
         org-babel-python-command "python"
         org-clock-into-drawer t
         org-clock-persist 'history
@@ -885,7 +821,6 @@ restore former values for debug-on-error and debug-ignored-errors."
         org-ellipsis "…"
         org-log-done (quote note)
         org-log-into-drawer t
-        org-plantuml-jar-path "~/.emacs.d/plantUML/plantuml.jar"
         org-special-ctrl-a/e t
         org-special-ctrl-k t
         org-todo-keywords (quote ((sequence "TODO(t)" "WAITING(w)" "DONE(d)" "CANCEL(c)"))))
@@ -941,14 +876,6 @@ restore former values for debug-on-error and debug-ignored-errors."
 
 (use-package prodigy
   :config
-
-  (defvar prodigy-service-root
-    "~/.emacs.d/services/"
-    "Root directory for various services bundled with init.el." )
-
-  (defvar prodigy-python-interpreter
-    "/usr/bin/python3"
-    "Location of python interpreter used by prodigy.  Default just grabs one from PATH.")
   
   (defun prodigy-setup-frame ()
     (interactive)
@@ -964,12 +891,11 @@ restore former values for debug-on-error and debug-ignored-errors."
 
   (defun prodigy-next-line ()
     (interactive)
-    (next-line)
+    (forward-line)
     (when (looking-at ".*Running.*")
       (progn
         (prodigy-display-process)
         (select-window (get-buffer-window "*prodigy*")))))
-
 
   (defun prodigy-previous-line ()
     (interactive)
@@ -1002,7 +928,7 @@ restore former values for debug-on-error and debug-ignored-errors."
 
   (prodigy-define-service
     :name "Network Log-Receiver"
-    :command "/usr/bin/python2"
+    :command prodigy-python-interpreter
     :args '("logwebmon.py")
     :cwd (concat prodigy-service-root "loghost/"))
 
@@ -1042,7 +968,6 @@ restore former values for debug-on-error and debug-ignored-errors."
         treemacs-follow-after-init          t
         treemacs-width                      35
         treemacs-indentation                2
-        treemacs-git-integration            t
         treemacs-change-root-without-asking nil
         treemacs-sorting                    'alphabetic-desc
         treemacs-show-hidden-files          nil
@@ -1477,6 +1402,8 @@ With prefix argument insert classname with package name. Otherwise omit package 
       (when (string= (buffer-name) live-buffer-name)
         (erase-buffer))
       (cd project-path)
+      (with-current-buffer live-buffer
+        (term-mode))
       (call-process maven nil live-buffer-name t "archetype:generate"
                     (format "-DgroupId=%s" group-id)
                     (format "-DartifactId=%s" artifact-id)
@@ -1692,22 +1619,8 @@ If so calculate pacakge name from current directory name."
 
 ;; handy: (nxml-balanced-close-start-tag-inline)
 
-(require 'hideshow)
 (require 'sgml-mode)
 (require 'nxml-mode)
-
-(add-to-list 'hs-special-modes-alist
-             '(nxml-mode
-               "<!--\\|<[^/>]*[^/]>"
-               "-->\\|</[^/>]*[^/]>"
-               "<!--"
-               sgml-skip-tag-forward
-               nil))
-
-(add-hook 'nxml-mode-hook 'hs-minor-mode)
-
-;; optional key bindings, easier than hs defaults
-(define-key nxml-mode-map (kbd "C--") 'hs-toggle-hiding)
 
 (defun nxml-mode-setup ()
   (local-set-key (kbd "C-x <return>") 'sgml-close-tag))
@@ -1720,20 +1633,6 @@ If so calculate pacakge name from current directory name."
 
 (dolist (mode xml-modes)
   (add-to-list 'auto-mode-alist (cons mode 'xml-mode)))
-
-(defun maven-integration ()
-  (interactive)
-  (when (string= "pom.xml" (buffer-name))
-    (progn
-      (setq compile-command (concat maven " package"))
-      (local-set-key (kbd "C-c C-c") 'compile))))
-
-(defun schema-validation-setup ()
-  (add-to-list 'rng-schema-locating-files
-               "~/.emacs.d/schemas/schemas.xml"))
-
-(add-hook 'nxml-mode-hook 'maven-integration)
-(add-hook 'nxml-mode-hook 'schema-validation-setup)
 
 ;; ]
 
@@ -1859,21 +1758,8 @@ If so calculate pacakge name from current directory name."
 (defun web-mode-extension ()
   (interactive)
   (setq indent-tabs-mode nil
-        web-mode-markup-indent-offset 4)
-  (hs-minor-mode))
+        web-mode-markup-indent-offset 4))
 
-(require 'hideshow)
-(require 'sgml-mode)
-
-(add-to-list 'hs-special-modes-alist
-             '(web-mode
-               "<!--\\|<[^/>]*[^/]>"
-               "-->\\|</[^/>]*[^/]>"
-               "<!--"
-               sgml-skip-tag-forward
-               nil))
-
-(define-key web-mode-map (kbd "C--") 'hs-toggle-hiding)
 
 (defun html-post-processing ()
   "This method looks for a couple of key-strings and replaces them with some meaningful values."
@@ -2144,20 +2030,9 @@ If so calculate pacakge name from current directory name."
 
 ;; ]
 
-;; [ linum mode
-
-(defun profile-forward-line ()
-  (interactive)
-  (profiler-start 'cpu+mem)
-  (let ((count 0))
-    (while (< count 75)
-      (forward-line)
-      (setq count (+ count 1))))
-  (profiler-report))
-
-;; ]
-
 ;; [ popup edit menu
+
+;; Open edit menu on right-click
 
 (use-package popup-edit-menu
   :config
@@ -2241,7 +2116,7 @@ If so calculate pacakge name from current directory name."
   (defvar ac-source-classpath-cache nil)
 
   (defun ac-source-classpath-init ()
-    (setq ac-source-classpath-cache java-read-classes-from-classpath))
+    (setq ac-source-classpath-cache (java-read-classes-from-classpath)))
 
   (defvar ac-source-classpath
     '((init . ac-source-classpath-init)
@@ -2326,7 +2201,7 @@ If so calculate pacakge name from current directory name."
 (require 'ansi-color)
 
 (defun colorize-compilation-buffer ()
-  (let (inhibit-read-only nil)
+  (let ((inhibit-read-only nil))
     (ansi-color-apply-on-region (point-min) (point-max))))
 
 (add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
@@ -2341,15 +2216,15 @@ If so calculate pacakge name from current directory name."
 (use-package projectile
   :config
   (setq projectile-completion-system 'ivy
-        projectile-enable-caching t
-        projectile-tags-command "etags --include /home/matthias/opt/jdk/src/TAGS -a TAGS \"%s\"")
+        projectile-enable-caching t)
+;;        projectile-tags-command "etags --include /home/matthias/opt/jdk/src/TAGS -a TAGS \"%s\"")
   (projectile-mode))
 
 (defun find-file-dispatcher (arg)
   (interactive "P")
   (call-interactively   (if arg 
-			    'find-file
-			  'projectile-find-file)))
+                            'projectile-find-file
+                          'ffap)))
 
 (global-set-key (kbd "C-x C-f") 'find-file-dispatcher)
 

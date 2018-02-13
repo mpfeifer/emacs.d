@@ -13,6 +13,14 @@
             (apply 'solar-time-string (car l))
             (apply 'solar-time-string (cadr l)))))
 
+(defcustom ibuffer-project-file
+  "/home/matthias/.emacs.d/ibuffer-projects"
+  "A file describing a list of project directories for ibuffer. Format
+of the file is like this:
+ projectname,projectdir
+ projectname,projectdir
+ …"
+  :group 'ibuffer)
 
 (defun ibuffer-previous-line ()
   "Move point to last buffer when going before first buffer."

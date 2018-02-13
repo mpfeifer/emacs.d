@@ -1,61 +1,81 @@
 ;; Extensions to the custom system for init.el
 
-(defcustom ibuffer-project-file
-  "/home/matthias/.emacs.d/ibuffer-projects"
-  "A file describing a list of project directories for ibuffer. Format
-of the file is like this:
- projectname,projectdir
- projectname,projectdir
- …"
-  :group 'ibuffer)
+(defgroup Custom-X
+  nil "All things related to my customization"
+  :group 'Emacs)
+
+(defgroup development
+  nil "All things related to development"
+  :group 'Custom-X)
+
+(defgroup ibuffer
+  nil "All things related to ibuffer"
+  :group 'Custom-X)
 
 (defgroup c++
   nil "All things related to C++ development"
-  :group 'development)
+  :group 'Development-X)
 
 (defcustom openssl-dictionary-location
-  "/home/matthias/.emacs.d/dictionaries/openssl.txt"
+  (concat (expand-file-name "~") "/.emacs.d/dictionaries/openssl.txt")
   "Location of a file with openssl function names."
-  :group 'c++)
+  :group 'C++-X)
 
 (defgroup java
   nil "All things related to java development"
-  :group 'development)
+  :group 'Development-X)
 
 (defcustom java-project-root
-  "/home/matthias/src/"
+  (concat (expand-file-name "~") "/src")
   "New java projects are stored in this directory."
-  :group 'java)
+  :group 'Java-X)
 
 (defcustom jdk-location
-  ""
+  (getenv "JAVA_HOME")
   "Location of JDK"
-  :group 'java)
+  :group 'Java-X)
 
 (defcustom mvn-home
-  "/home/matthias/opt/apache-maven"
+  (getenv "M2_HOME")
   "Value for M2_HOME"
-  :group 'java)
+  :group 'Java-X)
 
 (defcustom tomcat-root-dir
-  "/home/matthias/opt/apache-tomcat"
-  "Root directory of tomcat installation.")
+  (getenv "CATALINA_HOME")
+  "Root directory of tomcat installation."
+  :group 'Java-X)
 
 (defcustom tomcat-start-script
-  (concat tomcat-root-dir "/bin/catalina.sh")
+  (if tomcat-root-dir 
+      (concat tomcat-root-dir "/bin/startup"
+              (if (eq system-type 'windows-nt)
+                  ".bat"
+                ".sh"))
+    "startup.sh")
   "Path to script that starts Tomcat.")
 
 (defgroup web
   nil "All things related to web development"
-  :group 'development)
+  :group 'Development-X)
 
 (defcustom web-project-root
-  "/home/matthias/public_html/"
+  (concat (expand-file-name "~") "/public_html/")
   "New web projects are stored in this directory."
-  :group 'web)
+  :group 'Web-X)
 
 (defcustom web-application-root
   java-project-root
   "New web projects are stored in this directory."
-  :group 'web)
+  :group 'Web-X)
 
+(defcustom
+  prodigy-service-root
+  "~/.emacs.d/services/"
+  "Root directory for various services bundled with init.el."
+  :group 'Prodigy-X)
+
+(defcustom
+  prodigy-python-interpreter
+  "python3"
+  "Location of python interpreter used by prodigy. Default just grabs one from PATH."
+  :group 'Prodigy-X)
