@@ -37,3 +37,4 @@ projectile/
 .cache
 org-gcal-secrets.el
 javadoc-cache
+server/

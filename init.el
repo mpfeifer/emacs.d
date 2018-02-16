@@ -271,9 +271,6 @@
       auto-window-vscroll nil
       delete-exited-processes t)
 
-;; Kill buffers when done (C-x #)
-(add-hook 'server-done-hook (lambda nil (kill-buffer nil)))
-
 (autoload 'zap-up-to-char "misc"
   "Kill up to, but not including ARGth occurrence of CHAR.")
 
@@ -332,11 +329,14 @@
 
 ;; [ server mode edit server
 
-(setq server-use-tcp nil
+(setq server-use-tcp t
       server-host "localhost"
       server-port 39246)
 
 (server-start)
+
+;; Kill buffers when done (C-x #)
+(add-hook 'server-done-hook (lambda nil (kill-buffer nil)))
 
 ;; ]
 
@@ -370,6 +370,23 @@
 
 ;; [ global appearence
 
+;; Set default font
+
+(when (eq system-type 'windows-nt)
+  (progn
+    (set-face-attribute 'default nil
+                        :family "Hack"
+                        :height 100
+                        :weight 'normal
+                        :width 'normal)
+    (set-face-attribute 'mode-line nil
+                        :family "Hack"
+                        :height 100
+                        :weight 'normal
+                        :width 'normal)))
+
+(load-theme 'base16-solarized-dark)
+
 (defun add-standard-display-buffer-entry (name)
   "Add an entry to display-buffer-alist for buffers called NAME."
   (add-to-list 'display-buffer-alist
@@ -390,8 +407,6 @@
   (menu-bar-mode 1)
   (tooltip-mode -1)
   (scroll-bar-mode -1))
-
-(load-theme 'adwaita)
 
 (use-package volatile-highlights
   :disabled
@@ -1699,8 +1714,7 @@ If so calculate pacakge name from current directory name."
   (when auto-complete-mode
     (auto-complete-mode -1))
   (setq company-backends '(elpy-company-backend))
-  (company-mode)
-)
+  (company-mode))
 
 ;;  (pyvenv-activate "~/.emacs.d/.python-environments/default/"))
 
@@ -1976,7 +1990,9 @@ If so calculate pacakge name from current directory name."
 
 ;; [ the mode line
 
-(set-face-attribute 'mode-line nil :background "red")
+;; theme dependent setting...
+(set-face-background 'mode-line "#000000")
+(set-face-background 'mode-line-inactive "#000000")
 
 (setq-default mode-line-format (list
                                 ;; These setting provide four characters:
@@ -2224,7 +2240,7 @@ If so calculate pacakge name from current directory name."
   (interactive "P")
   (call-interactively   (if arg 
                             'projectile-find-file
-                          'ffap)))
+                          'find-file)))
 
 (global-set-key (kbd "C-x C-f") 'find-file-dispatcher)
 
@@ -2247,6 +2263,50 @@ If so calculate pacakge name from current directory name."
   :pin melpa
   :interpreter
   ("scala" . scala-mode))
+
+;; ]
+
+;; [ origami
+
+
+
+
+(use-package origami
+
+  ;; https://github.com/gregsexton/origami.el
+
+  :init
+
+  (defvar mp/origami-open-map (make-sparse-keymap))
+  (defvar mp/origami-close-map (make-sparse-keymap))
+  (defvar mp/origami-map (make-sparse-keymap))
+
+  :config
+
+  (define-key mp/origami-map (kbd "u") 'origami-undo)
+  (define-key mp/origami-map (kbd "r") 'origami-redo)
+  (define-key mp/origami-map (kbd "f") 'origami-forward-fold-same-level)
+  (define-key mp/origami-map (kbd "p") 'origami-backward-fold-same-level)
+  (define-key mp/origami-close-map (kbd "a") 'origami-close-all-nodes)
+  (define-key mp/origami-close-map (kbd "n") 'origami-close-node)
+  (define-key mp/origami-close-map (kbd "s") 'origami-show-only-node)
+  (define-key mp/origami-open-map (kbd "a") 'origami-open-all-nodes)
+  (define-key mp/origami-open-map (kbd "n") 'origami-open-node)
+
+  (defun mp/enable-origami()
+    (local-set-key (kbd "M-+") 'origami-toggle-node)
+    (global-unset-key (kbd "M-o"))
+    (local-set-key (kbd "M-o") mp/origami-map)
+    (define-key mp/origami-map (kbd "c") mp/origami-close-map)
+    (define-key mp/origami-map (kbd "o") mp/origami-open-map)
+    (origami-mode))
+
+  (add-hook 'emacs-lisp-mode-hook 'mp/enable-origami)
+  (add-hook 'xml-mode-hook 'mp/enable-origami)
+  (add-hook 'nxml-mode-hook 'mp/enable-origami)
+  (add-hook 'python-mode-hook 'mp/enable-origami)
+  (add-hook 'web-mode-hook 'mp/enable-origami)
+  (add-hook 'java-mode-hook 'mp/enable-origami))
 
 ;; ]
 
