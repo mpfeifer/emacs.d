@@ -1401,6 +1401,8 @@ With prefix argument insert classname with package name. Otherwise omit package 
     (java-assert-import classname)))
 
 (defun start-new-web-application (group-id artifact-id version-number)
+  ;; TODO replace maven archetype with copy-file statements
+  ;; include jquery, bootsrap and datatable by default
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
   (let* ((project-path web-application-root)
          (live-buffer-name "*mvn*")
