@@ -451,6 +451,28 @@
 
 ;; ]
 
+;; [ projectile
+
+;; To view key bindings do "C-c p C-h"
+;; Also see http://batsov.com/projectile/
+
+(use-package projectile
+  :config
+  (setq projectile-completion-system 'ivy
+        projectile-enable-caching t)
+;;        projectile-tags-command "etags --include /home/matthias/opt/jdk/src/TAGS -a TAGS \"%s\"")
+  (projectile-mode))
+
+(defun find-file-dispatcher (arg)
+  (interactive "P")
+  (call-interactively   (if arg 
+                            'projectile-find-file
+                          'find-file)))
+
+(global-set-key (kbd "C-x C-f") 'find-file-dispatcher)
+
+;; ]
+
 ;; [ imenu
 
 (setq imenu-auto-rescan t
@@ -975,7 +997,8 @@ restore former values for debug-on-error and debug-ignored-errors."
     (let ((window (get-buffer-window "*SPEEDBAR*")))
       (when window (select-window window)))))
 
-(use-package treemacs-projectile)
+(use-package treemacs-projectile
+  :disabled)
 
 (use-package treemacs
   :config
@@ -986,9 +1009,12 @@ restore former values for debug-on-error and debug-ignored-errors."
         treemacs-change-root-without-asking nil
         treemacs-sorting                    'alphabetic-desc
         treemacs-show-hidden-files          nil
-        treemacs-never-persist              nil)
+        treemacs-never-persist              nil
+        treemacs-icon-open-png   (propertize "⊖ " 'face 'treemacs-directory-face)
+        treemacs-icon-closed-png (propertize "⊕ " 'face 'treemacs-directory-face))
   (treemacs-follow-mode t)
   (treemacs-filewatch-mode t)
+
   :bind
   (:map global-map
         ([f6]        . treemacs-toggle)))
@@ -2223,28 +2249,6 @@ If so calculate pacakge name from current directory name."
     (ansi-color-apply-on-region (point-min) (point-max))))
 
 (add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
-
-;; ]
-
-;; [ projectile
-
-;; To view key bindings do "C-c p C-h"
-;; Also see http://batsov.com/projectile/
-
-(use-package projectile
-  :config
-  (setq projectile-completion-system 'ivy
-        projectile-enable-caching t)
-;;        projectile-tags-command "etags --include /home/matthias/opt/jdk/src/TAGS -a TAGS \"%s\"")
-  (projectile-mode))
-
-(defun find-file-dispatcher (arg)
-  (interactive "P")
-  (call-interactively   (if arg 
-                            'projectile-find-file
-                          'find-file)))
-
-(global-set-key (kbd "C-x C-f") 'find-file-dispatcher)
 
 ;; ]
 
