@@ -449,16 +449,32 @@
 (defconst auto-save-directory (expand-file-name
                                 (concat user-emacs-directory "/auto-save")))
 
+(setq auto-save-file-name-transforms '((".*" ,auto-save-directory t)))
+
 (setq backup-directory-alist (list (cons "." backup-directory))
       delete-old-versions t
       version-control t
       vc-make-backup-files t
-      auto-save-interval 300
+      auto-save-interval 200
       backup-by-copying t
       kept-new-versions 10
       delete-old-versions t
-      vc-make-backup-files t)
- 
+      vc-make-backup-files t
+      auto-save-list-file-prefix auto-save-directory
+      auto-save-visited-file-name t))
+
+(defun full-auto-save ()
+  (interactive)
+  (save-excursion
+    (dolist (buf (buffer-list))
+      (set-buffer buf)
+      (if (and (buffer-file-name) (buffer-modified-p))
+          (basic-save-buffer)))))
+
+(add-hook 'auto-save-hook 'full-auto-save)
+
+
+
 ;; ]
 
 ;; [ projectile
