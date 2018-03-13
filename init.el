@@ -389,14 +389,7 @@
                         :family "Hack"
                         :height 100
                         :weight 'normal
-                        :width 'normal)
-    (set-face-attribute 'mode-line nil
-                        :family "Hack"
-                        :height 100
-                        :weight 'normal
                         :width 'normal)))
-
-(load-theme 'base16-solarized-dark)
 
 (defun add-standard-display-buffer-entry (name)
   "Add an entry to display-buffer-alist for buffers called NAME."
@@ -439,9 +432,45 @@
 ;; visualize matching paren
 (show-paren-mode 1)
 
+(use-package solarized-theme
+  :config
+  (load-theme 'solarized-light t))
+
+;; ]
+
+;; [ the mode line
+
+(let ((line (face-attribute 'mode-line :underline)))
+  (set-face-attribute 'mode-line          nil :overline   line)
+  (set-face-attribute 'mode-line-inactive nil :overline   line)
+  (set-face-attribute 'mode-line-inactive nil :underline  line)
+  (set-face-attribute 'mode-line          nil :box        nil)
+  (set-face-attribute 'mode-line-inactive nil :box        nil)
+  (set-face-attribute 'mode-line-inactive nil :background "#f9f2d9"))
+
+(when (eq system-type 'windows-nt)
+  (set-face-attribute 'mode-line nil
+                      :family "Hack"
+                      :height 100
+                      :weight 'normal
+                      :width 'normal))
+
+(use-package moody
+  :config
+  (setq x-underline-at-descent-line t)
+  (moody-replace-mode-line-buffer-identification)
+  (moody-replace-vc-mode))
+
+(use-package minions
+  :config (minions-mode 1))
+
+(which-function-mode)
+
+(setq which-func-unknown "∅")
+
 ;; ]
  
-;; [ backups
+;; [ backup & auto-save
 
 (defconst backup-directory (expand-file-name
                                 (concat user-emacs-directory "/backups")))
@@ -449,7 +478,7 @@
 (defconst auto-save-directory (expand-file-name
                                 (concat user-emacs-directory "/auto-save")))
 
-(setq auto-save-file-name-transforms '((".*" ,auto-save-directory t)))
+(setq auto-save-file-name-transforms `((".*" ,auto-save-directory t)))
 
 (setq backup-directory-alist (list (cons "." backup-directory))
       delete-old-versions t
@@ -461,7 +490,7 @@
       delete-old-versions t
       vc-make-backup-files t
       auto-save-list-file-prefix auto-save-directory
-      auto-save-visited-file-name t))
+      auto-save-visited-file-name t)
 
 (defun full-auto-save ()
   (interactive)
@@ -525,7 +554,8 @@
              ad-do-it
              (ibuffer-jump-to-buffer recent-buffer-name)))
 
-(use-package ibuffer-git)
+(use-package ibuffer-git
+  :disabled)
 
 (defun ibuffer-show-filename ()
   (interactive)
@@ -592,7 +622,8 @@
         buffer-mode)))
 
   (setq ibuffer-show-empty-filter-groups nil
-        ibuffer-formats '(( mark (git-status-mini) modified read-only "|"
+;;      ibuffer-formats '(( mark (git-status-mini) modified read-only "|"
+        ibuffer-formats '(( mark modified read-only "|"
                                  (name 36 36 :left :elide)
                                  "|"
                                  (size 9 -1 :left)
@@ -1694,14 +1725,14 @@ T - tag prefix
   (local-set-key (kbd "C-x <return>") 'sgml-close-tag)
   (setq nxml-slash-auto-complete-flag t))
 
-(add-hook 'nxml-mode-hook 'nxml-mode-setup)
+(add-hook 'xml-mode-hook 'xml-mode-setup)
 
 (add-to-list 'auto-insert-alist '("pom.xml$" . [ "pom.xml" ]))
 
-(setq xml-files (list ".*\\.wadl'" ".*\\.xul\\'" ".*\\..rdf\\'" ".*\\.xsd\\'" ".*\\.wsdl\\'"))
+(setq xml-file-patterns (list ".*\\.wadl'" ".*\\.xul\\'" ".*\\..rdf\\'" ".*\\.xsd\\'" ".*\\.wsdl\\'"))
 
-(dolist (file xml-modes)
-  (add-to-list 'auto-mode-alist (cons file 'xml-mode)))
+(dolist (pattern xml-file-patterns)
+  (add-to-list 'auto-mode-alist (cons pattern 'xml-mode)))
 
 ;; [ ant mode
 
@@ -2075,19 +2106,6 @@ T - tag prefix
 
 ;; ]
 
-
-;; [ which function mode
-
-;; this is a global minor mode and displays the name
-;; of the function that surrounds point. To look into
-;; how it works look at which-func-* variables.
-
-(which-function-mode)
-
-(setq which-func-unknown "∅")
-
-;; ]
-
 ;; [ eldoc
 
 (setq eldoc-echo-area-use-multiline-p t)
@@ -2114,37 +2132,6 @@ T - tag prefix
       (delete-other-windows) ) )
 
   (global-set-key (kbd "<f12>") 'magit-status-wrapper))
-
-;; ]
-
-;; [ the mode line
-
-;; theme dependent setting...
-(set-face-background 'mode-line "#000000")
-(set-face-background 'mode-line-inactive "#000000")
-
-(setq-default mode-line-format (list
-                                ;; These setting provide four characters:
-                                ;; encoding line-endings read/write modified
-                                ;; eg [U:**] 
-                                ;; U - unicode encoding
-                                ;; : -  unix line endings
-                                ;; * - read-write
-                                ;; * - modified
-                                "%e" "[" mode-line-mule-info mode-line-client mode-line-modified "]"
-                                "   "
-                                '(:eval
-                                  (format "[%s/%s]"
-                                          (projectile-project-name)
-                                          (propertize "%b" 'help-echo (buffer-file-name))))
-                                ;; line and column
-                                "   "
-                                "[" ;; '%02' to set to 2 chars at least; prevents flickering
-                                (propertize "%03l") ","
-                                (propertize "%c")
-                                "]"
-                                "   "
-                                mode-line-misc-info))
 
 ;; ]
 
@@ -2374,9 +2361,6 @@ T - tag prefix
 ;; ]
 
 ;; [ origami
-
-
-
 
 (use-package origami
 
