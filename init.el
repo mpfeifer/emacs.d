@@ -23,7 +23,7 @@
 
 ;; [ custom set variables
 
-(setq gc-cons-threshold 402653184
+(setq gc-cons-threshold (* 512 1024 1024)
       gc-cons-percentage 0.6)
 
 (load "~/.emacs.d/customx.el")
@@ -41,7 +41,7 @@
 (require 'package)
 
 (defconst fn-package-guard "~/.emacs.d/.package-guard")
-(defconst package-guard-renewal 604800) ;; this is one week. use 86400 for one day.
+(defconst package-guard-renewal 604800)
 
 (setq package-archives '(("melpa" . "http://melpa.org/packages/"))
       package-enable-at-startup nil
@@ -100,7 +100,7 @@
   (when (package-refresh-necessary-p)
     (let ((user-information "Will refresh package contents! Press enter."))
       (read-from-minibuffer user-information)
-      (package-refresh-contents)
+      (package-refresh-contents t)
       (update-package-guard))))
 
 (require 'use-package)
@@ -432,9 +432,13 @@
 ;; visualize matching paren
 (show-paren-mode 1)
 
-(use-package solarized-theme
+(use-package theme-changer
   :config
-  (load-theme 'solarized-light t))
+  (change-theme '(solarized-light
+                  base16-google-light)
+                '(solarized-dark
+                  base16-google-dark
+                  base16-material-darker)))
 
 ;; ]
 
@@ -478,9 +482,7 @@
 (defconst auto-save-directory (expand-file-name
                                 (concat user-emacs-directory "/auto-save")))
 
-(setq auto-save-file-name-transforms `((".*" ,auto-save-directory t)))
-
-(setq backup-directory-alist (list (cons "." backup-directory))
+(setq backup-directory-alist `((".*" . ,backup-directory))
       delete-old-versions t
       version-control t
       vc-make-backup-files t
@@ -489,6 +491,7 @@
       kept-new-versions 10
       delete-old-versions t
       vc-make-backup-files t
+      auto-save-file-name-transforms `((".*" ,auto-save-directory t))
       auto-save-list-file-prefix auto-save-directory
       auto-save-visited-file-name t)
 
@@ -543,6 +546,15 @@
 ;; ]
 
 ;; [ ibuffer
+
+(define-ibuffer-sorter alphabetic-by-path
+  "Sort the buffers by their filename (including path).
+Ordering is lexicographic."
+  (:description "buffer name")
+  (string-lessp
+   (buffer-file-name (car a))
+   (buffer-file-name (car b))))
+
 
 (defadvice ibuffer-center-recenter (around ibuffer-point-to-most-recent activate)
            "Open ibuffer with cursor pointed to most recent (non-minibuffer) buffer name"
@@ -853,12 +865,12 @@ restore former values for debug-on-error and debug-ignored-errors."
 ;; hydra
 
 ;; TODO: This does not seem to work 
+
 (use-package org-gcal
   :disabled
   :config
   (add-hook 'org-agenda-mode-hook (lambda () (org-gcal-sync) ))
   (add-hook 'org-capture-after-finalize-hook (lambda () (org-gcal-sync)))
-
   (when (not (require 'org-gcal-secrets nil 'noerror))
     (message "org gcal secrets are not available!")))
 
@@ -902,6 +914,17 @@ restore former values for debug-on-error and debug-ignored-errors."
 (add-to-list 'auto-mode-alist '("organizer\\'" . org-mode))
 
 (defun org-mode-setup ()
+  ;;  "Stop the org-level headers from increasing in height relative to the other text."
+  (dolist (face '(org-level-1
+                  org-level-2
+                  org-level-3
+                  org-level-4
+                  org-level-5))
+    (set-face-attribute face nil
+                        :family "Hack"
+                        :height 1.0
+                        :weight 'normal
+                        :width 'normal))
   (org-hide-block-all)
   (flyspell-mode)
   (add-to-list 'org-file-apps '("\\.png\\'" . default))
@@ -1649,6 +1672,10 @@ If so calculate pacakge name from current directory name."
 
 (add-hook 'dired-mode-hook
           (lambda ()
+            (set-face-attribute 'dired-header nil
+                                :height 1.0
+                                :weight 'normal
+                                :width 'normal)
             (define-key dired-mode-map "f" 'dired-show-only)
             (define-key dired-mode-map "e" 'ora-ediff-files)
             (define-key dired-mode-map (kbd "<backspace>")
@@ -2408,8 +2435,8 @@ T - tag prefix
 
 ;; ]
 
-(setq gc-cons-threshold 33554432
-      gc-cons-percentage 0.1)
+(setq gc-cons-threshold (* 1024 1024 32)
+      gc-cons-percentage 0.3)
 
 (notify "[Emacs] init.el fully loaded")
 
