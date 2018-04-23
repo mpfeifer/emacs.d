@@ -496,7 +496,7 @@
       delete-old-versions t
       version-control t
       vc-make-backup-files t
-      auto-save-interval 200
+      auto-save-interval 50
       backup-by-copying t
       kept-new-versions 10
       delete-old-versions t
@@ -504,18 +504,6 @@
       auto-save-file-name-transforms `((".*" ,auto-save-directory t))
       auto-save-list-file-prefix auto-save-directory
       auto-save-visited-file-name t)
-
-(defun full-auto-save ()
-  (interactive)
-  (save-excursion
-    (dolist (buf (buffer-list))
-      (set-buffer buf)
-      (if (and (buffer-file-name) (buffer-modified-p))
-          (basic-save-buffer)))))
-
-(add-hook 'auto-save-hook 'full-auto-save)
-
-
 
 ;; ]
 
