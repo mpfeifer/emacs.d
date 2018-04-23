@@ -1,6 +1,0 @@
-#contributor: Matthias
-#name: define-key
-#key: define-key
-#key: dk
-# --
-(define-key ${1:keymap} (kbd "${2:combo}") '${3:function})$0

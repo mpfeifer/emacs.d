@@ -1,6 +1,0 @@
-#contributor : Matthias
-#name : <dd> ... </dd>
-#group : list
-#key: dd
-# --
-<dd>$1</dd>

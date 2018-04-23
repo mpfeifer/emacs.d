@@ -1,6 +1,0 @@
-# -*- mode: snippet -*-
-# name: Declare and Instantiate with polymorphism
-# key: newp
-# --
-${1:Type} ${2:obj} = new ${3:Constr}(${4:args});
-$0

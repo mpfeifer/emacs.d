@@ -1,9 +1,0 @@
-#contributor: Matthias
-#name: use-package
-#key: up
-# --
-(use-package $1
-  :bind ("${2:key}" . ${3:function})
-  :config
-  $0
-  )

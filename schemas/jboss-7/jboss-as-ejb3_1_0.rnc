@@ -1,5 +1,0 @@
-default namespace = "urn:jboss:domain:ejb3:1.0"
-
-start =
-  notAllowed
-  | element subsystem { empty }

@@ -1,6 +1,0 @@
-# -*- mode: snippet -*-
-# name: variable
-# key: $
-# --
-$\{$1\}$0
-

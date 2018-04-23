@@ -1,3 +1,0 @@
-xsd10 = external "xsd10.rnc"
-xsd11 = external "xsd11.rnc"
-start = xsd10 | xsd11

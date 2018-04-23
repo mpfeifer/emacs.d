@@ -1,6 +1,0 @@
-#contributor : Matthias (mpfeifer77@gmail.com)
-#name : <tag key="val">...</tag>
-#binding: <
-# —
-`(if (not (eq (get-char-property (point) ‚face) font-lock-comment-face)) (insert "<$1>$2</${1:$(if (string-match \"[[:blank:]]\" yas-text) (substring yas-text 0 (string-match \"[[:blank:]]\" yas-text)) yas-text)}>") (insert "<"))`
-$0

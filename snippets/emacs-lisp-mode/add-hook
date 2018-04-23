@@ -1,5 +1,0 @@
-#contributor: Matthias
-#name: add-hook
-#key: ah
-# --
-(add-hook '${1:HOOK} '${2:FUNCTION})

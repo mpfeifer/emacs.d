@@ -1,5 +1,0 @@
-#name: copy-file
-#key: copy-file
-#key: cf
-# --
-(copy-file "${FILE}" "${NEWNAME}" ${OK-IF-ALREADY-EXISTS KEEP-TIME PRESERVE-UID-GID})
