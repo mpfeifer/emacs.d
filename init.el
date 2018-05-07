@@ -522,15 +522,19 @@
 
 (defun find-file-dispatcher (arg)
   (interactive "P")
-  (let ((file-at-point (thing-at-point 'filename)))
-    (if (and file-at-point
-             (file-exists-p file-at-point))
-        (progn
-          (message (format "find-file-dispatcher found file at point: %s" file-at-point))
-          (find-file file-at-point))
-      (call-interactively   (if arg 
-                                'projectile-find-file
-                              'find-file)))))
+  (if (and
+       (eq major-mode 'org-mode)
+       (eq (get-char-property (point) 'face) 'org-link))
+      (org-open-at-point)
+    (let ((file-at-point (thing-at-point 'filename)))
+      (if (and file-at-point
+               (file-exists-p file-at-point))
+          (progn
+            (message (format "find-file-dispatcher found file at point: %s" file-at-point))
+            (find-file file-at-point))
+        (call-interactively   (if arg 
+                                  'projectile-find-file
+                                'find-file))))))
 
 (global-set-key (kbd "C-x C-f") 'find-file-dispatcher)
 
@@ -559,7 +563,6 @@ Ordering is lexicographic."
   (string-lessp
    (buffer-file-name (car a))
    (buffer-file-name (car b))))
-
 
 (defadvice ibuffer-center-recenter (around ibuffer-point-to-most-recent activate)
   "Open ibuffer with cursor pointed to most recent (non-minibuffer) buffer name"
@@ -881,6 +884,10 @@ restore former values for debug-on-error and debug-ignored-errors."
 
 (add-hook 'org-agenda-mode-hook 'org-agenda-follow-mode)
 (add-hook 'org-agenda-mode-hook 'hl-line-mode)
+(add-hook 'org-agenda-mode-hook 'fit-window-to-buffer)
+
+(defadvice org-agenda-redo (after fit-window-after-agenda-redo activate)
+  (fit-window-to-buffer))
 
 ;; TODO: This does not seem to work 
 
@@ -933,9 +940,8 @@ restore former values for debug-on-error and debug-ignored-errors."
 
 (defun org-mode-setup ()
   ;;  "Stop the org-level headers from increasing in height relative to the other text."
-  
   (org-hide-block-all)
-  (flyspell-mode)
+;;  (flyspell-mode)
   (add-to-list 'org-file-apps '("\\.png\\'" . default))
   (company-mode -1) ;; disabled, since it looks broken
   (setq org-agenda-span 7
@@ -951,8 +957,7 @@ restore former values for debug-on-error and debug-ignored-errors."
         org-log-done (quote note)
         org-log-into-drawer t
         org-special-ctrl-a/e t
-        org-special-ctrl-k t
-        org-todo-keywords '((sequence "TODO" "WAITING" "|" "DONE" "CANCELED" "DELEGATED")))
+        org-special-ctrl-k t)
   (local-set-key (kbd "<return>") #'org-return-indent)
   (local-set-key (kbd "C-'") #'imenu)
   (local-set-key (kbd "C-c t") #'org-set-tags)
@@ -1948,25 +1953,10 @@ T - tag prefix
 
 ;; ]
 
-;; [ ispell mode
-
-;; make sure ispell is in your path or add it here
-
-;; (defconst ispell-path "")
-
-;; (add-to-list 'exec-path ispill-path)
-
-
-(setq ispell-program-name "aspell"
-      ispell-personal-dictionary "~/.emacs.d/dict")
-
-;; ]
-
 ;; [ html editing web mode
 
 (add-to-list 'auto-mode-alist '("\\.html\\'" . web-mode))
 (add-to-list 'auto-mode-alist '("\\.jsp\\'" . web-mode))
-
 
 (use-package web-mode
   :config
@@ -2466,7 +2456,7 @@ Timer^^        ^Clock^         ^Capture^
 s_t_art        _w_ clock in    _c_apture
  _s_top        _o_ clock out   _l_ast capture
 _r_eset        _j_ clock goto
-_p_rint
+_p_rint        _m_ clock mru
 "
   ("t" org-timer-start)
   ("s" org-timer-stop)
@@ -2479,14 +2469,26 @@ _p_rint
   ;; Visit the clocked task from any buffer
   ("j" org-clock-goto)
   ("c" org-capture)
+  ("m" org-mru-clock)
   ("l" org-capture-goto-last-stored))
 
 (global-set-key (kbd "C-c h") 'hydra-global-org/body)
 ;; ]
 
+;; [ macros
+
+
+;; (require 'macros)
+
+;; C-x (      to start macro recording
+;; C-x )      to stop macro recoring
+;; C-x C-k r  to apply last macro to region
+
+;; ]
+
 ;; [ Finalizer
 
-(setq gc-cons-threshold (* 1024 1024 32)
+(setq gc-cons-threshold (* 1024 1024 64)
       gc-cons-percentage 0.3)
 
 

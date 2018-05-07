@@ -5,11 +5,19 @@
 
 (define-abbrev-table 'Info-edit-mode-abbrev-table '())
 
+(define-abbrev-table 'Man-mode-abbrev-table '())
+
+(define-abbrev-table 'ant-mode-abbrev-table '())
+
 (define-abbrev-table 'awk-mode-abbrev-table
   '(
    ))
 
 (define-abbrev-table 'bibtex-mode-abbrev-table '())
+
+(define-abbrev-table 'bookmark-bmenu-mode-abbrev-table '())
+
+(define-abbrev-table 'bookmark-edit-annotation-mode-abbrev-table '())
 
 (define-abbrev-table 'bsh-script-mode-abbrev-table '())
 
@@ -31,6 +39,10 @@
 
 (define-abbrev-table 'data-debug-mode-abbrev-table '())
 
+(define-abbrev-table 'diary-fancy-display-mode-abbrev-table '())
+
+(define-abbrev-table 'diary-mode-abbrev-table '())
+
 (define-abbrev-table 'diff-mode-abbrev-table '())
 
 (define-abbrev-table 'edit-abbrevs-mode-abbrev-table '())
@@ -43,9 +55,14 @@
 
 (define-abbrev-table 'eshell-mode-abbrev-table '())
 
+(define-abbrev-table 'ffip-diff-mode-abbrev-table '())
+
 (define-abbrev-table 'fundamental-mode-abbrev-table '())
 
-(define-abbrev-table 'global-abbrev-table '())
+(define-abbrev-table 'global-abbrev-table
+  '(
+    ("xyz" "define a global abb" nil 0)
+   ))
 
 (define-abbrev-table 'grep-mode-abbrev-table '())
 
@@ -58,6 +75,10 @@
 (define-abbrev-table 'idl-mode-abbrev-table '())
 
 (define-abbrev-table 'inferior-python-mode-abbrev-table '())
+
+(define-abbrev-table 'ivy-occur-grep-mode-abbrev-table '())
+
+(define-abbrev-table 'ivy-occur-mode-abbrev-table '())
 
 (define-abbrev-table 'java-mode-abbrev-table
   '(
@@ -87,6 +108,8 @@
 
 (define-abbrev-table 'lisp-mode-abbrev-table '())
 
+(define-abbrev-table 'logview-mode-abbrev-table '())
+
 (define-abbrev-table 'makefile-automake-mode-abbrev-table '())
 
 (define-abbrev-table 'makefile-bsdmake-mode-abbrev-table '())
@@ -99,9 +122,15 @@
 
 (define-abbrev-table 'makefile-mode-abbrev-table '())
 
+(define-abbrev-table 'maven-mode-abbrev-table '())
+
+(define-abbrev-table 'message-mode-abbrev-table '())
+
 (define-abbrev-table 'messages-buffer-mode-abbrev-table '())
 
 (define-abbrev-table 'nxml-mode-abbrev-table '())
+
+(define-abbrev-table 'ob-http-mode-abbrev-table '())
 
 (define-abbrev-table 'objc-mode-abbrev-table
   '(
@@ -110,6 +139,8 @@
 (define-abbrev-table 'occur-edit-mode-abbrev-table '())
 
 (define-abbrev-table 'occur-mode-abbrev-table '())
+
+(define-abbrev-table 'org-export-stack-mode-abbrev-table '())
 
 (define-abbrev-table 'org-mode-abbrev-table '())
 
@@ -155,11 +186,15 @@
 
 (define-abbrev-table 'tabulated-list-mode-abbrev-table '())
 
+(define-abbrev-table 'tar-mode-abbrev-table '())
+
 (define-abbrev-table 'term-mode-abbrev-table '())
 
 (define-abbrev-table 'text-mode-abbrev-table '())
 
 (define-abbrev-table 'url-cookie-mode-abbrev-table '())
+
+(define-abbrev-table 'use-package-statistics-mode-abbrev-table '())
 
 (define-abbrev-table 'vc-git-log-edit-mode-abbrev-table '())
 
@@ -168,6 +203,8 @@
 (define-abbrev-table 'vc-git-region-history-mode-abbrev-table '())
 
 (define-abbrev-table 'vc-svn-log-view-mode-abbrev-table '())
+
+(define-abbrev-table 'web-mode-abbrev-table '())
 
 (define-abbrev-table 'xref--xref-buffer-mode-abbrev-table '())
 
