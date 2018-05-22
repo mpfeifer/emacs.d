@@ -414,7 +414,11 @@
 
 (use-package theme-changer
   :config
-  (change-theme '(solarized-light) '(solarized-dark)))
+  (change-theme '(solarized-light) '(solarized-dark))
+  (require 'hl-line)
+  (set-face-attribute 'hl-line nil
+                      :background "light blue"
+                      :foreground "black"))
 
 (defun add-standard-display-buffer-entry (name)
   "Add an entry to display-buffer-alist for buffers called NAME."
@@ -577,31 +581,20 @@ Ordering is lexicographic."
 (use-package ibuffer-git
   :disabled)
 
-(defun ibuffer-show-filename ()
-  (interactive)
-  (let ((buf (ibuffer-current-buffer))
-        (lsoutput nil))
-    (when (file-exists-p (buffer-file-name buf))
-      (with-temp-buffer
-        (let* ((filename (buffer-file-name buf))
-               (default-directory (file-name-directory filename))
-               (just-filename (file-name-nondirectory filename)))
-          (call-process "/usr/bin/ls" nil t nil "-l" just-filename)
-          (setq lsoutput (buffer-substring-no-properties (point-min) (- (point-max) 1))))))
-    (message lsoutput)))
-
 (defun ibuffer-show-file-path ()
   (interactive)
   (let ((buf (ibuffer-current-buffer))
-        (lsoutput nil))
-    (when (file-exists-p (buffer-file-name buf))
-      (with-temp-buffer
-        (let* ((filename (buffer-file-name buf))
-               (default-directory (file-name-directory filename))
-               (just-filename (file-name-nondirectory filename)))
-          (call-process "pwd" nil t nil)
-          (setq lsoutput (buffer-substring-no-properties (point-min) (- (point-max) 1))))))
-    (message lsoutput)))
+        (info nil))
+    (progn
+      (if  buf
+          (when (file-exists-p (buffer-file-name buf))
+            (with-temp-buffer
+              (let* ((filename (buffer-file-name buf))
+                     (file-directory (file-name-directory filename))
+                     (just-filename (file-name-nondirectory filename)))
+                (setq input file-directory))))
+        (setq input "Buffer is not backed by a file"))
+      (message input))))
 
 (use-package ibuffer
   :bind ("C-x C-b" . ibuffer)
@@ -884,10 +877,13 @@ restore former values for debug-on-error and debug-ignored-errors."
 
 (add-hook 'org-agenda-mode-hook 'org-agenda-follow-mode)
 (add-hook 'org-agenda-mode-hook 'hl-line-mode)
-(add-hook 'org-agenda-mode-hook 'fit-window-to-buffer)
 
-(defadvice org-agenda-redo (after fit-window-after-agenda-redo activate)
-  (fit-window-to-buffer))
+;; (defadvice org-agenda-redo (after fit-window-after-agenda-redo activate)
+;;  (fit-window-to-buffer))
+
+(add-hook 'window-configuration-change-hook '(lambda ()
+                                               (when (string= (buffer-name) "*Org Agenda*")
+                                                 (fit-window-to-buffer))))
 
 ;; TODO: This does not seem to work 
 
@@ -998,7 +994,10 @@ restore former values for debug-on-error and debug-ignored-errors."
         ("m" "Meeting" entry (file+headline org-capture-file "Inbox")
          "** MEETING with %? :MEETING:\n%U" :kill-buffer t :clock-in t :clock-resume t)
         ("p" "Phone call" entry (file+headline org-capture-file "Inbox")
-         "** PHONE %? :PHONE:\n%U" :kill-buffer t :clock-in t :clock-resume t) ) )
+         "** PHONE %? :PHONE:\n%U" :kill-buffer t :clock-in t :clock-resume t)
+        ("j" "Jira Task" entry (file+headline org-capture-file "Jira")
+         ""
+         :clock-in t :clock-resume)) )
 
 (add-hook 'org-mode-hook 'org-mode-setup)
 
@@ -1778,6 +1777,14 @@ T - tag prefix
 (dolist (pattern xml-file-patterns)
   (add-to-list 'auto-mode-alist (cons pattern 'xml-mode)))
 
+(defun xml-pretty-print-buffer()
+  (interactive)
+  (goto-char (point-min))
+  (while (re-search-forward "><" nil t)
+    (replace-match ">
+<"))
+  (indent-buffer))
+
 ;; [ ant mode
 
 (define-derived-mode ant-mode xml-mode
@@ -2483,6 +2490,174 @@ _p_rint        _m_ clock mru
 ;; C-x (      to start macro recording
 ;; C-x )      to stop macro recoring
 ;; C-x C-k r  to apply last macro to region
+
+;; ]
+
+;; [ scratchy
+
+(when (get-buffer "*scratch*")
+  (kill-buffer "*scratch*"))
+
+(defvar scratch-map (make-hash-table))
+
+(defun scratch-update-map (map)
+  (let ((updated-list (make-hash-table)))
+    (progn
+      (dolist (mode (map-keys map))
+        (let ((buffer (gethash mode map)))
+          (when (bufferp buffer)
+            (puthash mode buffer map))))
+      updated-list)))
+
+(defun scratch-goto-mode (mode)
+  (interactive)
+  (let ((scratch-buffer (gethash mode scratch-map)))
+    (when (or
+           (not (buffer-live-p scratch-buffer))
+           (null scratch-buffer))
+      (progn
+        (setq scratch-buffer (generate-new-buffer (format "*scratch-%s*" (symbol-to-string mode))))
+        (with-current-buffer scratch-buffer
+          (funcall mode))
+        (puthash mode scratch-buffer scratch-map)))
+    (select-frame (make-frame))
+    (switch-to-buffer scratch-buffer)))
+
+(defun scratch-goto-text-mode ()
+  (interactive)
+  (scratch-goto-mode 'text-mode))
+
+(defun scratch-goto-emacs-lisp-mode ()
+  (interactive)
+  (scratch-goto-mode 'emacs-lisp-mode))
+
+(defun scratch-goto-python-mode ()
+  (interactive)
+  (scratch-goto-mode 'python-mode))
+
+(defun scratch-goto-java-mode ()
+  (interactive)
+  (scratch-goto-mode 'java-mode))
+
+(defun scratch-goto-org-mode ()
+  (interactive)
+  (scratch-goto-mode 'org-mode))
+
+(defun scratch-goto-shl-mode ()
+  (interactive)
+  (scratch-goto-mode 'sh-mode))
+
+(defhydra hydra-global-scratch (:color blue :hint nil)
+  "
+Mode^^
+----------------------------------------------
+_t_ext-mode    _p_ython-mode        _o_rg-mode
+_j_ava-mode    emacs-_l_isp-mode    _s_h-mode
+"
+  ("t" scratch-goto-text-mode)
+  ("l" scratch-goto-emacs-lisp-mode)
+  ("p" scratch-goto-python-mode)
+  ("j" scratch-goto-java-mode)
+  ("o" scratch-goto-org-mode)
+  ("s" scratch-goto-shl-mode))
+
+(global-set-key (kbd "C-c s") 'hydra-global-scratch/body)
+
+
+;; ]
+
+;; [ dashboard
+
+(defun fx-file-modified-in-last-24-hours (path)
+  "Compare if file at PATH has been modified more recently then TIMESTAMP."
+  (let* ((attribs (file-attributes path))
+         (mtime (nth 5 attribs))
+         (now-24 (time-subtract (current-time) '(1 20864 0 0))))
+    (if (time-less-p now-24 mtime)
+        ;; File was modified within last 24 hours
+        ;; will use file-contents instead of calling
+        ;; web service
+        t
+      nil )))
+
+(defun dashboard-pretty-print-qod (qod)
+  (let ((width (window-body-width))
+        (words (split-string qod))
+        (word nil)
+        (spacer "   ")
+        (line-counter 0))
+    (insert spacer)
+    (insert "\"")
+    (while (and
+            words
+            (< line-counter 15))
+      (progn
+        (setq word (car words)
+            words (cdr words))
+        (if (>
+             (+ (current-column) (length word))
+             width)
+            (progn 
+              (newline)
+              (insert spacer)))
+        (insert word (if (> (length words ) 0) " " "\""))
+        (setq line-break nil)))))
+
+(defun dashboard-insert-qod (num-items)
+    (dashboard-insert-heading "Quote of the day: ")
+    (let ((dashboard-cache (concat
+                            (expand-file-name user-emacs-directory)
+                            "quote_of_the_day"))
+          (from 0)
+          (to 0)
+          (qod nil)
+          (response-buffer nil)
+          (response nil))
+      (progn
+        (setq response
+              (if (and (file-exists-p dashboard-cache)
+                       (fx-file-modified-in-last-24-hours dashboard-cache))
+                  (with-temp-buffer
+                    (insert-file-contents dashboard-cache)
+                    (buffer-string))
+                (progn
+                  (setq response-buffer (url-retrieve-synchronously "https://quotes.rest/qod" t))
+                  (with-current-buffer response-buffer
+                    (goto-char (point-min))
+                    (search-forward "{")
+                    (backward-char 1)
+                    (write-region (point) (point-max) dashboard-cache)
+                    (buffer-string)))))
+        (let* ((parsed-response (json-read-from-string response))
+               (qod (cdr (nth 0 (aref (cdr (car (cdr (nth 1 parsed-response)))) 0)))))
+          (newline)
+          (dashboard-pretty-print-qod qod)
+          ))))
+
+(setq dashboard-items '((qod . 1)
+                        (agenda . 10)
+                        (projects . 10)
+                        (recents . 15)
+                        (bookmarks . 10)
+                        (registers . 5)))
+
+(use-package dashboard
+  :config
+  
+  (add-to-list 'dashboard-item-generators '(qod . dashboard-insert-qod))
+
+  (setq dashboard-items '((qod . 1)
+                          (agenda . 10)
+                          (projects . 10)
+                          (recents . 15)
+                          (bookmarks . 10)
+                          (registers . 5)))
+
+  (dashboard-setup-startup-hook))
+
+;; [ json
+
+(require 'json)
 
 ;; ]
 
