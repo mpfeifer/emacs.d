@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name: issue
+# key: issue
+# --
+<div class="issue">
+     <div class="issue_id">
+            <a href="https://ent-jira.nuance.com:8443/browse/TEF-$1" target="_blank">TEF-$1</a>
+     </div>
+     <p class="userstory_text">$0</p>
+</div>     

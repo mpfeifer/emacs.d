@@ -36,6 +36,18 @@
                            (hl-line-mode)
                            ))
 
+(defun replace-vpng-with-link ()
+  "In current buffer replace all occurences of strings matching vpng-[0-9]+ with a link to the telefonica jira."
+  (interactive "P")
+  (let ((jira-url "https://jira-ex.telefonica.de/browse/"))
+    (save-excursion
+      (goto-char (point-min)))))
+
+(projectile-register-project-type 'npm '(".project" "bin/build.xml")
+				  :compile "ant buildWar"
+				  :test "ant test"
+				  :run "ant buildWar")
+
 (define-derived-mode nar-log-mode view-mode
   "Nar"
   "Mode for reading nar log files")

@@ -39,3 +39,4 @@ org-gcal-secrets.el
 javadoc-cache
 server/
 quote_of_the_day
+elisp/n.el

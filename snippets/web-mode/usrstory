@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name: usrstory
+# key: usrstory
+# --
+<div class="userstory">
+     <span class="userstory_id">
+           <a href="https://jira-ex.telefonica.de/browse/VPNG-$1" target="_blank">VPNG-$1</a>
+     </span>
+     <p class="userstory_text">$0</p>
+</div>     

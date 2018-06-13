@@ -7,6 +7,14 @@
 ;;  starting up.  It takes care for loading the users' preferences.
 ;;
 
+;; TODO
+;;
+;; 1. split the file up
+;; 2. extract everything that looks like a tool
+;; 3. start using log4e
+;; 4. have host specific settings
+;; 
+
 ;; [ header
 
 ;; Info  : Emacs initialization file
@@ -16,10 +24,6 @@
 ;; ]
 
 ;;; Code:
-
-;; [ personal information
-
-;; ]
 
 ;; [ custom set variables
 
@@ -83,17 +87,11 @@
 
 (if (not (file-exists-p fn-package-guard))
     (let* ((emacs-dir (expand-file-name user-emacs-directory))
-           (autosave-dir (concat emacs-dir "/auto-save/"))
            (desktop-dir (concat emacs-dir "/desktop"))
-           (backup-dir (concat emacs-dir "/backups"))
            (user-information "Will perform first time initialisation! Press enter."))
       (read-from-minibuffer user-information)
-      (when (not (file-exists-p autosave-dir))
-        (make-directory autosave-dir))
       (when (not (file-exists-p desktop-dir))
         (make-directory desktop-dir))
-      (when (not (file-exists-p backup-dir))
-        (make-directory backup-dir))
       (update-package-guard)
       (package-refresh-contents)
       (package-install 'use-package))
@@ -490,24 +488,19 @@
 
 ;; [ backup & auto-save
 
-(defconst backup-directory (expand-file-name
-                            (concat user-emacs-directory "/backups")))
-
-(defconst auto-save-directory (expand-file-name
-                               (concat user-emacs-directory "/auto-save")))
-
-(setq backup-directory-alist `((".*" . ,backup-directory))
-      delete-old-versions t
-      version-control t
-      vc-make-backup-files t
+(setq auto-save-default nil
+      auto-save-file-name-transforms nil
       auto-save-interval 50
+      auto-save-list-file-prefix nil
+      auto-save-visited-file-name t
       backup-by-copying t
-      kept-new-versions 10
+      backup-directory-alist nil
       delete-old-versions t
-      vc-make-backup-files t
-      auto-save-file-name-transforms `((".*" ,auto-save-directory t))
-      auto-save-list-file-prefix auto-save-directory
-      auto-save-visited-file-name t)
+      delete-old-versions t
+      kept-new-versions 10
+      make-backup-files nil
+      vc-make-backup-files nil
+      version-control t)
 
 ;; ]
 
@@ -536,9 +529,16 @@
           (progn
             (message (format "find-file-dispatcher found file at point: %s" file-at-point))
             (find-file file-at-point))
-        (call-interactively   (if arg 
+        (call-interactively   (if (or arg projectile-cached-project-root)
                                   'projectile-find-file
                                 'find-file))))))
+
+
+(defun ibuffer-dispatcher (arg)
+  (interactive "P")
+  (call-interactively   (if (or arg projectile-cached-project-root)
+                            'projectile-ibuffer
+                          'ibuffer)))
 
 (global-set-key (kbd "C-x C-f") 'find-file-dispatcher)
 
@@ -597,7 +597,7 @@ Ordering is lexicographic."
       (message input))))
 
 (use-package ibuffer
-  :bind ("C-x C-b" . ibuffer)
+  :bind ("C-x C-b" . ibuffer-dispatcher)
   :init
 
   (define-ibuffer-column dirname
@@ -648,6 +648,7 @@ Ordering is lexicographic."
   (defun ibuffer-mode-hook-extender ()
     (ibuffer-auto-mode 1) ;; auto updates
     (hl-line-mode)
+    (define-key ibuffer-mode-map (kbd "<RET>") 'ibuffer-visit-buffer-other-frame)
     (define-key ibuffer-mode-map (kbd "p") 'ibuffer-show-file-path))
   
   (add-hook 'ibuffer-mode-hook 'ibuffer-mode-hook-extender))
@@ -768,17 +769,20 @@ restore former values for debug-on-error and debug-ignored-errors."
 
 ;; [ the kill ring
 
-(defun elx-browse-kill-ring ()
-  (interactive)
-  (insert (completing-read "Pick an element: " kill-ring)))
+
+(defun elx-browse-kill-ring (prefix-arg)
+  (interactive "P")
+  (let ((tmp-kill-ring nil))
+    (if prefix-arg
+        (setq tmp-kill-ring kill-ring)
+      (setq tmp-kill-ring (mapcar 'string-trim kill-ring))
+      (insert (completing-read "Pick an element: " (seq-filter 'length tmp-kill-ring))))))
 
 (global-set-key (kbd "C-M-y") 'elx-browse-kill-ring)
 
 ;; ]
 
 ;; [ yasnippet
-
-
 
 (use-package yasnippet
 
@@ -787,13 +791,13 @@ restore former values for debug-on-error and debug-ignored-errors."
   (require 'yasnippet-snippets)
 
   (defconst yasnippet-my-snippets-dir "~/.emacs.d/snippets/")
-  (add-to-list 'yas-snippet-dirs yasnippet-my-snippets-dir t)
 
   ;; Add snippet directory to auto-mode-alist
   ;; so that files are opened in snipped-mode
   (dolist (snippet-dir yas-snippet-dirs)
-    (add-to-list 'auto-mode-alist (cons (concat ".*" snippet-dir ".*") 'snippet-mode))
-    (yas-load-directory snippet-dir))
+    (add-to-list 'auto-mode-alist (cons (concat ".*" snippet-dir ".*") 'snippet-mode)))
+
+  (yas-load-directory yasnippet-my-snippets-dir)
 
   (require 'warnings)
   ;; do not complain when snippets change buffer contents
@@ -875,6 +879,9 @@ restore former values for debug-on-error and debug-ignored-errors."
 
 ;; [ org mode
 
+(setq org-todo-keywords
+      '((sequence "TODO(t)" "INPROGRESS(p)" "DONE(d)")))
+
 (add-hook 'org-agenda-mode-hook 'org-agenda-follow-mode)
 (add-hook 'org-agenda-mode-hook 'hl-line-mode)
 
@@ -903,8 +910,6 @@ restore former values for debug-on-error and debug-ignored-errors."
 (require 'ob-plantuml)
 
 (require 'ob-python)
-
-(global-set-key (kbd "C-x c") #'org-capture)
 
 ;; clocking commands:
 ;;    C-c C-x C-i (org-clock-in)
@@ -935,9 +940,11 @@ restore former values for debug-on-error and debug-ignored-errors."
 (add-to-list 'auto-mode-alist '("organizer\\'" . org-mode))
 
 (defun org-mode-setup ()
+
   ;;  "Stop the org-level headers from increasing in height relative to the other text."
   (org-hide-block-all)
-;;  (flyspell-mode)
+  (org-clock-persistence-insinuate)
+  ;;  (flyspell-mode)
   (add-to-list 'org-file-apps '("\\.png\\'" . default))
   (company-mode -1) ;; disabled, since it looks broken
   (setq org-agenda-span 7
@@ -946,6 +953,14 @@ restore former values for debug-on-error and debug-ignored-errors."
         org-babel-python-command "python"
         org-clock-into-drawer t
         org-clock-persist 'history
+        org-clock-history-length 23
+        org-clock-in-resume t
+        org-clock-out-remove-zero-time-clocks t
+        org-clock-out-when-done t        
+        org-clock-persist t
+        org-clock-persist-query-resume nil
+        org-clock-auto-clock-resolution (quote when-no-clock-is-running)
+        org-clock-report-include-clocking-task t
         org-confirm-babel-evaluate nil
         org-default-notes-file "~/org/organizer"
         org-directory "~/org/"
@@ -953,12 +968,10 @@ restore former values for debug-on-error and debug-ignored-errors."
         org-log-done (quote note)
         org-log-into-drawer t
         org-special-ctrl-a/e t
-        org-special-ctrl-k t)
+        org-special-ctrl-k t
+        org-src-fontify-natively t)
   (local-set-key (kbd "<return>") #'org-return-indent)
   (local-set-key (kbd "C-'") #'imenu)
-  (local-set-key (kbd "C-c t") #'org-set-tags)
-  (local-set-key (kbd "C-c i") #'org-clock-in)
-  (local-set-key (kbd "C-c o") #'org-clock-out)
   ;;  (setenv "GRAPHVIZ_DOT" "/usr/bin/dot")
   (org-babel-do-load-languages
    'org-babel-load-languages
@@ -981,23 +994,21 @@ restore former values for debug-on-error and debug-ignored-errors."
 ;; capture templates are documented at
 ;; http://orgmode.org/manual/Capture.html
 
-(setq org-capture-templates
-      '(
-        ("P" "Project" entry (file+headline org-capture-file "Inbox")
-         "* %?\n\n%^T\n\n" :kill-buffer t :clock-in t :clock-resume)
-        ("a" "Appointment" entry (file  org-capture-file)
-	 "* %?\n\n%^T\n\n:PROPERTIES:\n\n:END:\n\n")
-        ("t" "todo" entry (file+headline org-capture-file "Inbox")
-         "** TODO %?\n%U\n%a\n" :kill-buffer t :clock-in t :clock-resume t)
-        ("n" "note" entry (file+headline org-capture-file "Inbox")
-         "** %? :NOTE:\n%U\n%a\n" :kill-buffer t :clock-in t :clock-resume t)
-        ("m" "Meeting" entry (file+headline org-capture-file "Inbox")
-         "** MEETING with %? :MEETING:\n%U" :kill-buffer t :clock-in t :clock-resume t)
-        ("p" "Phone call" entry (file+headline org-capture-file "Inbox")
-         "** PHONE %? :PHONE:\n%U" :kill-buffer t :clock-in t :clock-resume t)
-        ("j" "Jira Task" entry (file+headline org-capture-file "Jira")
-         ""
-         :clock-in t :clock-resume)) )
+(let ((note-template "** %? :Note:\n:PROPERTIES:\n%U\n:END:\n%a\n")
+      (todo-template "** TODO %?\n%U\n%a\n")
+      (project-template "* %?\n\n%^T\n\n")
+      (apt-template "* %?\n\n%^T\n\n:PROPERTIES:\n\n:END:\n\n")
+      (meeting-template "** MEETING with %? :MEETING:\n%U"))
+  (setq org-capture-templates
+        '( ;; See https://orgmode.org/manual/Template-elements.html#Template-elements
+          ("P" "Project" entry (file+headline org-capture-file "Inbox")
+           project-template :clock-in t :clock-resume)
+          ("a" "Appointment" entry (file+headline org-capture-file "Inbox") apt-template)
+          ("t" "A generic Todo item" entry (file+headline org-capture-file "Inbox") todo-template :clock-in t :clock-resume t)
+          ("T" "A Todo item for the current task" entry (clock) todo-template)
+          ("n" "A generic note" entry (file+headline org-capture-file "Inbox") note-template :clock-in t :clock-resume t)
+          ("N" "A note for the current task" entry (clock) note-template)
+          ("m" "Meeting" entry (file+headline org-capture-file "Inbox") meeting-template :clock-in t :clock-resume t) ) ) )
 
 (add-hook 'org-mode-hook 'org-mode-setup)
 
@@ -1785,6 +1796,9 @@ T - tag prefix
 <"))
   (indent-buffer))
 
+(setq nxml-child-indent 4
+      nxml-attribute-indent 4)
+
 ;; [ ant mode
 
 (define-derived-mode ant-mode xml-mode
@@ -2266,7 +2280,11 @@ T - tag prefix
     "Turn on auto-complete mode and set ac-sources for emacs-lisp-mode."
     (setq ac-sources '(ac-source-yasnippet
                        ac-source-filename
-                       ac-source-files-in-current-dir))
+                       ac-source-files-in-current-dir
+                       ac-source-features
+                       ac-source-functions
+                       ac-source-variables
+                       ac-source-symbols))
     (auto-complete-mode t) )
 
   (add-hook 'emacs-lisp-mode-hook 'mp-ac-setup-for-emacs-lisp)
@@ -2392,6 +2410,15 @@ T - tag prefix
 
 ;; [ origami
 
+
+(defun mp/enable-origami()
+  (local-set-key (kbd "M-+") 'origami-toggle-node)
+  (global-unset-key (kbd "M-o"))
+  (local-set-key (kbd "M-o") 'mp/origami-map)
+  (define-key mp/origami-map (kbd "c") 'mp/origami-close-map)
+  (define-key mp/origami-map (kbd "o") 'mp/origami-open-map)
+  (origami-mode))
+
 (use-package origami
 
   ;; https://github.com/gregsexton/origami.el
@@ -2413,14 +2440,6 @@ T - tag prefix
   (define-key mp/origami-close-map (kbd "s") 'origami-show-only-node)
   (define-key mp/origami-open-map (kbd "a") 'origami-open-all-nodes)
   (define-key mp/origami-open-map (kbd "n") 'origami-open-node)
-
-  (defun mp/enable-origami()
-    (local-set-key (kbd "M-+") 'origami-toggle-node)
-    (global-unset-key (kbd "M-o"))
-    (local-set-key (kbd "M-o") mp/origami-map)
-    (define-key mp/origami-map (kbd "c") mp/origami-close-map)
-    (define-key mp/origami-map (kbd "o") mp/origami-open-map)
-    (origami-mode))
 
   (add-hook 'emacs-lisp-mode-hook 'mp/enable-origami)
   (add-hook 'xml-mode-hook 'mp/enable-origami)
@@ -2445,9 +2464,11 @@ T - tag prefix
   "Mode for viewing log files files.")
 
 (add-to-list 'auto-mode-alist (cons "\\.log\\'" 'logview-mode))
+(add-to-list 'auto-mode-alist (cons "\\-LOG\\'" 'logview-mode))
 
 (add-hook 'logview-mode-hook '(lambda ()
                                 (stripe-buffer-mode)
+                                (hl-line-mode)
                                 (define-key logview-mode-map  (kbd "<") 'beginning-of-buffer)
                                 (define-key logview-mode-map (kbd ">") 'end-of-buffer)))
 
@@ -2476,7 +2497,7 @@ _p_rint        _m_ clock mru
   ;; Visit the clocked task from any buffer
   ("j" org-clock-goto)
   ("c" org-capture)
-  ("m" org-mru-clock)
+  ("m" org-mru-clock-in)
   ("l" org-capture-goto-last-stored))
 
 (global-set-key (kbd "C-c h") 'hydra-global-org/body)
@@ -2570,6 +2591,7 @@ _j_ava-mode    emacs-_l_isp-mode    _s_h-mode
 
 (defun fx-file-modified-in-last-24-hours (path)
   "Compare if file at PATH has been modified more recently then TIMESTAMP."
+  (message "[dashboard] Checking if cache is current")
   (let* ((attribs (file-attributes path))
          (mtime (nth 5 attribs))
          (now-24 (time-subtract (current-time) '(1 20864 0 0))))
@@ -2581,6 +2603,7 @@ _j_ava-mode    emacs-_l_isp-mode    _s_h-mode
       nil )))
 
 (defun dashboard-pretty-print-qod (qod)
+;;  (message "[dashboard] pretty printing quote of the day")
   (let ((width (window-body-width))
         (words (split-string qod))
         (word nil)
@@ -2593,7 +2616,7 @@ _j_ava-mode    emacs-_l_isp-mode    _s_h-mode
             (< line-counter 15))
       (progn
         (setq word (car words)
-            words (cdr words))
+              words (cdr words))
         (if (>
              (+ (current-column) (length word))
              width)
@@ -2604,42 +2627,35 @@ _j_ava-mode    emacs-_l_isp-mode    _s_h-mode
         (setq line-break nil)))))
 
 (defun dashboard-insert-qod (num-items)
-    (dashboard-insert-heading "Quote of the day: ")
-    (let ((dashboard-cache (concat
-                            (expand-file-name user-emacs-directory)
-                            "quote_of_the_day"))
-          (from 0)
-          (to 0)
-          (qod nil)
-          (response-buffer nil)
-          (response nil))
-      (progn
-        (setq response
-              (if (and (file-exists-p dashboard-cache)
-                       (fx-file-modified-in-last-24-hours dashboard-cache))
-                  (with-temp-buffer
-                    (insert-file-contents dashboard-cache)
-                    (buffer-string))
-                (progn
-                  (setq response-buffer (url-retrieve-synchronously "https://quotes.rest/qod" t))
-                  (with-current-buffer response-buffer
-                    (goto-char (point-min))
-                    (search-forward "{")
-                    (backward-char 1)
-                    (write-region (point) (point-max) dashboard-cache)
-                    (buffer-string)))))
-        (let* ((parsed-response (json-read-from-string response))
-               (qod (cdr (nth 0 (aref (cdr (car (cdr (nth 1 parsed-response)))) 0)))))
-          (newline)
-          (dashboard-pretty-print-qod qod)
-          ))))
-
-(setq dashboard-items '((qod . 1)
-                        (agenda . 10)
-                        (projects . 10)
-                        (recents . 15)
-                        (bookmarks . 10)
-                        (registers . 5)))
+;;  (message "[dashboard] Inserting quote of the day")
+  (dashboard-insert-heading "Quote of the day: ")
+  (let ((dashboard-cache (concat
+                          (expand-file-name user-emacs-directory)
+                          "quote_of_the_day"))
+        (from 0)
+        (to 0)
+        (qod nil)
+        (response-buffer nil)
+        (response nil))
+    (progn
+      (setq response
+            (if (and (file-exists-p dashboard-cache)
+                     (fx-file-modified-in-last-24-hours dashboard-cache))
+                (with-temp-buffer
+                  (insert-file-contents dashboard-cache)
+                  (buffer-string))
+              (progn
+                (setq response-buffer (url-retrieve-synchronously "https://quotes.rest/qod" t))
+                (with-current-buffer response-buffer
+                  (goto-char (point-min))
+                  (search-forward "{")
+                  (backward-char 1)
+                  (write-region (point) (point-max) dashboard-cache)
+                  (buffer-substring-no-properties (point) (point-max))))))
+      (let* ((parsed-response (json-read-from-string response))
+             (qod (cdr (nth 0 (aref (cdr (car (cdr (nth 1 parsed-response)))) 0)))))
+        (newline)
+        (dashboard-pretty-print-qod qod)))))
 
 (use-package dashboard
   :config
@@ -2647,7 +2663,7 @@ _j_ava-mode    emacs-_l_isp-mode    _s_h-mode
   (add-to-list 'dashboard-item-generators '(qod . dashboard-insert-qod))
 
   (setq dashboard-items '((qod . 1)
-                          (agenda . 10)
+                          ;; (agenda . 10)
                           (projects . 10)
                           (recents . 15)
                           (bookmarks . 10)
@@ -2670,4 +2686,3 @@ _j_ava-mode    emacs-_l_isp-mode    _s_h-mode
 (notify "[Emacs] init.el fully loaded")
 
 ;; ]
-
