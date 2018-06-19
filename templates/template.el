@@ -1,33 +1,15 @@
 ;;; FILENAME --- 
 ;; 
-;; Filename: FILENAME
 ;; Description: DESCRIPTION
 ;; Author: AUTHOR
-;; Maintainer: MAINTAINER
-;; Copyright (C) 2017, AUTHOR, all rights reserved.
-;; Created: TIMESTAMP
-;; Version: VERSION
-;; Last-Updated: 
-;;           By: 
-;;     Update #: 0
-;; URL: URL
 ;; Keywords: KEYWORDS
-;; Compatibility: 
-;; 
-;; Features that might be required by this library:
-;;
-;;   None
+;; Dependencies: DEPENDENCIES
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 
-;;; Commentary: 
+;; Changelog: 
 ;; 
-;; 
-;; 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 
-;;; Change log:
-;; 
+;; VERSION (TIMESTAMP): Initial release
 ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 
