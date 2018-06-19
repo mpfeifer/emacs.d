@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: var
+# key: $
+# --
+\${`(insert (completing-read "Variable? " (shx-find-variables)))`}$0
