@@ -1,19 +1,10 @@
 ;;; init.el --- Emacs initialization file
-;; -*- lexical-binding: t -*-
-;;
+;; -*- lexical-binding: t; -*-
 ;;
 ;;; Commentary:
 ;;  This is the Emacs initialization file.  Emacs reads it when
 ;;  starting up.  It takes care for loading the users' preferences.
 ;;
-
-;; TODO
-;;
-;; 1. split the file up
-;; 2. extract everything that looks like a tool
-;; 3. start using log4e
-;; 4. have host specific settings
-;; 
 
 ;; [ header
 
@@ -548,11 +539,8 @@
 
 (setq imenu-auto-rescan t
       imenu-use-popup-menu nil
-      imenu-space-replacement "-"
+      imenu-space-replacement " "
       imenu-sort-function 'imenu--sort-by-name) ;; sorts only mouse menu
-
-(defadvice imenu-recenter-advice (after imenu-center activate)
-  (recenter-top-bottom 2))
 
 (global-set-key (kbd "C-'") 'imenu)
 
@@ -683,17 +671,15 @@ restore former values for debug-on-error and debug-ignored-errors."
 (defun elisp-preprocessor()
   "Process emacs lisp template file and replace place holder."
   (let* ((filename (buffer-name))
-         (description (read-from-minibuffer "Description: "))
+         (description (read-from-minibuffer "Description? "))
          (maintainer (format "%s (%s)" user-full-name user-mail-address))
          (author user-full-name)
-         (version (read-from-minibuffer "Version: "))
-         (url (read-from-minibuffer "Url: "))
-         (keywords (read-from-minibuffer "Keywords: "))
+         (version (read-from-minibuffer "Version? "))
+         (url (read-from-minibuffer "Url? "))
+         (keywords (read-from-minibuffer "Keywords? "))
+         (dependencies (read-from-minibuffer "Dependencies? "))
          (timestamp (current-time-string)))
     (progn 
-      (goto-char (point-min))
-      (while (search-forward "FILENAME" nil t)
-        (replace-match filename t))
       (goto-char (point-min))
       (while (search-forward "DESCRIPTION" nil t)
         (replace-match description t) )
@@ -701,17 +687,11 @@ restore former values for debug-on-error and debug-ignored-errors."
       (while (search-forward "AUTHOR" nil t)
         (replace-match author t) )
       (goto-char (point-min))
-      (while (search-forward "MAINTAINER" nil t)
-        (replace-match maintainer t) )
-      (goto-char (point-min))
       (while (search-forward "TIMESTAMP" nil t)
         (replace-match timestamp t) )
       (goto-char (point-min))
       (while (search-forward "VERSION" nil t)
         (replace-match version t) )
-      (goto-char (point-min))
-      (while (search-forward "URL" nil t)
-        (replace-match url t) )
       (goto-char (point-min))
       (while (search-forward "KEYWORDS" nil t)
         (replace-match keywords t) ) ) ) )
@@ -739,7 +719,7 @@ restore former values for debug-on-error and debug-ignored-errors."
 (defun emacs-lisp-mode-setup ()
   (when (string= (buffer-name) "init.el")
     (dotemacs-mode-hook))
-  (local-set-key (kbd "C-/") 'comment-dwim)
+  (local-set-key (kbd "C-;") 'comment-dwim)
   (local-set-key (kbd "C-c C-c") 'byte-compile-current-buffer)
   (electric-pair-mode) )
 
@@ -785,24 +765,16 @@ restore former values for debug-on-error and debug-ignored-errors."
 ;; [ yasnippet
 
 (use-package yasnippet
-
   :config
-  
-  (require 'yasnippet-snippets)
-
   (defconst yasnippet-my-snippets-dir "~/.emacs.d/snippets/")
-
   ;; Add snippet directory to auto-mode-alist
   ;; so that files are opened in snipped-mode
   (dolist (snippet-dir yas-snippet-dirs)
     (add-to-list 'auto-mode-alist (cons (concat ".*" snippet-dir ".*") 'snippet-mode)))
-
   (yas-load-directory yasnippet-my-snippets-dir)
-
   (require 'warnings)
   ;; do not complain when snippets change buffer contents
   (add-to-list 'warning-suppress-types '(yasnippet backquote-change))
-
   ;; enable yasnippet mode in some modes:
   (add-hook 'python-mode-hook 'yas-minor-mode)
   (add-hook 'java-mode-hook 'yas-minor-mode)
@@ -811,7 +783,8 @@ restore former values for debug-on-error and debug-ignored-errors."
   (add-hook 'xml-mode-hook 'yas-minor-mode)
   (add-hook 'nxml-mode-hook 'yas-minor-mode)
   (add-hook 'maven-mode-hook 'yas-minor-mode)
-  (add-hook 'ant-mode-hook 'yas-minor-mode) )
+  (add-hook 'ant-mode-hook 'yas-minor-mode)
+  (add-hook 'sh-mode-hook 'yas-minor-mode))
 
 ;; ]
 
@@ -2123,8 +2096,30 @@ T - tag prefix
 (add-to-list 'auto-insert-alist
              '(".*\\.sh$" . [ "template.sh" elisp-post-processor ] ) )
 
+(defun re-seq (regexp string idx)
+  "Get a list of all REGEXP matches in STRING."
+  (save-match-data
+    (let ((pos 0)
+          matches)
+      (while (string-match regexp string pos)
+        (push (match-string idx string) matches)
+        (setq pos (match-end 0)))
+      matches)))
+
+(defun shx-find-variables ()
+  "Extract list of variable names from shell script"
+  (re-seq "^[[:space:]]+\\(\\w+\\)=.*$" (buffer-substring-no-properties (point-min) (point-max)) 1))
+
+(defun shx-insert-variable ()
+  "docstring"
+  (interactive)
+  (insert "${")
+  (insert (completing-read "Variable? " (shx-find-variables)))
+  (insert "}"))
+
 (defun shell-mode-setup ()
-  (interactive) )
+  (interactive)
+  (local-set-key (kbd "$") 'shx-insert-variable))
 
 (add-hook 'shell-mode-hook 'shell-mode-setup)
 
