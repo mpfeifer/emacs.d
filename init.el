@@ -34,6 +34,7 @@
 ;; [ packages
 
 (require 'package)
+(require 'subr-x)
 
 (defconst fn-package-guard "~/.emacs.d/.package-guard")
 (defconst package-guard-renewal 604800)
@@ -71,13 +72,13 @@
     (insert (prin1-to-string (current-time)))
     (write-file fn-package-guard)))
 
-(global-set-key (kbd "C-x p") #'package-list-packages)
+(global-set-key (kbd "<f7>") #'package-list-packages)
 
 ;; see if this emacs is starting for the first time (with this init.el)
 ;; and if pacakge refresh is necessary (currently once in a week)
 
 (if (not (file-exists-p fn-package-guard))
-    (let* ((emacs-dir (expand-file-name user-emacs-directory))
+    (let* ((emacs-dir( expand-file-name user-emacs-directory))
            (desktop-dir (concat emacs-dir "/desktop"))
            (user-information "Will perform first time initialisation! Press enter."))
       (read-from-minibuffer user-information)
@@ -112,7 +113,9 @@
                                         (get-buffer-window "*Calendar*")))
                                    (if calendar-window
                                        (delete-window calendar-window)
-                                     (calendar) ) ) ) )
+                                     (calendar)))))
+
+(setq diary-display-function #'diary-fancy-display)
 
 (defun calendar-mode-setup ()
   (local-set-key (kbd "<RET>") #'diary-view-entries) )
@@ -184,8 +187,6 @@
 ;; [ General Emacs Behaviour
 
 (setq auto-window-vscroll nil)
-
-(auto-fill-mode)
 (setq fill-column 72)
 
 ;; (toggle-debug-on-error)
@@ -260,6 +261,8 @@
 ;; here goes my personal emacs extension files
 (add-to-list 'load-path "~/.emacs.d/elisp/")
 
+(require 'lisp-x)
+
 (setq scroll-step 1
       scroll-conservatively 10000
       auto-window-vscroll nil
@@ -269,6 +272,21 @@
   "Kill up to, but not including ARGth occurrence of CHAR.")
 
 (global-set-key (kbd "M-Z") #'zap-up-to-char)
+
+;; load host specific settings
+
+(require (string-to-symbol (format "init-%s" (downcase 
+                                              (getenv (if (eq system-type 'windows-nt)
+                                                          "COMPUTERNAME"
+                                                        (if (or
+                                                             (eq system-type 'gnu/linux)
+                                                             (eq system-type 'cygwin))
+                                                            "HOSTNAME"
+                                                          "default")))))))
+
+(setq fill-column 72)
+
+;; (auto-fill-mode) TODO: put this into modes
 
 ;; ]
 
@@ -281,6 +299,35 @@
 
 (global-set-key (kbd "C-c k") 'pop-global-mark)
 
+;; ]
+
+;; [ hydra
+
+(defhydra hydra-global-org (:color blue
+                                   :hint nil)
+  "
+Timer^^        ^Clock^         ^Capture^
+--------------------------------------------------
+s_t_art        _w_ clock in    _c_apture
+ _s_top        _o_ clock out   _l_ast capture
+_r_eset        _j_ clock goto
+_p_rint        _m_ clock mru
+"
+  ("t" org-timer-start)
+  ("s" org-timer-stop)
+  ;; Need to be at timer
+  ("r" org-timer-set-timer)
+  ;; Print timer value to buffer
+  ("p" org-timer)
+  ("w" (org-clock-in '(4)))
+  ("o" org-clock-out)
+  ;; Visit the clocked task from any buffer
+  ("j" org-clock-goto)
+  ("c" org-capture)
+  ("m" org-mru-clock-in)
+  ("l" org-capture-goto-last-stored))
+
+(global-set-key (kbd "C-c h") 'hydra-global-org/body)
 ;; ]
 
 ;; [ expand region
@@ -296,29 +343,6 @@
   (global-set-key (kbd "C-v") 'er/expand-region)
   (global-set-key (kbd "C-S-v") 'er/contract-region) )
 
-(defun mark-init.el-paragraph ()
-  "This function is for the expand region package."
-  (interactive)
-  (re-search-forward paragraph-separate nil t)
-  (set-mark (point))
-  (re-search-backward paragraph-start nil t))
-
-(add-hook 'emacs-lisp-mode 
-          '(lambda ()
-             (add-to-list 'er/try-expand-list 'mark-init.el-paragraph)))
-
-;; ]
-
-;; [ abbreviations
-
-;; (C-u 4 ) C-x a g  to define a global abbrev for word before point
-
-(setq abbrev-file-name "~/.emacs.d/abbrev_defs"
-      save-abbrevs t) ;; save abbrevs when file is saved and emacs quits
-
-(if (file-exists-p abbrev-file-name)
-    (quietly-read-abbrev-file))
-
 ;; ]
 
 ;; [ server mode edit server
@@ -330,13 +354,50 @@
 (server-start)
 
 ;; Kill buffers when done (C-x #)
-(add-hook 'server-done-hook (lambda nil (kill-buffer nil)))
+;; (add-hook 'server-done-hook (lambda nil (kill-buffer nil)))
 
 ;; ]
 
-;; [ highlight.el
+;; [ highlighting
 
-(use-package highlight)
+;; M-s h l or highlight-lines-matching-regexp
+;; Highlights all lines matching a regular expression
+
+;; M-s h p or highlight-phrase
+;; Highlights everything matching a phrase
+
+;; M-s h r or highlight-regexp
+;; Highlights everything matching a regular expression
+
+;; M-s h u or unhighlight-regexp
+;; Deletes the highlighter under point
+
+;; M-s h w or hi-lock-write-interactive-patterns
+;; Inserts a list of Hi-Lock patterns into the buffer
+
+;; M-s h f or hi-lock-find-patterns
+
+(defhydra hydra-highlighting (:color blue
+                                     :hint nil)
+  "
+Highlight                  Unhighlight
+------------------------------------------------
+
+_l_ines matching regexp    regular _e_xpression
+_p_phrase                 
+_r_egular expression
+lines containing _E_rror   lines containing E_r_ror
+"
+  ("l" highlight-lines-matching-regexp)
+  ("p" highlight-phrase)
+  ("r" highlight-regexp)
+  ("e" unhighlight-regexp)
+  ("E" (call-interactively '(lambda ()
+                              (interactive)
+                              (highlight-lines-matching-regexp "ERROR" 'hi-pink))))
+  ("r" (call-interactively '(lambda ()
+                              (interactive)
+                              (unhighlight-regexp "^.*ERROR.*$")))))
 
 ;; ]
 
@@ -423,12 +484,13 @@
 (setq frame-title-format '("Emacs://%f "))
 
 (when window-system
-  (when (eq system-type 'windows-nt)
-    (horizontal-scroll-bar-mode -1))
-  (tool-bar-mode -1)
-  (menu-bar-mode 1)
-  (tooltip-mode -1)
-  (scroll-bar-mode -1))
+  (progn
+    (when (eq system-type 'windows-nt)
+      (horizontal-scroll-bar-mode -1))
+    (tool-bar-mode -1)
+    (menu-bar-mode 1)
+    (tooltip-mode -1)
+    (scroll-bar-mode -1)))
 
 (use-package volatile-highlights
   :disabled
@@ -503,12 +565,11 @@
 (use-package projectile
   :config
   (setq projectile-completion-system 'ivy
-        projectile-enable-caching t
-        ;; projectile-tags-command "etags --include /home/matthias/opt/jdk/src/TAGS -a TAGS \"%s\"")
-        )
+        projectile-enable-caching t)
   (projectile-mode))
 
 (defun find-file-dispatcher (arg)
+  "If projectile-find-file is available use it. Otherweise plain find-file."
   (interactive "P")
   (if (and
        (eq major-mode 'org-mode)
@@ -520,16 +581,20 @@
           (progn
             (message (format "find-file-dispatcher found file at point: %s" file-at-point))
             (find-file file-at-point))
-        (call-interactively   (if (or arg projectile-cached-project-root)
-                                  'projectile-find-file
-                                'find-file))))))
-
+        (call-interactively   (if arg
+                                  'find-file
+                                (if (not (eq 'none projectile-cached-project-root))
+                                    'projectile-find-file
+                                  'find-file)))))))
 
 (defun ibuffer-dispatcher (arg)
+  "If projectile-ibuffer makes sense - use it. Otherwise plain 'ibuffer."
   (interactive "P")
-  (call-interactively   (if (or arg projectile-cached-project-root)
-                            'projectile-ibuffer
-                          'ibuffer)))
+  (call-interactively   (if arg
+                            'ibuffer
+                          (if  (not (eq 'none projectile-cached-project-root))
+                              'projectile-ibuffer
+                            'ibuffer))))
 
 (global-set-key (kbd "C-x C-f") 'find-file-dispatcher)
 
@@ -710,7 +775,7 @@ restore former values for debug-on-error and debug-ignored-errors."
         paragraph-separate ";; ]")
   (setq imenu-generic-expression 
         (list '(nil "^;; \\[ \\(.+\\)$" 1)))
-  (setq-local imenu-create-index-function 'imenu-default-create-index-function) )
+  (setq-local imenu-create-index-function 'imenu-default-create-index-function))
 
 (defun byte-compile-current-buffer ()
   (interactive)
@@ -785,6 +850,23 @@ restore former values for debug-on-error and debug-ignored-errors."
   (add-hook 'maven-mode-hook 'yas-minor-mode)
   (add-hook 'ant-mode-hook 'yas-minor-mode)
   (add-hook 'sh-mode-hook 'yas-minor-mode))
+;; [ hydra
+
+(defhydra hydra-yasnippets (:color blue
+                                   :hint nil)
+  "
+Yasnippet - Yasnippet - Yasnippet - Yasnippet - Yasnippet
+---------------------------------------------------------
+_n_ew snippet for current mode    _e_dit existing snippet
+_r_eload snippets                 _i_nsert snippet
+"
+  ("n" yas-new-snippet)
+  ("e" yas-visit-snippet-file)
+  ;; Need to be at timer
+  ("r" yas-reload-all)
+  ("i" yas-insert-snippet))
+
+(define-key yas-minor-mode-map (kbd "C-h y") 'hydra-yasnippets/body)
 
 ;; ]
 
@@ -831,7 +913,6 @@ restore former values for debug-on-error and debug-ignored-errors."
 ;; TODO: There is a python info page lying around in this directcory,
 ;; but info does not find it
 
-
 (add-to-list 'Info-default-directory-list "~/.emacs.d/info")
 
 (defun Info-mode-setup ()
@@ -853,7 +934,20 @@ restore former values for debug-on-error and debug-ignored-errors."
 ;; [ org mode
 
 (setq org-todo-keywords
-      '((sequence "TODO(t)" "INPROGRESS(p)" "DONE(d)")))
+      '((sequence "TODO" "IN_PROGRESS" "|" "DONE")))
+
+(setq org-clock-out-switch-to-state "WAITING")
+
+(defun mp-clock-out-after-state-change ()
+  (when (string= org-state "IN_PROGRESS")
+    (org-clock-out nil 't)))
+
+(defun mp-clock-in-after-state-change ()
+  (when (string= org-state "IN_PROGRESS")
+    (org-clock-in)))
+
+(add-hook 'org-after-todo-state-change-hook 'mp-clock-out-after-state-change)
+(add-hook 'org-after-todo-state-change-hook 'mp-clock-in-after-state-change)
 
 (add-hook 'org-agenda-mode-hook 'org-agenda-follow-mode)
 (add-hook 'org-agenda-mode-hook 'hl-line-mode)
@@ -861,9 +955,8 @@ restore former values for debug-on-error and debug-ignored-errors."
 ;; (defadvice org-agenda-redo (after fit-window-after-agenda-redo activate)
 ;;  (fit-window-to-buffer))
 
-(add-hook 'window-configuration-change-hook '(lambda ()
-                                               (when (string= (buffer-name) "*Org Agenda*")
-                                                 (fit-window-to-buffer))))
+(defadvice org-agenda (after fit-agenda-buffer-to-window activate) 
+  (fit-window-to-buffer))
 
 ;; TODO: This does not seem to work 
 
@@ -920,9 +1013,11 @@ restore former values for debug-on-error and debug-ignored-errors."
   ;;  (flyspell-mode)
   (add-to-list 'org-file-apps '("\\.png\\'" . default))
   (company-mode -1) ;; disabled, since it looks broken
+  (org-bullets-mode)
   (setq org-agenda-span 7
         org-agenda-comact-blocks t
         org-agenda-show-all-dates t
+        org-agenda-include-diary t
         org-babel-python-command "python"
         org-clock-into-drawer t
         org-clock-persist 'history
@@ -967,21 +1062,14 @@ restore former values for debug-on-error and debug-ignored-errors."
 ;; capture templates are documented at
 ;; http://orgmode.org/manual/Capture.html
 
-(let ((note-template "** %? :Note:\n:PROPERTIES:\n%U\n:END:\n%a\n")
-      (todo-template "** TODO %?\n%U\n%a\n")
-      (project-template "* %?\n\n%^T\n\n")
-      (apt-template "* %?\n\n%^T\n\n:PROPERTIES:\n\n:END:\n\n")
-      (meeting-template "** MEETING with %? :MEETING:\n%U"))
-  (setq org-capture-templates
-        '( ;; See https://orgmode.org/manual/Template-elements.html#Template-elements
-          ("P" "Project" entry (file+headline org-capture-file "Inbox")
-           project-template :clock-in t :clock-resume)
-          ("a" "Appointment" entry (file+headline org-capture-file "Inbox") apt-template)
-          ("t" "A generic Todo item" entry (file+headline org-capture-file "Inbox") todo-template :clock-in t :clock-resume t)
-          ("T" "A Todo item for the current task" entry (clock) todo-template)
-          ("n" "A generic note" entry (file+headline org-capture-file "Inbox") note-template :clock-in t :clock-resume t)
-          ("N" "A note for the current task" entry (clock) note-template)
-          ("m" "Meeting" entry (file+headline org-capture-file "Inbox") meeting-template :clock-in t :clock-resume t) ) ) )
+(setq org-capture-templates
+      '( ;; See https://orgmode.org/manual/Template-elements.html#Template-elements
+        ("P" "Project" entry (file+headline org-capture-file "Inbox")
+         "* %?\n" :clock-in t :clock-resume)
+        ("t" "A generic Todo item" entry (file+headline org-capture-file "Inbox") "** TODO %?\n" :clock-in t :clock-resume t)
+        ("T" "A Todo item for the current task" entry (clock) todo-template)
+        ("n" "A generic note" entry (file+headline org-capture-file "Inbox") "** %? :Note:" :clock-in t :clock-resume t)
+        ("N" "A note for the current task" entry (clock) note-template) ) )
 
 (add-hook 'org-mode-hook 'org-mode-setup)
 
@@ -1023,8 +1111,8 @@ restore former values for debug-on-error and debug-ignored-errors."
         (select-window (get-buffer-window "*prodigy*")))))
 
   (defun prodigy-mode-setup ()
-    (local-set-key (kbd "C-n") 'prodigy-next-line)
-    (local-set-key (kbd "C-p") 'prodigy-previous-line))
+    (local-set-key (kbd "n") 'prodigy-next-line)
+    (local-set-key (kbd "p") 'prodigy-previous-line))
 
   (add-hook 'prodigy-mode-hook 'prodigy-mode-setup)
 
@@ -1034,7 +1122,7 @@ restore former values for debug-on-error and debug-ignored-errors."
     :name "Tomcat"
     :command tomcat-start-script
     :args '("run")
-    :cwd tomcat-root-dir)
+    :cwd tomcat-home)
 
   (prodigy-define-service
     :name "Date Server (14002)"
@@ -1058,7 +1146,7 @@ restore former values for debug-on-error and debug-ignored-errors."
 
 ;; ]
 
-;; [ speedbar neotree treemacs
+;; [ speedbar treemacs
 
 (use-package sr-speedbar
   :bind ("<f6>" . sr-speedbar-toggle)
@@ -1077,33 +1165,59 @@ restore former values for debug-on-error and debug-ignored-errors."
     (let ((window (get-buffer-window "*SPEEDBAR*")))
       (when window (select-window window)))))
 
-(use-package treemacs-projectile
-  :disabled)
-
-(use-package treemacs
-  :config
-  (setq ;; treemacs-header-function            #'treemacs--create-header-projectile
-   treemacs-follow-after-init          t
-   treemacs-width                      35
-   treemacs-indentation                2
-   treemacs-change-root-without-asking nil
-   treemacs-sorting                    'alphabetic-desc
-   treemacs-show-hidden-files          nil
-   treemacs-never-persist              nil
-   treemacs-icon-open-png   (propertize "⊖ " 'face 'treemacs-directory-face)
-   treemacs-icon-closed-png (propertize "⊕ " 'face 'treemacs-directory-face))
-  (treemacs-follow-mode t)
-  (treemacs-filewatch-mode t)
-
-  :bind
-  (:map global-map
-        ([f6]        . treemacs-toggle)))
-
 ;; (modify-frame-parameters nil (list '( name . "Emacs" )
 
-(use-package neotree
-  :disabled)
+(use-package treemacs
+  :defer t
+  :config
+  (progn
+    (setq treemacs-collapse-dirs              (if (executable-find "python") 3 0)
+          treemacs-deferred-git-apply-delay   0.5
+          treemacs-file-event-delay           5000
+          treemacs-follow-after-init          t
+          treemacs-follow-recenter-distance   0.1
+          treemacs-goto-tag-strategy          'refetch-index
+          treemacs-indentation                2
+          treemacs-indentation-string         " "
+          treemacs-is-never-other-window      nil
+          treemacs-no-png-images              nil
+          treemacs-project-follow-cleanup     nil
+          treemacs-persist-file               (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
+          treemacs-recenter-after-file-follow nil
+          treemacs-recenter-after-tag-follow  nil
+          treemacs-show-hidden-files          t
+          treemacs-silent-filewatch           nil
+          treemacs-silent-refresh             nil
+          treemacs-sorting                    'alphabetic-desc
+          treemacs-space-between-root-nodes   t
+          treemacs-tag-follow-cleanup         t
+          treemacs-tag-follow-delay           1.5
+          treemacs-width                      35)
 
+    ;; The default width and height of the icons is 22 pixels. If you are
+    ;; using a Hi-DPI display, uncomment this to double the icon size.
+    ;;(treemacs-resize-icons 44)
+
+    (treemacs-follow-mode t)
+    (treemacs-filewatch-mode t)
+    (treemacs-fringe-indicator-mode t)
+    (pcase (cons (not (null (executable-find "git")))
+                 (not (null (executable-find "python3"))))
+      (`(t . t)
+       (treemacs-git-mode 'extended))
+      (`(t . _)
+       (treemacs-git-mode 'simple))))
+  :bind
+  (:map global-map
+        ("M-0"       . treemacs-select-window)
+        ("C-x t 1"   . treemacs-delete-other-windows)
+        ("C-x t t"   . treemacs)
+        ("C-x t B"   . treemacs-bookmark)
+        ("C-x t C-t" . treemacs-find-file)
+        ("C-x t M-t" . treemacs-find-tag)))
+
+(use-package treemacs-projectile
+  :after treemacs projectile)
 ;; ]
 
 ;; [ xref and tags
@@ -1340,8 +1454,6 @@ and display corresponding buffer in new frame."
 
 ;; [ ediff
 
-(add-hook 'ediff-after-quit-hook-internal 'winner-undo)
-
 (defun ediff-this ()
   "If current frame hosts exactly two windows. ediff the two window buffers."
   (interactive)
@@ -1524,11 +1636,13 @@ If so calculate pacakge name from current directory name."
     (write-file target-file nil) 
     (kill-buffer) ) )
 
+
 (defun start-new-java-project (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
   (let* ((project-root (concat (expand-file-name java-project-root) artifact-id))
          (target-pom (concat project-root "/pom.xml"))
          (src-dir (concat project-root "/src/main/java/"))
+         (premature-exit nil)
          (main-class (concat src-dir
                              (replace-regexp-in-string "\\." "/" group-id)
                              "/" 
@@ -1537,22 +1651,22 @@ If so calculate pacakge name from current directory name."
          (class-dir (file-name-directory main-class))
          (pframe (make-frame))
          (default-directory project-root))
-
-    (when (not (file-exists-p project-root))
-      (make-directory project-root t))
-
-    (copy-template "pom.xml" target-pom
-                   (list (list 'GROUP-ID group-id)
-                         (list 'ARTIFACT-ID artifact-id)
-                         (list 'VERSION version-number)))
-
-    (when (not (file-exists-p class-dir))
-      (make-directory class-dir t))
-
+    (if (not (file-exists-p project-root))
+        (make-directory project-root t)
+      (when (yes-or-no-p "Directory already exists. Continue?" )
+        (setq premature-exit t))
+      (when (not premature-exit)
+        (progn
+          (copy-template "pom.xml" target-pom
+                         (list (list 'GROUP-ID group-id)
+                               (list 'ARTIFACT-ID artifact-id)
+                               (list 'VERSION version-number)))
+          (when (not (file-exists-p class-dir))
+            (make-directory class-dir t)))))
     (select-frame pframe)
     (find-file main-class)
     (save-buffer)
-    (neotree-dir project-root)) )
+    (treemacs-dir project-root)))
 
 ;; TODO Something is veery buggy here. Why is C-x c defined in emacs-lisp mode?
 (defun java-mode-process-dir-locals ()
@@ -1626,6 +1740,8 @@ If so calculate pacakge name from current directory name."
 
 ;; [ dired
 
+(setq dired-dwim-target t) ;; Make dired guess the target of a copy operation
+
 (defun dired-show-only (regexp)
   "Show only files matching REGEXP. To revert buffer to show all files press g."
   (interactive "sFiles to show (regexp): ")
@@ -1683,8 +1799,6 @@ If so calculate pacakge name from current directory name."
             (define-key dired-mode-map (kbd "c") 'dired-2pane-copy-over)
             (define-key dired-mode-map (kbd "TAB") 'other-window)
             
-
-
             (defhydra hydra-dired (:hint nil :color "#268bd2")
               "
 _+_ mkdir          _v_iew           _m_ark             _(_ details        _i_nsert-subdir    wdired
@@ -1784,7 +1898,7 @@ T - tag prefix
 
 ;; [ maven mode
 
-(define-derived-mode maven-mode xml-mode
+(define-derived-mode maven-mode nxml-mode
   "Maven"
   "Mode for editing maven pom.xml files.")
 
@@ -1836,7 +1950,7 @@ T - tag prefix
       (goto-char (point-min))
       (when (search-forward "BUILD SUCCESS")
         (progn
-          (neotree-dir project-path)
+          (treemacs-dir project-path)
           (other-window 1)
           (split-window-below -8)
           (find-file (concat project-path "/" artifact-id "/pom.xml"))
@@ -1904,9 +2018,6 @@ T - tag prefix
   "Personal python mode hook extension."
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
-  (setq elpy-rpc-backend "jedi"
-        python-indent-offset 4
-        elpy-syntax-check-command "flake8")
   (local-set-key (kbd "M-#") 'comment-dwim)
   (jedi:setup)
   (when auto-complete-mode
@@ -1914,11 +2025,12 @@ T - tag prefix
   (setq company-backends '(elpy-company-backend))
   (company-mode))
 
-;;  (pyvenv-activate "~/.emacs.d/.python-environments/default/"))
-
 (use-package elpy
   :config
   (elpy-enable)
+  (setq python-indent-offset 4
+        elpy-rpc-backend "jedi"
+        elpy-syntax-check-command "flake8")
   (add-hook 'python-mode-hook 'python-mode-setup)
   (add-to-list 'auto-mode-alist '("\\.py\\'" . python-mode))
   (add-to-list 'auto-mode-alist '("\\.py2\\'" . python-mode))
@@ -2465,37 +2577,11 @@ T - tag prefix
                                 (stripe-buffer-mode)
                                 (hl-line-mode)
                                 (define-key logview-mode-map  (kbd "<") 'beginning-of-buffer)
-                                (define-key logview-mode-map (kbd ">") 'end-of-buffer)))
+                                (define-key logview-mode-map (kbd ">") 'end-of-buffer)
+                                (define-key logview-mode-map (kbd "C-h h") 'hydra-highlighting/body)))
 
-;; ]
+;; TODO always highlight lines containing ERROR
 
-;; [ hydra
-
-(defhydra hydra-global-org (:color blue
-                                   :hint nil)
-  "
-Timer^^        ^Clock^         ^Capture^
---------------------------------------------------
-s_t_art        _w_ clock in    _c_apture
- _s_top        _o_ clock out   _l_ast capture
-_r_eset        _j_ clock goto
-_p_rint        _m_ clock mru
-"
-  ("t" org-timer-start)
-  ("s" org-timer-stop)
-  ;; Need to be at timer
-  ("r" org-timer-set-timer)
-  ;; Print timer value to buffer
-  ("p" org-timer)
-  ("w" (org-clock-in '(4)))
-  ("o" org-clock-out)
-  ;; Visit the clocked task from any buffer
-  ("j" org-clock-goto)
-  ("c" org-capture)
-  ("m" org-mru-clock-in)
-  ("l" org-capture-goto-last-stored))
-
-(global-set-key (kbd "C-c h") 'hydra-global-org/body)
 ;; ]
 
 ;; [ macros
@@ -2597,8 +2683,8 @@ _j_ava-mode    emacs-_l_isp-mode    _s_h-mode
         t
       nil )))
 
-(defun dashboard-pretty-print-qod (qod)
-;;  (message "[dashboard] pretty printing quote of the day")
+(defun dashboard-pretty-print-qod (qod author)
+  ;;  (message "[dashboard] pretty printing quote of the day")
   (let ((width (window-body-width))
         (words (split-string qod))
         (word nil)
@@ -2619,10 +2705,11 @@ _j_ava-mode    emacs-_l_isp-mode    _s_h-mode
               (newline)
               (insert spacer)))
         (insert word (if (> (length words ) 0) " " "\""))
-        (setq line-break nil)))))
+        (setq line-break nil)))
+    (insert (format " (%s)" author))))
 
 (defun dashboard-insert-qod (num-items)
-;;  (message "[dashboard] Inserting quote of the day")
+  ;;  (message "[dashboard] Inserting quote of the day")
   (dashboard-insert-heading "Quote of the day: ")
   (let ((dashboard-cache (concat
                           (expand-file-name user-emacs-directory)
@@ -2648,22 +2735,36 @@ _j_ava-mode    emacs-_l_isp-mode    _s_h-mode
                   (write-region (point) (point-max) dashboard-cache)
                   (buffer-substring-no-properties (point) (point-max))))))
       (let* ((parsed-response (json-read-from-string response))
-             (qod (cdr (nth 0 (aref (cdr (car (cdr (nth 1 parsed-response)))) 0)))))
+             (qod (read-quote-of-the-day parsed-response))
+             (author (read-author parsed-response)))
         (newline)
-        (dashboard-pretty-print-qod qod)))))
+        (dashboard-pretty-print-qod qod author)))))
+
+(defun read-quote-of-the-day (parsed-response)
+  "Extract quote of the day from RESPONSE."
+  (cdr (nth 0 (aref (cdr (car (cdr (nth 1 parsed-response)))) 0))))
+
+(defun read-author (parsed-response)
+  "Extract author from RESPONSE."
+  (cdr (nth 2 (aref (cdr (car (cdr (nth 1 parsed-response)))) 0))))
+
+(defun dashboard-system-info (numitems)
+  (dashboard-insert-heading "Emacs system information: ")
+  (insert "Emacs version : " emacs-version "\r\n")
+  (insert "User init file: " user-init-file "\r\n"))
 
 (use-package dashboard
   :config
   
   (add-to-list 'dashboard-item-generators '(qod . dashboard-insert-qod))
-
-  (setq dashboard-items '((qod . 1)
-                          ;; (agenda . 10)
+  (add-to-list 'dashboard-item-generators '(sysinfo . dashboard-system-info))
+  (setq dashboard-items '((qod . nil)
+                          (agenda . 10)
+                          (sysinfo . 1)                          
                           (projects . 10)
                           (recents . 15)
                           (bookmarks . 10)
                           (registers . 5)))
-
   (dashboard-setup-startup-hook))
 
 ;; [ json

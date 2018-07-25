@@ -1,5 +1,5 @@
 #contributor : Matthias
-#name : Insert new paragraph into init.el
+#name :new paragraph for init.el
 #key:nk
 # --
 ;; [ ${1:name}

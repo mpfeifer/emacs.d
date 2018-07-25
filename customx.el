@@ -1,4 +1,4 @@
-;; Extensions to the custom system for init.el
+;; Personal extensions to the Emacs customization system
 
 (defgroup Custom-X
   nil "All things related to my customization"
@@ -30,28 +30,19 @@
   "New java projects are stored in this directory."
   :group 'Java-X)
 
-(defcustom jdk-location
-  (getenv "JAVA_HOME")
+(defcustom jdk-location nil  
   "Location of JDK"
   :group 'Java-X)
 
-(defcustom mvn-home
-  (getenv "M2_HOME")
+(defcustom mvn-home nil
   "Value for M2_HOME"
   :group 'Java-X)
 
-(defcustom tomcat-root-dir
-  (getenv "CATALINA_HOME")
+(defcustom tomcat-home nil
   "Root directory of tomcat installation."
   :group 'Java-X)
 
-(defcustom tomcat-start-script
-  (if tomcat-root-dir 
-      (concat tomcat-root-dir "/bin/startup"
-              (if (eq system-type 'windows-nt)
-                  ".bat"
-                ".sh"))
-    "startup.sh")
+(defcustom tomcat-start-script nil
   "Path to script that starts Tomcat.")
 
 (defgroup web
@@ -76,6 +67,6 @@
 
 (defcustom
   prodigy-python-interpreter
-  "python3"
+  "python"
   "Location of python interpreter used by prodigy. Default just grabs one from PATH."
   :group 'Prodigy-X)
