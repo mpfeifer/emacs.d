@@ -7,7 +7,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
 
-class CLASSNAME {
+public class CLASSNAME {
 
     // Define a static logger variable
     private static final Logger logger = LogManager.getLogger(CLASSNAME.class);
@@ -15,7 +15,7 @@ class CLASSNAME {
     public static void main(final String... args) {
         logger.trace("Entering application.");
 
-        logger.error("Application logic not yet implemented.")
+        logger.error("Application logic not yet implemented.");
 
         logger.trace("Exiting application.");
     }

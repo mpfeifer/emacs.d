@@ -1,8 +1,13 @@
 ;; Personal extensions to the Emacs customization system
 
+
 (defgroup Custom-X
   nil "All things related to my customization"
   :group 'Emacs)
+
+(defgroup External-Utilities
+  nil "List of extern tools"
+  :group 'Custom-X)
 
 (defgroup development
   nil "All things related to development"
@@ -24,6 +29,10 @@
 (defgroup java
   nil "All things related to java development"
   :group 'Development-X)
+
+(defcustom host-local-javadoc-roots '()
+  "A list of directories that will be indexed by javadoc-lookup package."
+  :group 'Java-X)
 
 (defcustom java-project-root
   (concat (expand-file-name "~") "/src")
@@ -70,3 +79,9 @@
   "python"
   "Location of python interpreter used by prodigy. Default just grabs one from PATH."
   :group 'Prodigy-X)
+
+(defcustom
+  pdf-reader
+  nil
+  "Location of a pdf reader application"
+  :group 'External-Utilities)

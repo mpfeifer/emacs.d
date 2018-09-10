@@ -99,6 +99,8 @@
       use-package-always-ensure t
       load-prefer-newer t)
 
+(global-set-key (kbd "<f4>") 'package-list-packages-no-fetch)
+
 ;; ]
 
 ;; [ calendar
@@ -106,7 +108,7 @@
 ;; TODO: Want diary view entries be called after moving date marker in calendar
 ;; TODO: Want tab to jump from one entry to the next (shift-tab to jump back)
 
-(global-set-key (kbd "<f4>") #'(lambda ()
+(global-set-key (kbd "C-<f4>") #'(lambda ()
                                  (interactive)
                                  "Toggle calendar visibility"
                                  (let ((calendar-window
@@ -186,10 +188,11 @@
 
 ;; [ General Emacs Behaviour
 
-(setq auto-window-vscroll nil)
-(setq fill-column 72)
+(setq ring-bell-function 'ignore
+      auto-window-vscroll nil
+      fill-column 72)
 
-;; (toggle-debug-on-error)
+(toggle-debug-on-error nil)
 
 (setq stack-trace-on-error '(buffer-read-only))
 
@@ -557,69 +560,15 @@ lines containing _E_rror   lines containing E_r_ror
 
 ;; ]
 
-;; [ projectile
-
-;; To view key bindings do "C-c p C-h"
-;; Also see http://batsov.com/projectile/
-
-(use-package projectile
-  :config
-  (setq projectile-completion-system 'ivy
-        projectile-enable-caching t)
-  (projectile-mode))
-
-(defun find-file-dispatcher (arg)
-  "If projectile-find-file is available use it. Otherweise plain find-file."
-  (interactive "P")
-  (if (and
-       (eq major-mode 'org-mode)
-       (eq (get-char-property (point) 'face) 'org-link))
-      (org-open-at-point)
-    (let ((file-at-point (thing-at-point 'filename)))
-      (if (and file-at-point
-               (file-exists-p file-at-point))
-          (progn
-            (message (format "find-file-dispatcher found file at point: %s" file-at-point))
-            (find-file file-at-point))
-        (call-interactively   (if arg
-                                  'find-file
-                                (if (not (eq 'none projectile-cached-project-root))
-                                    'projectile-find-file
-                                  'find-file)))))))
-
-(defun ibuffer-dispatcher (arg)
-  "If projectile-ibuffer makes sense - use it. Otherwise plain 'ibuffer."
-  (interactive "P")
-  (call-interactively   (if arg
-                            'ibuffer
-                          (if  (not (eq 'none projectile-cached-project-root))
-                              'projectile-ibuffer
-                            'ibuffer))))
-
-(global-set-key (kbd "C-x C-f") 'find-file-dispatcher)
-
-;; ]
-
-;; [ imenu
-
-(setq imenu-auto-rescan t
-      imenu-use-popup-menu nil
-      imenu-space-replacement " "
-      imenu-sort-function 'imenu--sort-by-name) ;; sorts only mouse menu
-
-(global-set-key (kbd "C-'") 'imenu)
-
-;; ]
-
 ;; [ ibuffer
 
-(define-ibuffer-sorter alphabetic-by-path
-  "Sort the buffers by their filename (including path).
-Ordering is lexicographic."
-  (:description "buffer name")
-  (string-lessp
-   (buffer-file-name (car a))
-   (buffer-file-name (car b))))
+;; (define-ibuffer-sorter ibuffer-sorter-alphabetic-by-path
+;;   "Sort the buffers by their filename (including path).
+;; Ordering is lexicographic."
+;;   (:description "buffer name")
+;;   (string-lessp
+;;    (buffer-file-name (car a))
+;;    (buffer-file-name (car b))))
 
 (defadvice ibuffer-center-recenter (around ibuffer-point-to-most-recent activate)
   "Open ibuffer with cursor pointed to most recent (non-minibuffer) buffer name"
@@ -650,7 +599,7 @@ Ordering is lexicographic."
       (message input))))
 
 (use-package ibuffer
-  :bind ("C-x C-b" . ibuffer-dispatcher)
+  :bind ("C-x C-b" . ibuffer)
   :init
 
   (define-ibuffer-column dirname
@@ -759,7 +708,13 @@ restore former values for debug-on-error and debug-ignored-errors."
         (replace-match version t) )
       (goto-char (point-min))
       (while (search-forward "KEYWORDS" nil t)
-        (replace-match keywords t) ) ) ) )
+        (replace-match keywords t) )
+      (goto-char (point-min))
+      (while (search-forward "FILENAME" nil t)
+        (replace-match filename t) )
+      (goto-char (point-min))
+      (while (search-forward "DEPENDENCIES" nil t)
+        (replace-match dependencies t) ) ) ) )
 
 (add-to-list 'auto-insert-alist '(".*\\.el$" . [ "template.el" elisp-preprocessor] ) )
 
@@ -773,7 +728,7 @@ restore former values for debug-on-error and debug-ignored-errors."
   (make-local-variable 'paragraph-separate)
   (setq paragraph-start ";; \\[ "
         paragraph-separate ";; ]")
-  (setq imenu-generic-expression 
+(setq imenu-generic-expression 
         (list '(nil "^;; \\[ \\(.+\\)$" 1)))
   (setq-local imenu-create-index-function 'imenu-default-create-index-function))
 
@@ -828,6 +783,14 @@ restore former values for debug-on-error and debug-ignored-errors."
 ;; ]
 
 ;; [ yasnippet
+
+(defun yasx-downcase-initial-char (text)
+  "Return copy of text with first character downcased."
+  (concat (downcase (substring text 0 1)) (substring text 1)))
+
+(defun yasx-capitalize-initial-char (text)
+  "Return copy of text with first character downcased."
+  (concat (capitalize (substring text 0 1)) (substring text 1)))
 
 (use-package yasnippet
   :config
@@ -949,7 +912,6 @@ _r_eload snippets                 _i_nsert snippet
 (add-hook 'org-after-todo-state-change-hook 'mp-clock-out-after-state-change)
 (add-hook 'org-after-todo-state-change-hook 'mp-clock-in-after-state-change)
 
-(add-hook 'org-agenda-mode-hook 'org-agenda-follow-mode)
 (add-hook 'org-agenda-mode-hook 'hl-line-mode)
 
 ;; (defadvice org-agenda-redo (after fit-window-after-agenda-redo activate)
@@ -1053,7 +1015,7 @@ _r_eload snippets                 _i_nsert snippet
      (java . t)
      (perl . t)
      (http . t)
-     (sh . t) ) ) )
+     (shell . t) ) ) )
 
 (org-clock-persistence-insinuate)
 
@@ -1072,6 +1034,17 @@ _r_eload snippets                 _i_nsert snippet
         ("N" "A note for the current task" entry (clock) note-template) ) )
 
 (add-hook 'org-mode-hook 'org-mode-setup)
+
+;; ]
+
+;; [ imenu
+
+(setq imenu-auto-rescan t
+      imenu-use-popup-menu nil
+      imenu-space-replacement " "
+      imenu-sort-function 'imenu--sort-by-name) ;; sorts only mouse menu
+
+(global-set-key (kbd "C-'") 'imenu)
 
 ;; ]
 
@@ -1146,6 +1119,12 @@ _r_eload snippets                 _i_nsert snippet
 
 ;; ]
 
+;; [
+
+(use-package find-file-in-project)
+
+;; ]
+
 ;; [ speedbar treemacs
 
 (use-package sr-speedbar
@@ -1180,7 +1159,7 @@ _r_eload snippets                 _i_nsert snippet
           treemacs-indentation                2
           treemacs-indentation-string         " "
           treemacs-is-never-other-window      nil
-          treemacs-no-png-images              nil
+          treemacs-no-png-images              t
           treemacs-project-follow-cleanup     nil
           treemacs-persist-file               (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
           treemacs-recenter-after-file-follow nil
@@ -1194,19 +1173,39 @@ _r_eload snippets                 _i_nsert snippet
           treemacs-tag-follow-delay           1.5
           treemacs-width                      35)
 
+    (global-set-key (kbd "<f6>") #'treemacs)
+    (define-key treemacs-mode-map (kbd "C-n") #'treemacs-next-line)
+    (define-key treemacs-mode-map (kbd "C-p") #'treemacs-previous-line)
+
     ;; The default width and height of the icons is 22 pixels. If you are
     ;; using a Hi-DPI display, uncomment this to double the icon size.
     ;;(treemacs-resize-icons 44)
 
-    (treemacs-follow-mode t)
+    (define-key treemacs-mode-map (kbd "C-t r")     #'treemacs-rename-project)
+    (define-key treemacs-mode-map (kbd "C-t a")     #'treemacs-add-project-to-workspace)
+    (define-key treemacs-mode-map (kbd "C-t d")     #'treemacs-remove-project-from-workspace)
+    (define-key treemacs-mode-map (kbd "C-t c c")   #'treemacs-collapse-project)
+    (define-key treemacs-mode-map (kbd "C-t c o")   #'treemacs-collapse-other-projects)
+    (define-key treemacs-mode-map (kbd "C-t c a")   #'treemacs-collapse-all-projects)
+    (define-key treemacs-mode-map (kbd "C-f") 'find-file-in-project))
+
+    (treemacs-follow-mode nil)
     (treemacs-filewatch-mode t)
     (treemacs-fringe-indicator-mode t)
+
     (pcase (cons (not (null (executable-find "git")))
                  (not (null (executable-find "python3"))))
       (`(t . t)
        (treemacs-git-mode 'extended))
       (`(t . _)
-       (treemacs-git-mode 'simple))))
+       (treemacs-git-mode 'simple)))
+    ;; have some advices for very long file-names
+    
+    (defadvice treemacs-next-line (after show-line-in-echo-area-next activate) 
+      (message (string-trim (thing-at-point 'line))))
+    (defadvice treemacs-previous-line (after show-line-in-echo-area-prev activate) 
+      (message (string-trim (thing-at-point 'line))))
+
   :bind
   (:map global-map
         ("M-0"       . treemacs-select-window)
@@ -1216,8 +1215,6 @@ _r_eload snippets                 _i_nsert snippet
         ("C-x t C-t" . treemacs-find-file)
         ("C-x t M-t" . treemacs-find-tag)))
 
-(use-package treemacs-projectile
-  :after treemacs projectile)
 ;; ]
 
 ;; [ xref and tags
@@ -1493,7 +1490,6 @@ and display corresponding buffer in new frame."
 (add-hook 'Man-mode-hook 'man-mode-setup)
 
 (defun my-help-mode-setup ()
-  (local-set-key (kbd "q") 'kill-buffer)  
   (local-set-key (kbd "C-q") 'kill-buffer-and-window))
 
 (add-hook 'help-mode-hook 'my-help-mode-setup)
@@ -1511,6 +1507,7 @@ and display corresponding buffer in new frame."
   :config
   (add-hook 'java-mode-hook 'jtags-mode))
 
+;; Make sure there is a TAGS file in jdk-location/src
 (setq tags-table-list (list (concat jdk-location "/src")))
 
 (setq tags-revert-without-query 't)
@@ -1518,79 +1515,11 @@ and display corresponding buffer in new frame."
 (use-package javadoc-lookup
   :config
   (javadoc-add-roots (concat jdk-location "/docs"))
-  ;;  (javadoc-add-artifacts [org.springframework spring-core "4.3.2-RELEASE"])
+
+  (dolist (root host-local-javadoc-roots)
+    (javadoc-add-roots root))
+
   (setq browser-url-browser-function 'browse-url-chromium))
-
-(defvar-local java-classpath nil "Java classpath. This will be set by .dir-locals.el (hopefully).")
-(defvar-local java-project-root nil "Buffer local location of current project root.")
-(defvar-local java-classes-cache nil "Cache for the current classpath classes.")
-
-(defun java-read-classes-from-classpath ( classpath-list )
-  "Iterate over classpath and gather classes from jar files.
-Evaluates into one large list containing all classes."
-  (let* ((jarfiles nil)
-         (jarfile nil)
-         (result '()))
-    (progn
-      (dolist (file (directory-files (concat jdk-location "/jre/lib") t "\.\*.jar\$"))
-        (setq jarfiles (cons file jarfiles)))
-      (dolist (file (reverse classpath-list))
-        (setq jarfiles (cons file jarfiles))))
-    (with-temp-buffer
-      (while jarfiles
-        (progn
-          (setq jarfile (car jarfiles)
-                jarfiles (cdr jarfiles))
-          (call-process "unzip" nil t nil "-l" (expand-file-name jarfile))
-          (goto-char (point-min))
-          (let ((end 0)
-                (classname ""))
-            (while (search-forward ".class" nil t nil)
-              (end-of-line)
-              (setq end (point))
-              (beginning-of-line)
-              (goto-char (+ (point) 30))
-              (setq classname (substring 
-                               (replace-regexp-in-string "/" "."
-                                                         (buffer-substring-no-properties (point) end))
-                               0 -6))
-              (setq result (cons classname result))
-              (forward-line 1)
-              (beginning-of-line))
-            (erase-buffer)))))
-    result))
-
-(defun insert-import-statement ()
-  (interactive)
-  (let* ((default (thing-at-point 'symbol))
-         (classname (completing-read "Class: " java-classes-cache)))
-    (insert "import " classname ";")))
-
-(defun java-insert-classname-completing-read (prefix)
-  "Query the user for a class name.
-With prefix argument insert classname with package name. Otherwise omit package name."
-  (interactive "P")
-  (let* ((default (thing-at-point 'symbol))
-         (classname (completing-read "Class: " java-classes-cache)))
-    (if prefix
-        (insert classname)
-      (insert (replace-regexp-in-string ".*\\." "" classname)))))
-
-(defun java-assert-import (name)
-  "Insert import statement for class NAME if it does not yet exist. "
-  (push-mark)
-  (goto-char (point-min))
-  (when (not (re-search-forward (format "^import %s;" name) nil t))
-    (progn
-      (while (re-search-forward "^import.*" nil t))
-      (end-of-line)
-      (newline-and-indent)
-      (insert (format "import %s;" name)))))
-
-(defun java-add-import ()
-  (interactive)
-  (let* ((classname (completing-read "Class: " java-classes-cache)))
-    (java-assert-import classname)))
 
 (defun guess-package-name-for-current-buffer ()
   "See if this is a maven project with standard directory layout.
@@ -1599,19 +1528,20 @@ If so calculate pacakge name from current directory name."
          (indicator "/src/main/java/")
          (package-name "undefined")
          (matched-string nil))
-    (progn
-      (string-match (concat ".*" indicator "\\(.*\\)") dirname)
-      (setq matched-string (match-string 1 dirname))
-      (unless matched-string ;; if indicator is not found just take
-        (setq matched-string dirname)) ;; whole path for the package-name
-      (setq package-name matched-string)
-      (when (string-suffix-p "/" package-name)
-        (setq package-name (substring package-name 0 -1)))
-      (when (string-prefix-p "/" package-name)
-        (setq package-name (substring package-name 1)))
-      (setq package-name (replace-regexp-in-string "/" "." package-name))
-      (setq package-name (replace-regexp-in-string "\\.\\." "." package-name))
-      package-name)))
+    (if (string-match (concat ".*" indicator "\\(.*\\)") dirname)
+        (progn
+          (setq matched-string (match-string 1 dirname))
+          (unless matched-string ;; if indicator is not found just take
+            (setq matched-string dirname)) ;; whole path for the package-name
+          (setq package-name matched-string)
+          (when (string-suffix-p "/" package-name)
+            (setq package-name (substring package-name 0 -1)))
+          (when (string-prefix-p "/" package-name)
+            (setq package-name (substring package-name 1)))
+          (setq package-name (replace-regexp-in-string "/" "." package-name))
+          (setq package-name (replace-regexp-in-string "\\.\\." "." package-name)))
+      (setq package-name (read-from-minibuffer "Cannot guess package name. Please provide a full package name:")))
+    package-name))
 
 (defun java-preprocessor()
   (let ((classname (file-name-sans-extension (buffer-name)))
@@ -1633,11 +1563,9 @@ If so calculate pacakge name from current directory name."
             (case-fold-search nil))
         (while (search-forward key nil t)
           (replace-match value t))))
-    (write-file target-file nil) 
-    (kill-buffer) ) )
+    (write-file target-file nil)))
 
-
-(defun start-new-java-project (group-id artifact-id version-number)
+(defun start-new-maven-project (group-id artifact-id version-number)
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
   (let* ((project-root (concat (expand-file-name java-project-root) artifact-id))
          (target-pom (concat project-root "/pom.xml"))
@@ -1668,33 +1596,19 @@ If so calculate pacakge name from current directory name."
     (save-buffer)
     (treemacs-dir project-root)))
 
-;; TODO Something is veery buggy here. Why is C-x c defined in emacs-lisp mode?
-(defun java-mode-process-dir-locals ()
-  (when (derived-mode-p 'java-mode)
-    (progn
-      (when (stringp java-project-root)
-        ;; sell the stock from emacs-maven-plugin:
-        (progn
-          (setq-local java-classes-cache (java-read-classes-from-classpath java-classpath) ))
-        (local-set-key (kbd "C-x c") 'java-insert-classname-completing-read)))))
+(require 'java-x)
 
 (defun java-mode-setup()
-
   ;; Treat Java 1.5 @-style annotations as comments.
   (setq c-comment-start-regexp "(@|/(/|[*][*]?))")
   (modify-syntax-entry ?@ "< b" java-mode-syntax-table)
-
   ;;
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
-
-  ;; navigate cammel cased words
+  ;; navigate camel cased words
   (subword-mode)
-
   ;; Get help with javadoc (need to have this working for non-jds classes too
   (local-set-key (kbd "C-h j") 'javadoc-lookup)
-  (local-set-key (kbd "C-?") 'java-add-import) ;; TODO Have a handy keymap for your java functions like "C-c j"
-
   ;; Turn on auto-complete mode and set ac-sources
   (auto-complete-mode 1)
   (setq ac-sources '(ac-source-yasnippet
@@ -1702,35 +1616,6 @@ If so calculate pacakge name from current directory name."
                      ac-source-dictionary
                      ac-source-words-in-same-mode-buffers)))
 
-(defun mpj-create-tags ()
-  "Create tags file in maven project."
-  (let ((default-directory (projectile-project-root)))
-    (eshell-command 
-     (format (concat "find %s -name \\*.java -type f "
-                     "| etags"
-                     " -o " (projectile-project-root) "TAGS"
-                     " --include /home/matthias/opt/jdk/src/TAGS"
-                     " -")
-             (projectile-project-root)))))
-
-;; slightly modified for xref-find-definition from emacswiki article
-(defadvice xref-find-definitions (around refresh-etags activate)
-  "Rerun etags and reload tags if tag not found and redo find-tag.              
-   If buffer is modified, ask about save before running etags."
-  (let ((extension (file-name-extension (buffer-file-name))))
-    (condition-case err
-        ad-do-it
-      (error (and (buffer-modified-p)
-                  (not (ding))
-                  (y-or-n-p "Buffer is modified, save it? ")
-                  (save-buffer))
-             (when (member #'etags--xref-backend xref-backend-functions)
-               (let ((tags-revert-without-query t))
-                 (mpj-create-tags)
-                 (visit-tags-table (projectile-project-root) nil))
-               ad-do-it)))))
-
-(add-hook 'hack-local-variables-hook 'java-mode-process-dir-locals)
 (add-hook 'java-mode-hook 'java-mode-setup)
 
 ;; preprocessor for interactively generating files from templates
@@ -1896,6 +1781,23 @@ T - tag prefix
 
 ;; ]
 
+;; [ ndf mode
+
+(define-derived-mode ndf-xml-mode xml-mode
+  "NDF"
+  "Mode for editing ndf xml files.")
+
+(add-hook 'ndf-xml-mode-hook '(lambda ()
+                                "Initialize ndf mode"
+                                (setq imenu-generic-expression (list '("All" "^.* id=\"\\([^\"]+\\)\".*$" 1)))
+                                                                     ;; '("Decision States" "^.*<decision-state ^.* id=\"\\([^\"]+\\)\".*$" 1)
+                                                                     ;; '("Dataaccess States" "^.*<data-access-state ^.* id=\"\\([^\"]+\\)\".*$" 1)
+                                                                     ;; '("Custom States" "^.*<custom-state ^.* id=\"\\([^\"]+\\)\".*$" 1)
+                                                                     ;; '("Play States" "^.*<play-state ^.* id=\"\\([^\"]+\\)\".*$" 1)))
+                                (local-set-key (kbd "C-'") 'imenu)))
+
+;; ]
+
 ;; [ maven mode
 
 (define-derived-mode maven-mode nxml-mode
@@ -1904,17 +1806,17 @@ T - tag prefix
 
 (add-to-list 'auto-mode-alist (cons "pom.xml" 'maven-mode))
 
-(when (getenv "M2_HOME")
-  (message
-   (concat
-    "Overwriting M2_HOME environment variable with custom value \""
-    (expand-file-name mvn-home) "\"")))
+;; (when (getenv "M2_HOME")
+;;   (message
+;;    (concat
+;;     "Overwriting M2_HOME environment variable with custom value \""
+;;     (expand-file-name mvn-home) "\"")))
 
-(setenv "M2_HOME" (expand-file-name mvn-home))
-(setenv "PATH"
-        (concat (expand-file-name mvn-home) "/bin"
-                path-separator
-                (getenv "PATH")))
+;; (setenv "M2_HOME" (expand-file-name mvn-home))
+;; (setenv "PATH"
+;;         (concat (expand-file-name mvn-home) "/bin"
+;;                 path-separator
+;;                 (getenv "PATH")))
 
 (defconst maven (concat (expand-file-name mvn-home) "/bin/mvn"))
 
@@ -2625,6 +2527,14 @@ T - tag prefix
     (select-frame (make-frame))
     (switch-to-buffer scratch-buffer)))
 
+(defun scratch-goto-json-mode ()
+  (interactive)
+  (scratch-goto-mode 'json-mode))
+
+(defun scratch-goto-xml-mode ()
+  (interactive)
+  (scratch-goto-mode 'xml-mode))
+
 (defun scratch-goto-text-mode ()
   (interactive)
   (scratch-goto-mode 'text-mode))
@@ -2655,13 +2565,17 @@ Mode^^
 ----------------------------------------------
 _t_ext-mode    _p_ython-mode        _o_rg-mode
 _j_ava-mode    emacs-_l_isp-mode    _s_h-mode
+jso_n_-mode    _x_ml-mode
+
 "
+  ("n" scratch-goto-json-mode)
   ("t" scratch-goto-text-mode)
   ("l" scratch-goto-emacs-lisp-mode)
   ("p" scratch-goto-python-mode)
   ("j" scratch-goto-java-mode)
   ("o" scratch-goto-org-mode)
-  ("s" scratch-goto-shl-mode))
+  ("s" scratch-goto-shl-mode)
+  ("x" scratch-goto-xml-mode))
 
 (global-set-key (kbd "C-c s") 'hydra-global-scratch/body)
 
@@ -2741,17 +2655,19 @@ _j_ava-mode    emacs-_l_isp-mode    _s_h-mode
         (dashboard-pretty-print-qod qod author)))))
 
 (defun read-quote-of-the-day (parsed-response)
-  "Extract quote of the day from RESPONSE."
+  "Extract quote of the day from PARSED-RESPONSE."
   (cdr (nth 0 (aref (cdr (car (cdr (nth 1 parsed-response)))) 0))))
 
 (defun read-author (parsed-response)
-  "Extract author from RESPONSE."
+  "Extract author from PARSED-RESPONSE."
   (cdr (nth 2 (aref (cdr (car (cdr (nth 1 parsed-response)))) 0))))
 
 (defun dashboard-system-info (numitems)
   (dashboard-insert-heading "Emacs system information: ")
-  (insert "Emacs version : " emacs-version "\r\n")
-  (insert "User init file: " user-init-file "\r\n"))
+  (insert "Emacs version : " emacs-version)
+  (newline-and-indent)
+  (insert "User init file: " user-init-file)
+  (newline-and-indent))
 
 (use-package dashboard
   :config
@@ -2759,9 +2675,9 @@ _j_ava-mode    emacs-_l_isp-mode    _s_h-mode
   (add-to-list 'dashboard-item-generators '(qod . dashboard-insert-qod))
   (add-to-list 'dashboard-item-generators '(sysinfo . dashboard-system-info))
   (setq dashboard-items '((qod . nil)
-                          (agenda . 10)
+;;                          (agenda . 10)
                           (sysinfo . 1)                          
-                          (projects . 10)
+;;                          (projects . 10)
                           (recents . 15)
                           (bookmarks . 10)
                           (registers . 5)))
@@ -2770,10 +2686,19 @@ _j_ava-mode    emacs-_l_isp-mode    _s_h-mode
 ;; [ json
 
 (require 'json)
+(use-package json-mode)
+;; ]
+
+;; [ openwith
+
+(require 'openwith)
+(openwith-mode t)
 
 ;; ]
 
 ;; [ Finalizer
+
+(require 'convenience)
 
 (setq gc-cons-threshold (* 1024 1024 64)
       gc-cons-percentage 0.3)

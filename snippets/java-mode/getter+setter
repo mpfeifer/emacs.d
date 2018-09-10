@@ -1,0 +1,21 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: getter+setter
+# key: gs
+# --
+
+/**
+ * @return the value of ${1:Member}
+ */
+
+public ${2:int} get${1:$(yasx-capitalize-initial-char yas-text)}() {
+       return this.$1;
+};
+
+
+/**
+ * @param value the to be set value for $1
+ */
+
+public void set${1:$(yasx-capitalize-initial-char yas-text)}($2 value) {
+       this.$1=value;
+};
