@@ -33,24 +33,37 @@
                            (local-set-key (kbd "n") 'next-line)
                            (local-set-key (kbd "p") 'previous-line)
                            (local-set-key (kbd "f") 'forward-word)
-                           (hl-line-mode)
-                           ))
+                           (hl-line-mode)))
 
-(defun replace-vpng-with-link ()
-  "In current buffer replace all occurences of strings matching vpng-[0-9]+ with a link to the telefonica jira."
-  (interactive "P")
-  (let ((jira-url "https://jira-ex.telefonica.de/browse/"))
-    (save-excursion
-      (goto-char (point-min)))))
+;; [ ndf mode
 
-(projectile-register-project-type 'npm '(".project" "bin/build.xml")
-				  :compile "ant buildWar"
-				  :test "ant test"
-				  :run "ant buildWar")
+(define-derived-mode ndf-xml-mode xml-mode
+  "NDF"
+  "Mode for editing ndf xml files.")
+
+(defun ndf-xml-mode-setup ()
+  "Initialize ndf mode"
+  (setq imenu-generic-expression (list '("All" "^.* id=\"\\([^\"]+\\)\".*$" 1)
+                                       '("Sentences" ".*<sentence id=\"\\([^\"]+\\)\".*$" 1)
+                                       '("Decision States" ".*<decision-state id=\"\\([^\"]+\\)\".*$" 1)
+                                       '("Dialog Modules" ".*<dm-state id=\"\\([^\"]+\\)\".*$" 1)
+                                       '("Data Access States" ".*<data-access-state id=\"\\([^\"]+\\)\".*$" 1)
+                                       '("Dialogs" ".*<dialog id=\"\\([^\"]+\\)\".*$" 1)
+                                       '("Custom States" ".*<custom-state id=\"\\([^\"]+\\)\".*$" 1)
+                                       '("Play States" ".*<play-state id=\"\\([^\"]+\\)\".*$" 1)))
+  ;; '("Dataaccess States" "^.*<data-access-state ^.* id=\"\\([^\"]+\\)\".*$" 1)
+  ;; '("Custom States" "^.*<custom-state ^.* id=\"\\([^\"]+\\)\".*$" 1)
+  ;; '("Play States" "^.*<play-state ^.* id=\"\\([^\"]+\\)\".*$" 1)))
+  (local-set-key (kbd "C-'") 'imenu))
+
+(add-hook 'ndf-xml-mode-hook 'ndf-xml-mode-setup)
+
+;; ]
 
 (define-derived-mode nar-log-mode view-mode
   "Nar"
   "Mode for reading nar log files")
 
+(provide 'n)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; n.el ends here

@@ -1,0 +1,12 @@
+#contributor : Matthias
+#name : Generic task (table)
+#key: task
+# --
+
+${1:node-name} [ label=<
+    <table border="1" cellborder="0" cellspacing="1">
+        <tr><td align="left"><b>${2:task name}</b></td></tr>
+        <tr><td align="left">${3:description}</td></tr>
+        <tr><td align="left"><font color="darkgreen">${4:state}</font></td></tr>
+    </table>>];
+$0

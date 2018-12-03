@@ -85,3 +85,9 @@
   nil
   "Location of a pdf reader application"
   :group 'External-Utilities)
+
+(defcustom
+  mpx-host-local-org-capture-templates
+  nil
+  "A host local definition of org capture templates."
+  :group 'Custom-X)

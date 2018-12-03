@@ -1,0 +1,7 @@
+#contributor : Matthias
+#name : Digraph template
+#key:D
+# --
+digraph ${1:name} {
+    $0
+}

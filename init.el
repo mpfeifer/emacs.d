@@ -29,6 +29,8 @@
     (load custom-file)
   (message "No custom.el file found."))
 
+(add-to-list 'load-path "~/.emacs.d/elisp/")
+
 ;; ]
 
 ;; [ packages
@@ -101,6 +103,8 @@
 
 (global-set-key (kbd "<f4>") 'package-list-packages-no-fetch)
 
+(add-hook 'package-menu-mode-hook 'hl-line-mode)
+
 ;; ]
 
 ;; [ calendar
@@ -109,13 +113,13 @@
 ;; TODO: Want tab to jump from one entry to the next (shift-tab to jump back)
 
 (global-set-key (kbd "C-<f4>") #'(lambda ()
-                                 (interactive)
-                                 "Toggle calendar visibility"
-                                 (let ((calendar-window
-                                        (get-buffer-window "*Calendar*")))
-                                   (if calendar-window
-                                       (delete-window calendar-window)
-                                     (calendar)))))
+                                   (interactive)
+                                   "Toggle calendar visibility"
+                                   (let ((calendar-window
+                                          (get-buffer-window "*Calendar*")))
+                                     (if calendar-window
+                                         (delete-window calendar-window)
+                                       (calendar)))))
 
 (setq diary-display-function #'diary-fancy-display)
 
@@ -260,9 +264,6 @@
 (defalias 'string-to-symbol 'intern)
 
 (recentf-mode)
-
-;; here goes my personal emacs extension files
-(add-to-list 'load-path "~/.emacs.d/elisp/")
 
 (require 'lisp-x)
 
@@ -423,6 +424,9 @@ lines containing _E_rror   lines containing E_r_ror
 
 (use-package s)
 
+(global-set-key (kbd "C-s") 'isearch-forward)
+(global-set-key (kbd "C-S-s") 'isearch-forward-symbol-at-point)
+
 ;; ]
 
 ;; [ encoding systems
@@ -434,34 +438,43 @@ lines containing _E_rror   lines containing E_r_ror
 
 ;; [ global appearence
 
-(run-with-timer 15 nil '(lambda ()
-                          "Set prefered fonts."
-                          (progn
-                            (dolist (face '(org-level-1
-                                            org-level-2
-                                            org-level-3
-                                            org-level-4
-                                            org-level-5))
-                              (set-face-attribute face nil
-                                                  :family "Hack"
-                                                  :height 100
-                                                  :weight 'normal
-                                                  :width 'normal))
+(use-package fill-column-indicator)
 
-                            (when (eq system-type 'windows-nt)
-                              (progn
-                                (set-face-attribute 'default nil
-                                                    :family "Hack"
-                                                    :height 100
-                                                    :weight 'normal
-                                                    :width 'normal)))
 
-                            (when (eq system-type 'windows-nt)
-                              (set-face-attribute 'mode-line nil
-                                                  :family "Hack"
-                                                  :height 100
-                                                  :weight 'normal
-                                                  :width 'normal)))))
+;; how to set fonts:
+;; https://www.emacswiki.org/emacs/SetFonts
+
+(defun mpx-fix-fonts ()
+  (interactive)
+  "Set prefered fonts."
+  (progn
+    (dolist (face '(org-level-1
+                    org-level-2
+                    org-level-3
+                    org-level-4
+                    org-level-5))
+      (set-face-attribute face nil
+                          :family "Hack"
+                          :height 80
+                          :weight 'normal
+                          :width 'normal))
+
+    (when (eq system-type 'windows-nt)
+      (progn
+        (set-face-attribute 'default nil
+                            :family "Hack"
+                            :height 80
+                            :weight 'normal
+                            :width 'normal)))
+
+    (when (eq system-type 'windows-nt)
+      (set-face-attribute 'mode-line nil
+                          :family "Hack"
+                          :height 80
+                          :weight 'normal
+                          :width 'normal))))
+
+(run-with-timer 15 nil 'mpx-fix-fonts)
 
 (use-package stripe-buffer)
 
@@ -612,37 +625,30 @@ lines containing _E_rror   lines containing E_r_ror
         result)))
 
   (define-ibuffer-column additional-info
-    (:name "Description" :inline nil)
+    (:name "Path" :inline nil)
     (let* ((result nil)
-           (buffer-mode (symbol-to-string (with-current-buffer buffer
-                                            major-mode)))
            (buf-file-name (buffer-file-name buffer))
-           (dircomponents nil)
            (dir-name (if (and buf-file-name
                               (file-exists-p buf-file-name))
                          (file-name-directory buf-file-name)
                        nil)))
       (if dir-name
-          (let* ((dirparts (reverse (split-string dir-name "/")))
-                 (result (if (> (length dirparts) 6)
-                             (concat "…/"
-                                     (nth 4 dirparts) "/"
-                                     (nth 3 dirparts) "/"
-                                     (nth 2 dirparts) "/"
-                                     (nth 1 dirparts) "/")
-                           (file-name-directory buf-file-name))))
+          (let* ((result (if (> (length dir-name) 47)
+                             (concat "⋯" (substring dir-name (- (length dir-name) 47)))
+                           dir-name)))
             (if result
                 result
               buffer-mode))
-        buffer-mode)))
+        "")))
 
   (setq ibuffer-show-empty-filter-groups nil
         ;;      ibuffer-formats '(( mark (git-status-mini) modified read-only "|"
-        ibuffer-formats '(( mark modified read-only "|"
-                                 (name 36 36 :left :elide)
-                                 "|"
-                                 (size 9 -1 :left)
-                                 "|" additional-info) ;; filename-and-process)
+        ibuffer-formats '(( mark (additional-info  48 48 :right :elide)
+                                 "|" (name 24 24 :left :elide)
+                                 "|" (mode 16 16 :left :elide)
+                                 "|" (size 9 -1 :left)
+                                 "[" modified read-only "] " 
+                                 ) ;; filename-and-process)
                           (mark " "
                                 (name 16 -1)
                                 " " filename)))
@@ -650,7 +656,7 @@ lines containing _E_rror   lines containing E_r_ror
   (defun ibuffer-mode-hook-extender ()
     (ibuffer-auto-mode 1) ;; auto updates
     (hl-line-mode)
-    (define-key ibuffer-mode-map (kbd "<RET>") 'ibuffer-visit-buffer-other-frame)
+    (define-key ibuffer-mode-map (kbd "M-<RET>") 'ibuffer-visit-buffer-other-frame)
     (define-key ibuffer-mode-map (kbd "p") 'ibuffer-show-file-path))
   
   (add-hook 'ibuffer-mode-hook 'ibuffer-mode-hook-extender))
@@ -728,7 +734,7 @@ restore former values for debug-on-error and debug-ignored-errors."
   (make-local-variable 'paragraph-separate)
   (setq paragraph-start ";; \\[ "
         paragraph-separate ";; ]")
-(setq imenu-generic-expression 
+  (setq imenu-generic-expression 
         (list '(nil "^;; \\[ \\(.+\\)$" 1)))
   (setq-local imenu-create-index-function 'imenu-default-create-index-function))
 
@@ -880,7 +886,7 @@ _r_eload snippets                 _i_nsert snippet
 
 (defun Info-mode-setup ()
   "Personal info mode hook."
-  (define-key Info-mode-map (kbd "C-s") 'isearch-forward-regexp) )
+  (define-key Info-mode-map (kbd "C-s") 'isearch-forward-symbol-at-point) )
 
 (add-hook 'Info-mode-hook 'Info-mode-setup)
 
@@ -895,22 +901,6 @@ _r_eload snippets                 _i_nsert snippet
 ;; ]
 
 ;; [ org mode
-
-(setq org-todo-keywords
-      '((sequence "TODO" "IN_PROGRESS" "|" "DONE")))
-
-(setq org-clock-out-switch-to-state "WAITING")
-
-(defun mp-clock-out-after-state-change ()
-  (when (string= org-state "IN_PROGRESS")
-    (org-clock-out nil 't)))
-
-(defun mp-clock-in-after-state-change ()
-  (when (string= org-state "IN_PROGRESS")
-    (org-clock-in)))
-
-(add-hook 'org-after-todo-state-change-hook 'mp-clock-out-after-state-change)
-(add-hook 'org-after-todo-state-change-hook 'mp-clock-in-after-state-change)
 
 (add-hook 'org-agenda-mode-hook 'hl-line-mode)
 
@@ -975,7 +965,7 @@ _r_eload snippets                 _i_nsert snippet
   ;;  (flyspell-mode)
   (add-to-list 'org-file-apps '("\\.png\\'" . default))
   (company-mode -1) ;; disabled, since it looks broken
-  (org-bullets-mode)
+  ;; (org-bullets-mode)
   (setq org-agenda-span 7
         org-agenda-comact-blocks t
         org-agenda-show-all-dates t
@@ -1024,14 +1014,7 @@ _r_eload snippets                 _i_nsert snippet
 ;; capture templates are documented at
 ;; http://orgmode.org/manual/Capture.html
 
-(setq org-capture-templates
-      '( ;; See https://orgmode.org/manual/Template-elements.html#Template-elements
-        ("P" "Project" entry (file+headline org-capture-file "Inbox")
-         "* %?\n" :clock-in t :clock-resume)
-        ("t" "A generic Todo item" entry (file+headline org-capture-file "Inbox") "** TODO %?\n" :clock-in t :clock-resume t)
-        ("T" "A Todo item for the current task" entry (clock) todo-template)
-        ("n" "A generic note" entry (file+headline org-capture-file "Inbox") "** %? :Note:" :clock-in t :clock-resume t)
-        ("N" "A note for the current task" entry (clock) note-template) ) )
+(setq org-capture-templates mpx-host-local-org-capture-templates)
 
 (add-hook 'org-mode-hook 'org-mode-setup)
 
@@ -1054,7 +1037,6 @@ _r_eload snippets                 _i_nsert snippet
 
 (use-package prodigy
   :config
-  
   (defun prodigy-setup-frame ()
     (interactive)
     (let ((frame-parameters '((name . "Prodigy")
@@ -1064,9 +1046,6 @@ _r_eload snippets                 _i_nsert snippet
       (select-frame (make-frame frame-parameters))
       (prodigy)
       (delete-other-windows)))
-  
-  ;;  (advice-add 'prodigy-start-service :after #'prodigy-display-process)
-
   (defun prodigy-next-line ()
     (interactive)
     (forward-line)
@@ -1074,7 +1053,6 @@ _r_eload snippets                 _i_nsert snippet
       (progn
         (prodigy-display-process)
         (select-window (get-buffer-window "*prodigy*")))))
-
   (defun prodigy-previous-line ()
     (interactive)
     (forward-line -1)
@@ -1082,41 +1060,12 @@ _r_eload snippets                 _i_nsert snippet
       (progn
         (prodigy-display-process)
         (select-window (get-buffer-window "*prodigy*")))))
-
   (defun prodigy-mode-setup ()
     (local-set-key (kbd "n") 'prodigy-next-line)
     (local-set-key (kbd "p") 'prodigy-previous-line))
-
   (add-hook 'prodigy-mode-hook 'prodigy-mode-setup)
-
   (global-set-key (kbd "<f5>") #'prodigy-setup-frame)
-
-  (prodigy-define-service
-    :name "Tomcat"
-    :command tomcat-start-script
-    :args '("run")
-    :cwd tomcat-home)
-
-  (prodigy-define-service
-    :name "Date Server (14002)"
-    :command prodigy-python-interpreter
-    :args '("date.py" "14002")
-    :stop-signal 'int
-    :cwd (concat prodigy-service-root "date/"))
-
-  (prodigy-define-service
-    :name "Network Log-Receiver"
-    :command prodigy-python-interpreter
-    :args '("logwebmon.py")
-    :cwd (concat prodigy-service-root "loghost/"))
-
-  (prodigy-define-service
-    :name "Echo Server (14001)"
-    :command prodigy-python-interpreter
-    :args '("echo.py" "14001")
-    :stop-signal 'int
-    :cwd (concat prodigy-service-root "echo/") ) )
-
+  (require (string-to-symbol prodigy-services-loader)))
 ;; ]
 
 ;; [
@@ -1146,6 +1095,10 @@ _r_eload snippets                 _i_nsert snippet
 
 ;; (modify-frame-parameters nil (list '( name . "Emacs" )
 
+(defun message-no-properties (text)
+  (set-text-properties 0 (length text) nil text)
+  (message (string-trim text)))
+
 (use-package treemacs
   :defer t
   :config
@@ -1173,7 +1126,6 @@ _r_eload snippets                 _i_nsert snippet
           treemacs-tag-follow-delay           1.5
           treemacs-width                      35)
 
-    (global-set-key (kbd "<f6>") #'treemacs)
     (define-key treemacs-mode-map (kbd "C-n") #'treemacs-next-line)
     (define-key treemacs-mode-map (kbd "C-p") #'treemacs-previous-line)
 
@@ -1189,22 +1141,23 @@ _r_eload snippets                 _i_nsert snippet
     (define-key treemacs-mode-map (kbd "C-t c a")   #'treemacs-collapse-all-projects)
     (define-key treemacs-mode-map (kbd "C-f") 'find-file-in-project))
 
-    (treemacs-follow-mode nil)
-    (treemacs-filewatch-mode t)
-    (treemacs-fringe-indicator-mode t)
+  (treemacs-follow-mode nil)
+  (treemacs-filewatch-mode t)
+  (treemacs-fringe-indicator-mode t)
 
-    (pcase (cons (not (null (executable-find "git")))
-                 (not (null (executable-find "python3"))))
-      (`(t . t)
-       (treemacs-git-mode 'extended))
-      (`(t . _)
-       (treemacs-git-mode 'simple)))
-    ;; have some advices for very long file-names
-    
-    (defadvice treemacs-next-line (after show-line-in-echo-area-next activate) 
-      (message (string-trim (thing-at-point 'line))))
-    (defadvice treemacs-previous-line (after show-line-in-echo-area-prev activate) 
-      (message (string-trim (thing-at-point 'line))))
+  (pcase (cons (not (null (executable-find "git")))
+               (not (null (executable-find "python3"))))
+    (`(t . t)
+     (treemacs-git-mode 'extended))
+    (`(t . _)
+     (treemacs-git-mode 'simple)))
+  ;; have some advices for very long file-names
+  
+  (defadvice treemacs-next-line (after show-line-in-echo-area-next activate) 
+    (message-no-properties (thing-at-point 'line)))
+
+  (defadvice treemacs-previous-line (after show-line-in-echo-area-prev activate) 
+    (message-no-properties (thing-at-point 'line)))
 
   :bind
   (:map global-map
@@ -1503,6 +1456,81 @@ and display corresponding buffer in new frame."
 
 ;; [ java mode
 
+(defun mpx-java-mode-smart-newline ()
+  (interactive)
+  (cond ((eq font-lock-doc-face (face-at-point))
+         (progn
+           (newline-and-indent)
+           (insert "* ")))
+        (t (newline-and-indent))))
+
+(defun mpx-java-mode-smart-newline-finish-something ()
+  (interactive)
+  (cond ((eq font-lock-doc-face (face-at-point))
+         (progn
+           (newline-and-indent)
+           (insert "*/")
+           (newline-and-indent)))
+        (t (newline-and-indent))))
+
+(defun mpx-load-closest-tags-file ()
+  "Traverse the directory tree upwards and look for the next TAGS file"
+  (interactive)
+  (let ((cwd-bak default-directory)
+        (cwd-last nil)
+        (cwd default-directory)
+        (keep-going t))
+    (progn
+      (while keep-going
+        (progn
+          (message "Checking directory " cwd)
+          (if (and (file-exists-p "pom.xml")
+                   (file-exists-p "TAGS"))
+              (progn
+                (mpx-add-tags-file (concat cwd "TAGS"))
+                (setq keep-going nil))
+            (progn
+              (cd "..")
+              (setq cwd-last cwd
+                    cwd default-directory)
+              (when (string= cwd-last cwd)
+                (setq keep-going nil))))))
+      (setq default-directory cwd-bak))))
+
+(defun mpx-add-tags-file (tags-file)
+  "Conveniance helper to add TAGS-FILE to tags-table-list."
+  (interactive "fWhich TAGS file? ")
+  (add-to-list 'tags-table-list tags-file  t nil))
+
+(defun pretty-print-list (tlist)
+  "Get simple string represetnation for TLIST."
+  (if (null tlist)
+      "nil"
+    (let* ((tmp-string "")
+           (ttf (mapc (lambda (str)
+                        (setq tmp-string (concat tmp-string (if (> (length tmp-string) 0) ", " "") str)))
+                      tlist)))
+      tmp-string)))
+
+(defvar mpx-help-on-tags-buffer nil)
+
+(defun mpx-help-on-tags ()
+  (interactive)
+  (when (or
+         (not (buffer-live-p mpx-help-on-tags-buffer))
+         (null mpx-help-on-tags-buffer))
+    (setq mpx-help-on-tags-buffer (get-buffer-create "*tags-help*")))
+  (with-current-buffer mpx-help-on-tags-buffer
+    (let ((tmp-string ""))
+      (erase-buffer)
+      (insert (format "%-24s: %s" "tags-table-files" (pretty-print-list tags-table-files)))
+      (newline)
+      (insert (format "%-24s: %s" "tags-file-name" (if (null tags-file-name) "nil" tags-file-name)))
+      (newline)
+      (insert (format "%-24s: %s" "tags-table-list" (pretty-print-list tags-table-list)))
+      (newline)))
+  (display-buffer-pop-up-window mpx-help-on-tags-buffer '((inhibit-switch-frame t))))
+
 (use-package jtags
   :config
   (add-hook 'java-mode-hook 'jtags-mode))
@@ -1596,9 +1624,10 @@ If so calculate pacakge name from current directory name."
     (save-buffer)
     (treemacs-dir project-root)))
 
-(require 'java-x)
+;; (require 'java-x) ;; not working
 
 (defun java-mode-setup()
+  (local-set-key (kbd "C-h t") 'mpx-help-on-tags)
   ;; Treat Java 1.5 @-style annotations as comments.
   (setq c-comment-start-regexp "(@|/(/|[*][*]?))")
   (modify-syntax-entry ?@ "< b" java-mode-syntax-table)
@@ -1677,6 +1706,7 @@ If so calculate pacakge name from current directory name."
                                 :height 1.0
                                 :weight 'normal
                                 :width 'normal)
+            (hl-line-mode)
             (define-key dired-mode-map "f" 'dired-show-only)
             (define-key dired-mode-map "e" 'ora-ediff-files)
             (define-key dired-mode-map (kbd "<backspace>")
@@ -1749,7 +1779,8 @@ T - tag prefix
 
 (defun xml-mode-setup ()
   (local-set-key (kbd "C-x <return>") 'sgml-close-tag)
-  (setq nxml-slash-auto-complete-flag t))
+  (setq nxml-slash-auto-complete-flag t)
+  (local-set-key (kbd ">" 'mpx-magic->)))
 
 (add-hook 'xml-mode-hook 'xml-mode-setup)
 
@@ -1768,6 +1799,33 @@ T - tag prefix
 <"))
   (indent-buffer))
 
+(defun mpx-magic-> ()
+  "Add closing tag for lastly entered tag."
+  (interactive)
+  (let ((beg 0)
+        (end 0)
+        (cbp (point))
+        (tag nil))
+    (progn
+      (save-excursion
+        (search-backward "<")
+        (forward-char)
+        (when (not (string= (buffer-substring-no-properties (point) (+ 1 (point)))
+                            "/"))
+          (progn
+            (setq beg (point)
+                  end (re-search-forward "[^ >]*"cbp t))
+            (when (not (and (null beg) (null end)))
+              (setq tag (buffer-substring-no-properties beg end))))))
+      (if tag
+        (progn
+          (insert ">")
+          (save-excursion
+            (insert (format "</%s>" tag))))
+        (progn
+          (insert ">")
+          (message "No tag found"))))))
+
 (setq nxml-child-indent 4
       nxml-attribute-indent 4)
 
@@ -1778,23 +1836,6 @@ T - tag prefix
   "Mode for editing ant build.xml files.")
 
 (add-to-list 'auto-mode-alist (cons "build.xml" 'ant-mode))
-
-;; ]
-
-;; [ ndf mode
-
-(define-derived-mode ndf-xml-mode xml-mode
-  "NDF"
-  "Mode for editing ndf xml files.")
-
-(add-hook 'ndf-xml-mode-hook '(lambda ()
-                                "Initialize ndf mode"
-                                (setq imenu-generic-expression (list '("All" "^.* id=\"\\([^\"]+\\)\".*$" 1)))
-                                                                     ;; '("Decision States" "^.*<decision-state ^.* id=\"\\([^\"]+\\)\".*$" 1)
-                                                                     ;; '("Dataaccess States" "^.*<data-access-state ^.* id=\"\\([^\"]+\\)\".*$" 1)
-                                                                     ;; '("Custom States" "^.*<custom-state ^.* id=\"\\([^\"]+\\)\".*$" 1)
-                                                                     ;; '("Play States" "^.*<play-state ^.* id=\"\\([^\"]+\\)\".*$" 1)))
-                                (local-set-key (kbd "C-'") 'imenu)))
 
 ;; ]
 
@@ -1941,7 +1982,7 @@ T - tag prefix
   (add-to-list 'auto-insert-alist '(".*\\.py2$" . [ "template.py" ] ) )
   (setq elpy-modules (quote
                       (elpy-module-eldoc
-                       elpy-module-flymake
+                       ;;                       elpy-module-flymake
                        elpy-module-highlight-indentation
                        elpy-module-yasnippet
                        elpy-module-sane-defaults))
@@ -1971,6 +2012,7 @@ T - tag prefix
   (add-hook 'web-mode-hook 'web-mode-setup))
 
 (defun web-mode-setup ()
+  (local-set-key (kbd ">") 'mpx-magic->)
   (setq indent-tabs-mode nil
         web-mode-markup-indent-offset 4))
 
@@ -2122,7 +2164,7 @@ T - tag prefix
 
 (defun shx-find-variables ()
   "Extract list of variable names from shell script"
-  (re-seq "^[[:space:]]+\\(\\w+\\)=.*$" (buffer-substring-no-properties (point-min) (point-max)) 1))
+  (re-seq "^\\([0-9a-zA-Z_]+\\)=.*$" (buffer-substring-no-properties (point-min) (point-max)) 1))
 
 (defun shx-insert-variable ()
   "docstring"
@@ -2131,11 +2173,15 @@ T - tag prefix
   (insert (completing-read "Variable? " (shx-find-variables)))
   (insert "}"))
 
-(defun shell-mode-setup ()
+(defun sh-mode-setup ()
   (interactive)
-  (local-set-key (kbd "$") 'shx-insert-variable))
+  (setq imenu-generic-expression (list '("Variables" "^\\([a-zA-Z0-9_]*\\)=.*$" 1)
+                                       '(nil "^\\(function \\)?\\([a-z0-9A-Z_]+\\)() {$" 2)))
+  (local-set-key (kbd "$") 'shx-insert-variable)
+  (fci-mode)
+  (set-fill-column 120))
 
-(add-hook 'shell-mode-hook 'shell-mode-setup)
+(add-hook 'sh-mode-hook 'sh-mode-setup)
 
 ;; ]
 
@@ -2429,7 +2475,7 @@ T - tag prefix
   (origami-mode))
 
 (use-package origami
-
+  :disabled
   ;; https://github.com/gregsexton/origami.el
 
   :init
@@ -2470,20 +2516,66 @@ T - tag prefix
 
 (define-derived-mode logview-mode view-mode
   "logview"
-  "Mode for viewing log files files.")
-
-(add-to-list 'auto-mode-alist (cons "\\.log\\'" 'logview-mode))
-(add-to-list 'auto-mode-alist (cons "\\-LOG\\'" 'logview-mode))
-
+  "Mode for viewing log files.")
 (add-hook 'logview-mode-hook '(lambda ()
                                 (stripe-buffer-mode)
                                 (hl-line-mode)
+                                (font-lock-add-keywords nil '(("\\(INFORMATION\\)" 1 font-lock-warning-face t)))
+                                (font-lock-add-keywords nil '(("\\(WARNUNG\\)" 1 font-lock-warning-face t)))
+                                (font-lock-add-keywords nil '(("\\(SCHWERWIEGEND\\)" 1 font-lock-warning-face t)))
                                 (define-key logview-mode-map  (kbd "<") 'beginning-of-buffer)
                                 (define-key logview-mode-map (kbd ">") 'end-of-buffer)
                                 (define-key logview-mode-map (kbd "C-h h") 'hydra-highlighting/body)))
 
-;; TODO always highlight lines containing ERROR
+(define-derived-mode ndf-logview-mode view-mode
+  "ndf-logview"
+  "Mode for viewing ndf log files.")
 
+(add-hook 'ndf-logview-mode-hook '(lambda ()
+                                    (font-lock-add-keywords
+                                     nil '(("\\(\\[Thread-[0-9][0-9]\\] (UTC)\\)" 1 font-lock-warning-face t)))
+                                    nil '(("\\(INFO\\)" 1 font-lock-warning-face t))))
+
+(define-derived-mode genesys-logview-mode view-mode
+  "gvp-logview"
+  "Mode for viewing genesys voice platform log files.")
+
+(add-hook 'genesys-logview-mode-hook '(lambda ()
+                                        (font-lock-add-keywords
+                                         nil '(("\\(WARN\\)" 1 font-lock-warning-face t)))
+                                        (font-lock-add-keywords
+                                         nil '(("\\(Build information\\)" 1 font-lock-warning-face t)))
+                                        (font-lock-add-keywords
+                                         nil '(("\\(Command line\\)" 1 font-lock-warning-face t)))
+                                        (font-lock-add-keywords
+                                         nil '(("\\(Host name\\)" 1 font-lock-warning-face t)))
+                                        (font-lock-add-keywords
+                                         nil '(("\\(DST\\)" 1 font-lock-warning-face t)))
+                                        (font-lock-add-keywords
+                                         nil '(("\\(Time zone\\)" 1 font-lock-warning-face t)))
+                                        (font-lock-add-keywords
+                                         nil '(("\\(UTC time\\)" 1 font-lock-warning-face t)))
+                                        (font-lock-add-keywords
+                                         nil '(("\\(Local time\\)" 1 font-lock-warning-face t)))
+                                        (font-lock-add-keywords
+                                         nil '(("\\(Start time (UTC)\\)" 1 font-lock-warning-face t)))
+                                        (font-lock-add-keywords
+                                         nil '(("\\(Running time\\)" 1 font-lock-warning-face t)))
+                                        (font-lock-add-keywords
+                                         nil '(("\\(Host info\\)" 1 font-lock-warning-face t)))
+                                        (font-lock-add-keywords
+                                         nil '(("\\(File\\)" 1 font-lock-warning-face t)))
+                                        (font-lock-add-keywords
+                                         nil '(("\\(Application name\\)" 1 font-lock-warning-face t)))
+                                        (font-lock-add-keywords
+                                         nil '(("\\(Application type\\)" 1 font-lock-warning-face t)))))
+
+
+(add-to-list 'auto-mode-alist (cons "\\.log\\'" 'logview-mode))
+(add-to-list 'auto-mode-alist (cons "\\-LOG\\'" 'logview-mode))
+
+(add-to-list 'auto-mode-alist (cons "^MCP_standard.*.log\\'" 'genesys-logview-mode))
+(add-to-list 'auto-mode-alist (cons "^ndf_.*.log\\'" 'ndf-logview-mode))
 ;; ]
 
 ;; [ macros
@@ -2602,7 +2694,7 @@ jso_n_-mode    _x_ml-mode
   (let ((width (window-body-width))
         (words (split-string qod))
         (word nil)
-        (spacer "   ")
+        (spacer "    ")
         (line-counter 0))
     (insert spacer)
     (insert "\"")
@@ -2662,25 +2754,81 @@ jso_n_-mode    _x_ml-mode
   "Extract author from PARSED-RESPONSE."
   (cdr (nth 2 (aref (cdr (car (cdr (nth 1 parsed-response)))) 0))))
 
+(defun dashboard-insert-list (some-list pSpacer)
+  "Insert SOME-LIST in a screen-friendly way."
+  (when (not (listp some-list))
+    (error "Parameter SOME-LIST should be a list, but is not!"))
+  (dolist (elem some-list)
+    (let ((spacer pSpacer))
+      (when (not (stringp elem))
+        (error "List element shoudl be a string, but is not!"))
+      (insert spacer elem)
+      (newline))))
+
+(defun dashboard-system-info-insert-load-path ()
+  (dashboard-insert-list load-path "     - "))
+
 (defun dashboard-system-info (numitems)
-  (dashboard-insert-heading "Emacs system information: ")
-  (insert "Emacs version : " emacs-version)
-  (newline-and-indent)
-  (insert "User init file: " user-init-file)
-  (newline-and-indent))
+  (dashboard-insert-heading "Emacs system information:")
+  (newline)
+  (insert "    Emacs version : " emacs-version)
+  (newline)
+  (insert "    User init file: " user-init-file)
+  (newline)
+  (insert "    User init file: " user-init-file)
+  (newline)
+  (dashboard-system-info-insert-load-path))
+
+(defun dashboard-get-nice-recentf-list ()
+  "docstring"
+  (mapcar '(lambda (entry) (format "%s (%s/%s)" (car entry) (cdr entry) (car entry)))
+          (-zip
+           (mapcar 'file-name-nondirectory recentf-list) 
+           (mapcar 'file-name-directory recentf-list))))
+
+(defun dashboard-insert-recentx-list (list-display-name list)
+  "Render LIST-DISPLAY-NAME title and items of LIST."
+  (when (car list)
+    (dashboard-insert-heading list-display-name)
+    (mapc (lambda (el)
+            (insert "\n    ")
+            (widget-create 'push-button
+                           :action `(lambda (&rest ignore) (find-file-existing ,(format "%s/%s" (cdr el) (car el))))
+                           :mouse-face 'highlight
+                           :follow-link "\C-m"
+                           :button-prefix ""
+                           :button-suffix ""
+                           :format "%[%t%]"
+                           (format "%-32s - %s" (car el) (cdr el))))
+          list)))
+
+
+(defun dashboard-insert-recentx (list-size)
+  "Pimped version of dashboard-insert-recents. Add the list of LIST-SIZE items from recently edited files."
+  (recentf-mode)
+  (when (dashboard-insert-recentx-list
+	 "Recent Files:"
+	 (dashboard-subseq (-zip
+                            (mapcar 'file-name-nondirectory recentf-list) 
+                            (mapcar 'file-name-directory recentf-list))
+                           0 list-size))
+    (dashboard-insert-shortcut "r" "Recent Files:")))
 
 (use-package dashboard
   :config
   
   (add-to-list 'dashboard-item-generators '(qod . dashboard-insert-qod))
+  (add-to-list 'dashboard-item-generators '(recentx . dashboard-insert-recentx))
   (add-to-list 'dashboard-item-generators '(sysinfo . dashboard-system-info))
+
   (setq dashboard-items '((qod . nil)
-;;                          (agenda . 10)
-                          (sysinfo . 1)                          
-;;                          (projects . 10)
-                          (recents . 15)
+                          (registers . 5)
+                          ;;                          (agenda . 10)
+                          ;;                          (projects . 10)
+                          (recentx . 15)
                           (bookmarks . 10)
-                          (registers . 5)))
+
+                          (sysinfo . 1)))
   (dashboard-setup-startup-hook))
 
 ;; [ json

@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: Sprint
+# key: Sprint
+# --
+** Sprint $0
+*** Sprint Planning 1
+*** Sprint Planning 2
+*** Sprint Review    
+*** Sprint Retrospektive    

@@ -32,9 +32,13 @@
 ;; 
 ;;; Code:
 
-(defvar-local java-classpath nil "Java classpath. This will be set by .dir-locals.el (hopefully).")
-(defvar-local java-project-root nil "Buffer local location of current project root.")
-(defvar-local java-classes-cache nil "Cache for the current classpath classes.")
+(defun mpx-java-mode-set-buffer-locals ()
+  "Called from java-mode-hook sets buffer local variables for java-mode."
+  (defvar-local java-classpath nil "Java classpath. This will be set by .dir-locals.el (hopefully).")
+  (defvar-local java-local-project-root nil "Buffer local location of current project root.")
+  (defvar-local java-classes-cache nil "Cache for the current classpath classes."))
+
+(add-hook 'java-mode-hook 'mpx-java-mode-set-buffer-locals)
 
 (defun java-read-classes-from-classpath ( classpath-list )
   "Iterate over classpath and gather classes from jar files.
@@ -106,7 +110,7 @@ With prefix argument insert classname with package name. Otherwise omit package 
 (defun java-mode-process-dir-locals ()
   (when (derived-mode-p 'java-mode)
     (progn
-      (when (stringp java-project-root)
+      (when (stringp java-local-project-root)
         ;; sell the stock from emacs-maven-plugin:
         (progn
           (setq-local java-classes-cache (java-read-classes-from-classpath java-classpath) ))

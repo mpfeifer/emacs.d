@@ -1,8 +1,15 @@
 # -*- mode: snippet -*-
 # name: javadoc
-# key: doc
+# key: /**
 # --
 /**
  * $0
  *
+ *
+ * @param
+ * @param
+ *
+ * @return
+ *
  */
+
