@@ -1102,6 +1102,7 @@ _r_eload snippets                 _i_nsert snippet
 (use-package treemacs
   :defer t
   :config
+  :disabled
   (progn
     (setq treemacs-collapse-dirs              (if (executable-find "python") 3 0)
           treemacs-deferred-git-apply-delay   0.5
@@ -2830,6 +2831,12 @@ jso_n_-mode    _x_ml-mode
 
                           (sysinfo . 1)))
   (dashboard-setup-startup-hook))
+
+;; [ profiler report mode ]
+
+(add-hook 'profiler-report-mode-hook 'hl-line-mode)
+
+;; ]
 
 ;; [ json
 
