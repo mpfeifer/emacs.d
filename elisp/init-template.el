@@ -1,7 +1,6 @@
-
-;;; init-template.el  --- 
+;;; init-ac-mpfeiffer01.el --- 
 ;; 
-;; Description: System specific settings for this host
+;; Description: System specific settings for host 
 ;; Author: Matthias
 ;; Keywords: emacs, init.el
 ;; Dependencies: none
@@ -10,23 +9,25 @@
 ;; 
 ;;; Code:
 
-
+;; see also customx.el
 
 (setq python-interpreter "")
-(setq tomcat-home (getenv "CATALINA_HOME"))
-(setq mpx-jdk "C:/Java/jdk1.8.0_152")
-(setq diary-file nil)
+(setq tomcat-home (getenv ""))
 (setq tomcat-start-script (format "%s/bin/startup.bat" tomcat-home))
 (setq tomcat-stop-script (format "%s/bin/shutdown.bat" tomcat-home))
+(setq jdk-location ""
+(setq diary-file ")
 (setq mvn-home (getenv "M2_HOME"))
 (setq java-home (getenv "JAVA_HOME"))
+(setq host-local-javadoc-roots nil)
+                                "c
+(defconst pdf-reader "")
 
 (setq mpx-host-local-org-capture-templates
       '( ;; See https://orgmode.org/manual/Template-elements.html#Template-elements
-         ) )
+        ("i" "Put item in the global inbox" entry (file+headline "~/org/organizer" "INBOX") "** %?\n" :clock-in t :clock-resume t) ) )
 
-;; TOD: Add hostname
-(provide 'init-ac-)
+(require 'n)
+(provide 'init-fill-in-hostname-here)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; ac-mpfeiffer01.el ends here
