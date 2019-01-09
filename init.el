@@ -36,64 +36,24 @@
 ;; [ packages
 
 (require 'package)
-(require 'subr-x)
 
-(defconst fn-package-guard "~/.emacs.d/.package-guard")
-(defconst package-guard-renewal 604800)
-
-(setq package-archives '(("melpa" . "http://melpa.org/packages/"))
-      package-enable-at-startup nil
+(setq package-enable-at-startup nil
       package-user-dir "~/.emacs.d/packages/")
 
-;; (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/") t)
+(let* ((no-ssl (and nil
+                    (memq system-type '(windows-nt ms-dos))
+                    (not (gnutls-available-p))))
+       (proto (if no-ssl "http" "https")))
+  ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
+  (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
+  ;;(add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t)
+  (when (< emacs-major-version 24)
+    ;; For important compatibility libraries like cl-lib
+    (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
 
 (package-initialize)
 
-;; periodically refresh package contents
-
-(defun timeval-to-seconds (tv)
-  "Calculate SEC-HIGH * 2^16 + SEC-LOW for value contained in TV."
-  (let* ((sec-high (nth 0 tv))
-         (sec-low (nth 1 tv)))
-    (+ sec-low (* sec-high (expt 2 16)))))
-
-(defun package-refresh-necessary-p ()
-  (if (file-exists-p fn-package-guard)
-      (progn
-        (let* ((mtime (timeval-to-seconds
-                       (nth 5
-                            (file-attributes fn-package-guard))))
-               (ctime (timeval-to-seconds
-                       (current-time))))
-          (< (+ mtime package-guard-renewal) ctime )))
-    t))
-
-(defun update-package-guard ()
-  "Write current time to pacakge-guard file"
-  (with-temp-buffer
-    (insert (prin1-to-string (current-time)))
-    (write-file fn-package-guard)))
-
 (global-set-key (kbd "<f7>") #'package-list-packages)
-
-;; see if this emacs is starting for the first time (with this init.el)
-;; and if pacakge refresh is necessary (currently once in a week)
-
-(if (not (file-exists-p fn-package-guard))
-    (let* ((emacs-dir( expand-file-name user-emacs-directory))
-           (desktop-dir (concat emacs-dir "/desktop"))
-           (user-information "Will perform first time initialisation! Press enter."))
-      (read-from-minibuffer user-information)
-      (when (not (file-exists-p desktop-dir))
-        (make-directory desktop-dir))
-      (update-package-guard)
-      (package-refresh-contents)
-      (package-install 'use-package))
-  (when (package-refresh-necessary-p)
-    (let ((user-information "Will refresh package contents! Press enter."))
-      (read-from-minibuffer user-information)
-      (package-refresh-contents t)
-      (update-package-guard))))
 
 (require 'use-package)
 
@@ -104,6 +64,21 @@
 (global-set-key (kbd "<f4>") 'package-list-packages-no-fetch)
 
 (add-hook 'package-menu-mode-hook 'hl-line-mode)
+
+(defun mpx-get-hostname ()
+  "Get hostname in a windows/linux/cygwin agnostic way."
+  (interactive)
+  (getenv (if (eq system-type 'windows-nt)
+              "COMPUTERNAME"
+            (if (or
+                 (eq system-type 'gnu/linux)
+                 (eq system-type 'cygwin))
+                "HOSTNAME"
+              "default"))))
+
+(defconst prodigy-services-loader
+  (format "prodigy-services-%s" (downcase 
+                                 (mpx-get-hostname))))
 
 ;; ]
 
@@ -334,6 +309,14 @@ _p_rint        _m_ clock mru
 (global-set-key (kbd "C-c h") 'hydra-global-org/body)
 ;; ]
 
+;; [ promt
+
+;; some supportiative functions for project handling
+
+(require 'promt)
+
+;; ]
+
 ;; [ expand region
 
 ;; Very handy package. Sets er/try-expand-list on a per mode basis to
@@ -345,7 +328,9 @@ _p_rint        _m_ clock mru
 (use-package expand-region
   :config
   (global-set-key (kbd "C-v") 'er/expand-region)
-  (global-set-key (kbd "C-S-v") 'er/contract-region) )
+  (global-set-key (kbd "C-S-v") 'er/contract-region) 
+  (eval-after-load 'ng2-mode '(require 'ng2-mode-expansions)))
+
 
 ;; ]
 
@@ -444,47 +429,40 @@ lines containing _E_rror   lines containing E_r_ror
 ;; how to set fonts:
 ;; https://www.emacswiki.org/emacs/SetFonts
 
-(defun mpx-fix-fonts ()
+(defun mpx-set-fonts ()
   (interactive)
   "Set prefered fonts."
-  (progn
-    (dolist (face '(org-level-1
-                    org-level-2
-                    org-level-3
-                    org-level-4
-                    org-level-5))
-      (set-face-attribute face nil
-                          :family "Hack"
-                          :height 80
-                          :weight 'normal
-                          :width 'normal))
-
-    (when (eq system-type 'windows-nt)
-      (progn
-        (set-face-attribute 'default nil
+  (when (eq system-type 'windows-nt)
+    (progn
+      (dolist (face '(org-level-1
+                      org-level-2
+                      org-level-3
+                      org-level-4
+                      org-level-5))
+        (set-face-attribute face nil
                             :family "Hack"
                             :height 80
                             :weight 'normal
-                            :width 'normal)))
-
-    (when (eq system-type 'windows-nt)
+                            :width 'normal))
+      (set-face-attribute 'default nil
+                          :family "Hack"
+                          :height 80
+                          :weight 'normal
+                          :width 'normal)
       (set-face-attribute 'mode-line nil
                           :family "Hack"
                           :height 80
                           :weight 'normal
                           :width 'normal))))
 
-(run-with-timer 15 nil 'mpx-fix-fonts)
+(run-with-timer 15 nil 'mpx-set-fonts)
 
 (use-package stripe-buffer)
 
 (use-package theme-changer
   :config
-  (change-theme '(solarized-light) '(solarized-dark))
-  (require 'hl-line)
-  (set-face-attribute 'hl-line nil
-                      :background "light blue"
-                      :foreground "black"))
+  (change-theme '(material-light) '(material))
+  (require 'hl-line))
 
 (defun add-standard-display-buffer-entry (name)
   "Add an entry to display-buffer-alist for buffers called NAME."
@@ -509,8 +487,8 @@ lines containing _E_rror   lines containing E_r_ror
     (scroll-bar-mode -1)))
 
 (use-package volatile-highlights
-  :disabled
   :init
+  :disabled
   (add-hook 'emacs-lisp-mode-hook 'volatile-highlights-mode)
   (add-hook 'js2-mode-hook 'volatile-highlights-mode)
   (add-hook 'cperl-mode-hook 'volatile-highlights-mode)
@@ -745,6 +723,7 @@ restore former values for debug-on-error and debug-ignored-errors."
 (defun emacs-lisp-mode-setup ()
   (when (string= (buffer-name) "init.el")
     (dotemacs-mode-hook))
+  (hl-line-mode)
   (local-set-key (kbd "C-;") 'comment-dwim)
   (local-set-key (kbd "C-c C-c") 'byte-compile-current-buffer)
   (electric-pair-mode) )
@@ -776,7 +755,7 @@ restore former values for debug-on-error and debug-ignored-errors."
 ;; [ the kill ring
 
 
-(defun elx-browse-kill-ring (prefix-arg)
+(defun mpx-browse-kill-ring (prefix-arg)
   (interactive "P")
   (let ((tmp-kill-ring nil))
     (if prefix-arg
@@ -784,7 +763,7 @@ restore former values for debug-on-error and debug-ignored-errors."
       (setq tmp-kill-ring (mapcar 'string-trim kill-ring))
       (insert (completing-read "Pick an element: " (seq-filter 'length tmp-kill-ring))))))
 
-(global-set-key (kbd "C-M-y") 'elx-browse-kill-ring)
+(global-set-key (kbd "C-M-y") 'mpx-browse-kill-ring)
 
 ;; ]
 
@@ -875,23 +854,6 @@ _r_eload snippets                 _i_nsert snippet
 
 ;; ]
 
-;; [ info browser
-
-;; To read plain info file from the filesystem: "C-u C-h i"
-
-;; TODO: There is a python info page lying around in this directcory,
-;; but info does not find it
-
-(add-to-list 'Info-default-directory-list "~/.emacs.d/info")
-
-(defun Info-mode-setup ()
-  "Personal info mode hook."
-  (define-key Info-mode-map (kbd "C-s") 'isearch-forward-symbol-at-point) )
-
-(add-hook 'Info-mode-hook 'Info-mode-setup)
-
-;; ]
-
 ;; [ session management
 
 ;; save and restore open buffers
@@ -957,6 +919,8 @@ _r_eload snippets                 _i_nsert snippet
 
 (add-to-list 'auto-mode-alist '("organizer\\'" . org-mode))
 
+(add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
+
 (defun org-mode-setup ()
 
   ;;  "Stop the org-level headers from increasing in height relative to the other text."
@@ -970,7 +934,7 @@ _r_eload snippets                 _i_nsert snippet
         org-agenda-comact-blocks t
         org-agenda-show-all-dates t
         org-agenda-include-diary t
-        org-babel-python-command "python"
+        org-babel-python-command python-interpreter
         org-clock-into-drawer t
         org-clock-persist 'history
         org-clock-history-length 23
@@ -1037,6 +1001,7 @@ _r_eload snippets                 _i_nsert snippet
 
 (use-package prodigy
   :config
+
   (defun prodigy-setup-frame ()
     (interactive)
     (let ((frame-parameters '((name . "Prodigy")
@@ -1046,6 +1011,7 @@ _r_eload snippets                 _i_nsert snippet
       (select-frame (make-frame frame-parameters))
       (prodigy)
       (delete-other-windows)))
+
   (defun prodigy-next-line ()
     (interactive)
     (forward-line)
@@ -1053,6 +1019,7 @@ _r_eload snippets                 _i_nsert snippet
       (progn
         (prodigy-display-process)
         (select-window (get-buffer-window "*prodigy*")))))
+
   (defun prodigy-previous-line ()
     (interactive)
     (forward-line -1)
@@ -1060,12 +1027,15 @@ _r_eload snippets                 _i_nsert snippet
       (progn
         (prodigy-display-process)
         (select-window (get-buffer-window "*prodigy*")))))
+
   (defun prodigy-mode-setup ()
     (local-set-key (kbd "n") 'prodigy-next-line)
     (local-set-key (kbd "p") 'prodigy-previous-line))
+
   (add-hook 'prodigy-mode-hook 'prodigy-mode-setup)
   (global-set-key (kbd "<f5>") #'prodigy-setup-frame)
   (require (string-to-symbol prodigy-services-loader)))
+
 ;; ]
 
 ;; [
@@ -1075,6 +1045,8 @@ _r_eload snippets                 _i_nsert snippet
 ;; ]
 
 ;; [ speedbar treemacs
+
+(use-package neotree)
 
 (use-package sr-speedbar
   :bind ("<f6>" . sr-speedbar-toggle)
@@ -1099,81 +1071,13 @@ _r_eload snippets                 _i_nsert snippet
   (set-text-properties 0 (length text) nil text)
   (message (string-trim text)))
 
-(use-package treemacs
-  :defer t
-  :config
-  :disabled
-  (progn
-    (setq treemacs-collapse-dirs              (if (executable-find "python") 3 0)
-          treemacs-deferred-git-apply-delay   0.5
-          treemacs-file-event-delay           5000
-          treemacs-follow-after-init          t
-          treemacs-follow-recenter-distance   0.1
-          treemacs-goto-tag-strategy          'refetch-index
-          treemacs-indentation                2
-          treemacs-indentation-string         " "
-          treemacs-is-never-other-window      nil
-          treemacs-no-png-images              t
-          treemacs-project-follow-cleanup     nil
-          treemacs-persist-file               (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
-          treemacs-recenter-after-file-follow nil
-          treemacs-recenter-after-tag-follow  nil
-          treemacs-show-hidden-files          t
-          treemacs-silent-filewatch           nil
-          treemacs-silent-refresh             nil
-          treemacs-sorting                    'alphabetic-desc
-          treemacs-space-between-root-nodes   t
-          treemacs-tag-follow-cleanup         t
-          treemacs-tag-follow-delay           1.5
-          treemacs-width                      35)
-
-    (define-key treemacs-mode-map (kbd "C-n") #'treemacs-next-line)
-    (define-key treemacs-mode-map (kbd "C-p") #'treemacs-previous-line)
-
-    ;; The default width and height of the icons is 22 pixels. If you are
-    ;; using a Hi-DPI display, uncomment this to double the icon size.
-    ;;(treemacs-resize-icons 44)
-
-    (define-key treemacs-mode-map (kbd "C-t r")     #'treemacs-rename-project)
-    (define-key treemacs-mode-map (kbd "C-t a")     #'treemacs-add-project-to-workspace)
-    (define-key treemacs-mode-map (kbd "C-t d")     #'treemacs-remove-project-from-workspace)
-    (define-key treemacs-mode-map (kbd "C-t c c")   #'treemacs-collapse-project)
-    (define-key treemacs-mode-map (kbd "C-t c o")   #'treemacs-collapse-other-projects)
-    (define-key treemacs-mode-map (kbd "C-t c a")   #'treemacs-collapse-all-projects)
-    (define-key treemacs-mode-map (kbd "C-f") 'find-file-in-project))
-
-  (treemacs-follow-mode nil)
-  (treemacs-filewatch-mode t)
-  (treemacs-fringe-indicator-mode t)
-
-  (pcase (cons (not (null (executable-find "git")))
-               (not (null (executable-find "python3"))))
-    (`(t . t)
-     (treemacs-git-mode 'extended))
-    (`(t . _)
-     (treemacs-git-mode 'simple)))
-  ;; have some advices for very long file-names
-  
-  (defadvice treemacs-next-line (after show-line-in-echo-area-next activate) 
-    (message-no-properties (thing-at-point 'line)))
-
-  (defadvice treemacs-previous-line (after show-line-in-echo-area-prev activate) 
-    (message-no-properties (thing-at-point 'line)))
-
-  :bind
-  (:map global-map
-        ("M-0"       . treemacs-select-window)
-        ("C-x t 1"   . treemacs-delete-other-windows)
-        ("C-x t t"   . treemacs)
-        ("C-x t B"   . treemacs-bookmark)
-        ("C-x t C-t" . treemacs-find-file)
-        ("C-x t M-t" . treemacs-find-tag)))
-
 ;; ]
 
 ;; [ xref and tags
 
 ;; TODO Change window handling for xref popups
+
+
 
 ;;(add-standard-display-buffer-entry "*xref*")
 
@@ -1219,47 +1123,6 @@ _r_eload snippets                 _i_nsert snippet
   :config
   (require 'hungry-delete)
   (global-hungry-delete-mode))
-
-;; ]
-
-;; [ ansi term mode
-
-;; C-c C-j  to put terminal to line mode
-;; C-c C-k  to put terminal in char mode
-
-(use-package term
-  :config
-  (add-standard-display-buffer-entry "*terminal*")
-  (defun open-terminal (prefix-arg)
-    "PREFIX-ARG -> open terminal in new frame
-current buffer is terminal buffer -> close buffer
-terminal is only buffer in frame -> close frame
-current frame has one window -> split window + open terminal
-current frame has more windows -> open terminal in new frame"
-    (interactive "P")
-    (when (and (not (get-buffer "*terminal*"))
-               (>= (length (window-list)) 2))
-      (setq prefix-arg t))
-    (if prefix-arg
-        (progn 
-          (select-frame (make-frame))
-          (let ((term-buffer (get-buffer "*terminal*")))
-            (if term-buffer
-                (switch-to-buffer "*terminal*")
-              (ansi-term "/bin/bash"))))
-      (if (string= "*terminal*" (buffer-name))
-          (if (eq 1 (length (window-list)))
-              (delete-frame)
-            (delete-window))
-        (progn
-          (if (get-buffer "*terminal*")
-              (select-window (display-buffer "*terminal*"))
-            (ansi-term "/bin/bash"))))))
-
-  (global-set-key (kbd "C-x 0") #'delete-window)
-  (global-set-key (kbd "C-x k") #'kill-buffer)
-  (global-set-key (kbd "<f7>") #'open-terminal)
-  (define-key term-raw-map (kbd "M-o") 'other-buffer))
 
 ;; ]
 
@@ -1386,9 +1249,17 @@ and display corresponding buffer in new frame."
         (switch-to-buffer buf-1) )
     (message "This function only works when the current frame holds two windows.") ) )
 
+(defun mpx-delete-frame ()
+  "Delete frame. If frame is only frame show friendly message."
+  (interactive)
+  (condition-case nil
+      (delete-frame)
+    (error
+     (message "This frame is the last remaining frame. It cannot be deleted."))))
+
 (global-set-key (kbd "<f1>") #'detach-window)
 (global-set-key (kbd "<f2>") #'make-frame)
-(global-set-key (kbd "<f3>") #'delete-frame)
+(global-set-key (kbd "<f3>") #'mpx-delete-frame)
 (global-set-key (kbd "C-x 2") #'split-window-below)
 (global-set-key (kbd "C-x 3") #'split-window-right)
 
@@ -1419,15 +1290,28 @@ and display corresponding buffer in new frame."
 
 ;; [ whitespace mode
 
-(global-set-key (kbd "C-x TAB") #'whitespace-mode)
+(global-set-key (kbd "C-c TAB") #'whitespace-mode)
 
 ;; ]
 
-;; [ man woman help mode
+;; [ info browser
 
-(setq 
- woman-use-own-frame t
- woman-use-topic-at-point-default t)
+;; To read plain info file from the filesystem: "C-u C-h i"
+
+;; TODO: There is a python info page lying around in this directcory,
+;; but info does not find it
+
+(add-to-list 'Info-default-directory-list "~/.emacs.d/info")
+
+(defun Info-mode-setup ()
+  "Personal info mode hook."
+  (define-key Info-mode-map (kbd "C-s") 'isearch-forward-symbol-at-point) )
+
+(add-hook 'Info-mode-hook 'Info-mode-setup)
+
+;; ]
+
+;; [ man info help mode
 
 (defsubst scroll-up-one-line ()
   (interactive)
@@ -1443,15 +1327,12 @@ and display corresponding buffer in new frame."
 
 (add-hook 'Man-mode-hook 'man-mode-setup)
 
-(defun my-help-mode-setup ()
-  (local-set-key (kbd "C-q") 'kill-buffer-and-window))
-
-(add-hook 'help-mode-hook 'my-help-mode-setup)
-
 (require 'man)
 
-(set-face-attribute 'Man-overstrike nil :inherit font-lock-type-face :bold t)
-(set-face-attribute 'Man-underline nil :inherit font-lock-keyword-face :underline t)
+(defun mpx-help-mode-setup ()
+  (local-set-key (kbd "S-q") 'kill-buffer-and-window))
+
+(add-hook 'help-mode-hook 'mpx-help-mode-setup)
 
 ;; ]
 
@@ -1465,7 +1346,7 @@ and display corresponding buffer in new frame."
            (insert "* ")))
         (t (newline-and-indent))))
 
-(defun mpx-java-mode-smart-newline-finish-something ()
+(defun mpx-java-mode-smart-newline-finish-javadoc ()
   (interactive)
   (cond ((eq font-lock-doc-face (face-at-point))
          (progn
@@ -1474,74 +1355,30 @@ and display corresponding buffer in new frame."
            (newline-and-indent)))
         (t (newline-and-indent))))
 
-(defun mpx-load-closest-tags-file ()
-  "Traverse the directory tree upwards and look for the next TAGS file"
-  (interactive)
-  (let ((cwd-bak default-directory)
-        (cwd-last nil)
-        (cwd default-directory)
-        (keep-going t))
-    (progn
-      (while keep-going
-        (progn
-          (message "Checking directory " cwd)
-          (if (and (file-exists-p "pom.xml")
-                   (file-exists-p "TAGS"))
-              (progn
-                (mpx-add-tags-file (concat cwd "TAGS"))
-                (setq keep-going nil))
-            (progn
-              (cd "..")
-              (setq cwd-last cwd
-                    cwd default-directory)
-              (when (string= cwd-last cwd)
-                (setq keep-going nil))))))
-      (setq default-directory cwd-bak))))
-
-(defun mpx-add-tags-file (tags-file)
-  "Conveniance helper to add TAGS-FILE to tags-table-list."
-  (interactive "fWhich TAGS file? ")
-  (add-to-list 'tags-table-list tags-file  t nil))
-
 (defun pretty-print-list (tlist)
-  "Get simple string represetnation for TLIST."
+  "Get simple string representation for TLIST."
   (if (null tlist)
       "nil"
-    (let* ((tmp-string "")
-           (ttf (mapc (lambda (str)
-                        (setq tmp-string (concat tmp-string (if (> (length tmp-string) 0) ", " "") str)))
-                      tlist)))
-      tmp-string)))
-
-(defvar mpx-help-on-tags-buffer nil)
-
-(defun mpx-help-on-tags ()
-  (interactive)
-  (when (or
-         (not (buffer-live-p mpx-help-on-tags-buffer))
-         (null mpx-help-on-tags-buffer))
-    (setq mpx-help-on-tags-buffer (get-buffer-create "*tags-help*")))
-  (with-current-buffer mpx-help-on-tags-buffer
-    (let ((tmp-string ""))
-      (erase-buffer)
-      (insert (format "%-24s: %s" "tags-table-files" (pretty-print-list tags-table-files)))
-      (newline)
-      (insert (format "%-24s: %s" "tags-file-name" (if (null tags-file-name) "nil" tags-file-name)))
-      (newline)
-      (insert (format "%-24s: %s" "tags-table-list" (pretty-print-list tags-table-list)))
-      (newline)))
-  (display-buffer-pop-up-window mpx-help-on-tags-buffer '((inhibit-switch-frame t))))
+    (reduce '(lambda (a b) (format "%s, %s" a b)) tlist)))
 
 (use-package jtags
   :config
   (add-hook 'java-mode-hook 'jtags-mode))
 
-;; Make sure there is a TAGS file in jdk-location/src
-(setq tags-table-list (list (concat jdk-location "/src")))
+;; Add tags file for jdk if it exists
 
-(setq tags-revert-without-query 't)
+
+(when (and
+       (not (null jdk-location))
+       (let ((jdk-tags-file (concat jdk-location "/src/TAGS")))
+         (message "Loading jdk TAGS file from " jdk-tags-file)
+         (file-exists-p jdk-tags-file)
+         (mpx-add-tags-file jdk-tags-file))))
+
+;;(setq tags-revert-without-query 't)
 
 (use-package javadoc-lookup
+  :disabled
   :config
   (javadoc-add-roots (concat jdk-location "/docs"))
 
@@ -1550,94 +1387,18 @@ and display corresponding buffer in new frame."
 
   (setq browser-url-browser-function 'browse-url-chromium))
 
-(defun guess-package-name-for-current-buffer ()
-  "See if this is a maven project with standard directory layout.
-If so calculate pacakge name from current directory name."
-  (let* ((dirname (file-name-directory (buffer-file-name)))
-         (indicator "/src/main/java/")
-         (package-name "undefined")
-         (matched-string nil))
-    (if (string-match (concat ".*" indicator "\\(.*\\)") dirname)
-        (progn
-          (setq matched-string (match-string 1 dirname))
-          (unless matched-string ;; if indicator is not found just take
-            (setq matched-string dirname)) ;; whole path for the package-name
-          (setq package-name matched-string)
-          (when (string-suffix-p "/" package-name)
-            (setq package-name (substring package-name 0 -1)))
-          (when (string-prefix-p "/" package-name)
-            (setq package-name (substring package-name 1)))
-          (setq package-name (replace-regexp-in-string "/" "." package-name))
-          (setq package-name (replace-regexp-in-string "\\.\\." "." package-name)))
-      (setq package-name (read-from-minibuffer "Cannot guess package name. Please provide a full package name:")))
-    package-name))
-
-(defun java-preprocessor()
-  (let ((classname (file-name-sans-extension (buffer-name)))
-        (packagename (guess-package-name-for-current-buffer)))
-    (while (search-forward "CLASSNAME" nil t)
-      (replace-match classname t))
-    (goto-char (point-min))
-    (while (search-forward "PACKAGE" nil t)
-      (replace-match packagename t) ) ) )
-
-(defun copy-template (filename target-file alist)
-  "Copy FILENAME to TARGET-FILE. Then replace keys with values looked up in ALIST"
-  (with-temp-buffer
-    (insert-file-contents (concat "~/.emacs.d/templates/" filename))
-    (dolist (key-value alist)
-      (goto-char (point-min))
-      (let ((key (symbol-to-string (car key-value)))
-            (value (car (cdr key-value)))
-            (case-fold-search nil))
-        (while (search-forward key nil t)
-          (replace-match value t))))
-    (write-file target-file nil)))
-
-(defun start-new-maven-project (group-id artifact-id version-number)
-  (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
-  (let* ((project-root (concat (expand-file-name java-project-root) artifact-id))
-         (target-pom (concat project-root "/pom.xml"))
-         (src-dir (concat project-root "/src/main/java/"))
-         (premature-exit nil)
-         (main-class (concat src-dir
-                             (replace-regexp-in-string "\\." "/" group-id)
-                             "/" 
-                             artifact-id
-                             ".java"))
-         (class-dir (file-name-directory main-class))
-         (pframe (make-frame))
-         (default-directory project-root))
-    (if (not (file-exists-p project-root))
-        (make-directory project-root t)
-      (when (yes-or-no-p "Directory already exists. Continue?" )
-        (setq premature-exit t))
-      (when (not premature-exit)
-        (progn
-          (copy-template "pom.xml" target-pom
-                         (list (list 'GROUP-ID group-id)
-                               (list 'ARTIFACT-ID artifact-id)
-                               (list 'VERSION version-number)))
-          (when (not (file-exists-p class-dir))
-            (make-directory class-dir t)))))
-    (select-frame pframe)
-    (find-file main-class)
-    (save-buffer)
-    (treemacs-dir project-root)))
-
-;; (require 'java-x) ;; not working
-
 (defun java-mode-setup()
   (local-set-key (kbd "C-h t") 'mpx-help-on-tags)
   ;; Treat Java 1.5 @-style annotations as comments.
   (setq c-comment-start-regexp "(@|/(/|[*][*]?))")
   (modify-syntax-entry ?@ "< b" java-mode-syntax-table)
+  (mpx-load-closest-tags-file)
   ;;
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
   ;; navigate camel cased words
   (subword-mode)
-  ;; Get help with javadoc (need to have this working for non-jds classes too
+  ;; Get help with javadoc (need to have this working for non-jdk classes too
   (local-set-key (kbd "C-h j") 'javadoc-lookup)
   ;; Turn on auto-complete mode and set ac-sources
   (auto-complete-mode 1)
@@ -1848,63 +1609,6 @@ T - tag prefix
 
 (add-to-list 'auto-mode-alist (cons "pom.xml" 'maven-mode))
 
-;; (when (getenv "M2_HOME")
-;;   (message
-;;    (concat
-;;     "Overwriting M2_HOME environment variable with custom value \""
-;;     (expand-file-name mvn-home) "\"")))
-
-;; (setenv "M2_HOME" (expand-file-name mvn-home))
-;; (setenv "PATH"
-;;         (concat (expand-file-name mvn-home) "/bin"
-;;                 path-separator
-;;                 (getenv "PATH")))
-
-(defconst maven (concat (expand-file-name mvn-home) "/bin/mvn"))
-
-(defun start-new-web-application (group-id artifact-id version-number)
-  ;; TODO replace maven archetype with copy-file statements
-  ;; include jquery, bootsrap and datatable by default
-  (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
-  (let* ((project-path web-application-root)
-         (live-buffer-name "*mvn*")
-         (live-buffer (get-buffer-create live-buffer-name))
-         (target-web-xml (concat project-path "/" artifact-id "/src/main/webapp/WEB-INF/web.xml"))
-         (win-edges (window-edges))
-         (this-window-x-min (nth 0 win-edges))
-         (this-window-x-max (nth 2 win-edges))
-         (ww (- this-window-x-max this-window-x-min)))
-    (progn
-      (when (not (file-exists-p project-path))
-        (make-directory project-path t))
-      (switch-to-buffer live-buffer)
-      (when (string= (buffer-name) live-buffer-name)
-        (erase-buffer))
-      (cd project-path)
-      (with-current-buffer live-buffer
-        (term-mode))
-      (call-process maven nil live-buffer-name t "archetype:generate"
-                    (format "-DgroupId=%s" group-id)
-                    (format "-DartifactId=%s" artifact-id)
-                    (format "-Dversion=%s" version-number)
-                    (format "-DarchetypeArtifactId=%s" "maven-archetype-webapp")
-                    (format "-DinteractiveMode=%s" "false") ) 
-      (when (file-exists-p artifact-id)
-        (cd artifact-id))
-      (goto-char (point-min))
-      (when (search-forward "BUILD SUCCESS")
-        (progn
-          (treemacs-dir project-path)
-          (other-window 1)
-          (split-window-below -8)
-          (find-file (concat project-path "/" artifact-id "/pom.xml"))
-          (copy-template "web-3.0.xml" target-web-xml
-                         (list 
-                          (list 'DISPLAY-NAME (format "%s %s" artifact-id version-number))))))
-      (goto-char (point-max)) ) ) )
-
-;; ]
-
 ;; ]
 
 ;; [ ivy,avy,ido&co
@@ -1913,12 +1617,13 @@ T - tag prefix
 
 (use-package ivy
   :config
+  :disabled
   (setq ivy-fixed-height-minibuffer t
         ;; add recentf and bookmarks to ivy-switch-buffer completion candidates
         ivy-use-virtual-buffers t
         ivy-count-format "[%d|%d] - ")
-  (ivy-mode)
-  )
+
+  (ivy-mode))
 
 (use-package swiper
   ;; I really don't like it, but next time I change my mind about it
@@ -1956,7 +1661,8 @@ T - tag prefix
 ;; autopep8, yapf, epc
 ;; to obtain dependencies use for example: "python -m pip install importmagic"
 
-(use-package jedi)
+(use-package jedi
+  :disabled)
 
 (defun python-mode-setup ()
   "Personal python mode hook extension."
@@ -1970,6 +1676,7 @@ T - tag prefix
   (company-mode))
 
 (use-package elpy
+  :disabled
   :config
   (elpy-enable)
   (setq python-indent-offset 4
@@ -2001,6 +1708,37 @@ T - tag prefix
   (add-to-list 'auto-mode-alist '("\\.rcm\\'" . restclient-mode))
   (add-to-list 'auto-insert-alist '(".*\\.rst?$" . [ "template.rst" ] ) ))
 
+(defvar mpx-restclient-bookmarks-file "~/.emacs.d/restclient-bookmarks.txt")
+
+(defvar mpx-restclient-bookmarks nil)
+
+(defun mpx-load-restclient-bookmarks ()
+  "Retrieve list of restclient bookmarks.
+TODO: Have more generic functions read-list-from-file, store-list-to-file
+and then do re-implement restclient-bookmarks and project files with this."
+  (let ((bookmarks-text nil))
+    (with-temp-buffer (insert-file-contents-literally mpx-restclient-bookmarks-file)
+                      (setq bookmarks-text (buffer-substring-no-properties (point-min) (point-max))))
+    (setq mpx-restclient-bookmarks (split-string bookmarks-text)))
+  mpx-restclient-bookmarks)
+
+(defun mpx-add-restclient-bookmark (url)
+  (interactive "MAdd url: ")
+  "Add ROOT-FOLDER to list of known bookmarks."
+  (message (concat "Adding " url " to list of restclient bookmarks"))
+  (let ((bookmarks (mpx-load-restclient-bookmarks)))
+    (add-to-list 'bookmarks url)
+    (mpx-restclient-save-bookmarks bookmarks)))
+
+(defun mpx-restclient-save-bookmarks (bookmarks)
+  (interactive (list mpx-restclient-bookmarks))
+  (with-temp-buffer
+    (progn
+      (dolist (bookmark bookmarks)
+        (progn
+          (insert bookmark)
+          (newline)))
+      (write-file mpx-restclient-bookmarks-file))))
 ;; ]
 
 ;; [ html editing web mode
@@ -2079,34 +1817,6 @@ T - tag prefix
     (goto-char (point-min))
     (when (re-search-forward "%CSSFILE%" nil t)
       (replace-match (replace-regexp-in-string (regexp-quote ".html") ".css" (buffer-name) 'fixedcase) 'fixedcase))))
-
-(defun start-web-project (name)
-  "Create a new web project with NAME.  Create initial html, js, css file."
-  (interactive "MProjectname? ")
-  (let ((projectroot (concat web-project-root name)))
-    (unless (file-exists-p projectroot)
-      (mkdir projectroot))
-    (select-frame (make-frame))
-    (split-window-vertically)
-    (find-file (concat projectroot "/" name ".html"))
-    (save-buffer)
-    (other-window 1)
-    (find-file (concat projectroot "/" name ".js"))
-    (save-buffer)
-    (split-window-horizontally)
-    (find-file (concat projectroot "/" name ".css"))
-    (save-buffer)
-    (other-window -1)
-    (copy-file "~/.emacs.d/templates/jquery-3.1.0.js" (concat projectroot "/"))
-    (copy-file "~/.emacs.d/templates/jquery-ui-1.12.0.css" (concat projectroot "/"))
-    (copy-file "~/.emacs.d/templates/jquery-ui-1.12.0.js" (concat projectroot "/"))
-    (copy-file "~/.emacs.d/templates/jquery.mobile-1.4.5.js" (concat projectroot "/"))
-    (copy-file "~/.emacs.d/templates/qunit-2.0.1.js" (concat projectroot "/"))
-    (copy-file "~/.emacs.d/templates/qunit-2.0.1.css" (concat projectroot "/"))
-    (switch-to-buffer (concat name ".html"))
-    (html-project-post-processing name)))
-
-(global-set-key (kbd "C-c 4") #'start-web-project)
 
 ;; ]
 
@@ -2272,7 +1982,7 @@ T - tag prefix
 
 ;; [ popup edit menu
 
-;; Open edit menu on right-click
+;; Open edit menu on right-click (TODO Have some usefull functions here)
 
 (use-package popup-edit-menu
   :config
@@ -2403,6 +2113,7 @@ T - tag prefix
 ;;(use-package company-statistics)
 
 (use-package company
+  :disabled
   :config
   ;; see company-backends for company backends
   ;; (make-variable-buffer-local 'company-backends)
@@ -2414,7 +2125,8 @@ T - tag prefix
 
 (use-package find-file-in-project
   :config
-  (add-to-list 'ffip-project-file "pom.xml"))
+  (add-to-list 'ffip-project-file "pom.xml")
+  (add-to-list 'ffip-project-file "angular.json"))
 
 ;; ]
 
@@ -2518,6 +2230,7 @@ T - tag prefix
 (define-derived-mode logview-mode view-mode
   "logview"
   "Mode for viewing log files.")
+
 (add-hook 'logview-mode-hook '(lambda ()
                                 (stripe-buffer-mode)
                                 (hl-line-mode)
@@ -2537,9 +2250,7 @@ T - tag prefix
                                      nil '(("\\(\\[Thread-[0-9][0-9]\\] (UTC)\\)" 1 font-lock-warning-face t)))
                                     nil '(("\\(INFO\\)" 1 font-lock-warning-face t))))
 
-(define-derived-mode genesys-logview-mode view-mode
-  "gvp-logview"
-  "Mode for viewing genesys voice platform log files.")
+
 
 (add-hook 'genesys-logview-mode-hook '(lambda ()
                                         (font-lock-add-keywords
@@ -2766,6 +2477,29 @@ jso_n_-mode    _x_ml-mode
       (insert spacer elem)
       (newline))))
 
+(defun dashboard-insert-mpx-projects (numitems)
+  (dashboard-insert-known-projects-list "Known projects:")
+  (newline))
+
+(defun dashboard-insert-known-projects-list (list-display-name)
+  "Render LIST-DISPLAY-NAME title and items of LIST."
+  (let ((projects (with-temp-buffer (insert-file-contents-literally mpx-promt-projects-file)
+                                    (split-string (buffer-substring-no-properties (point-min) (point-max))))))
+    (when (car projects)
+      (dashboard-insert-heading list-display-name)
+      (mapc (lambda (el)
+              (insert "\n    ")
+              (widget-create 'push-button
+                             :action `(lambda (&rest ignore) (find-file-existing ,(format "%s" el)))
+                             :mouse-face 'highlight
+                             :follow-link "\C-m"
+                             :button-prefix ""
+                             :button-suffix ""
+                             :format "%[%t%]"
+                             (format "%s" el)))
+            projects))))
+
+
 (defun dashboard-system-info-insert-load-path ()
   (dashboard-insert-list load-path "     - "))
 
@@ -2782,7 +2516,7 @@ jso_n_-mode    _x_ml-mode
 
 (defun dashboard-get-nice-recentf-list ()
   "docstring"
-  (mapcar '(lambda (entry) (format "%s (%s/%s)" (car entry) (cdr entry) (car entry)))
+  (mapcar #'(lambda (entry) (format "%s (%s/%s)" (car entry) (cdr entry) (car entry)))
           (-zip
            (mapcar 'file-name-nondirectory recentf-list) 
            (mapcar 'file-name-directory recentf-list))))
@@ -2803,7 +2537,6 @@ jso_n_-mode    _x_ml-mode
                            (format "%-32s - %s" (car el) (cdr el))))
           list)))
 
-
 (defun dashboard-insert-recentx (list-size)
   "Pimped version of dashboard-insert-recents. Add the list of LIST-SIZE items from recently edited files."
   (recentf-mode)
@@ -2817,24 +2550,59 @@ jso_n_-mode    _x_ml-mode
 
 (use-package dashboard
   :config
-  
   (add-to-list 'dashboard-item-generators '(qod . dashboard-insert-qod))
+  (add-to-list 'dashboard-item-generators '(mpx-projects . dashboard-insert-mpx-projects))
   (add-to-list 'dashboard-item-generators '(recentx . dashboard-insert-recentx))
   (add-to-list 'dashboard-item-generators '(sysinfo . dashboard-system-info))
 
   (setq dashboard-items '((qod . nil)
-                          (registers . 5)
                           ;;                          (agenda . 10)
-                          ;;                          (projects . 10)
+                          (mpx-projects . 10)
                           (recentx . 15)
                           (bookmarks . 10)
-
                           (sysinfo . 1)))
   (dashboard-setup-startup-hook))
 
 ;; [ profiler report mode ]
 
 (add-hook 'profiler-report-mode-hook 'hl-line-mode)
+
+;; ]
+
+;; [ angular2
+
+(use-package ng2-mode)
+
+(defun mpx-open-component-in-frame (component)
+  "Assume a component consists of three files (a css file, a ts file and a html file)
+and open all of these in a new frame like this:
+
++------------------------+---------------+
+| .ts-file               |.html-file     |
+|                        |               |
+|                        |               |
+|                        |               |
+|                        |               |
+|                        +---------------+
+|                        |.css-file      |
+|                        |               |
+|                        |               |
+|                        |               |
+|                        |               |
++------------------------+---------------+
+
+TODO: find files in the file system"
+  (interactive "sWhich component? ")
+  (let* ((project-root (mpx-promt-find-project-root))
+         (css-file (format "%s/src/app/%s/%s.component.css" project-root component component))
+         (ts-file (format "%s/src/app/%s/%s.component.ts" project-root  component component))
+         (html-file (format "%s/src/app/%s/%s.component.html" project-root  component component)))
+    (select-frame (make-frame))
+    (find-file ts-file)
+    (split-window-right-select)
+    (find-file html-file)
+    (split-window-below-select)
+    (find-file css-file)))
 
 ;; ]
 
@@ -2848,6 +2616,12 @@ jso_n_-mode    _x_ml-mode
 
 (require 'openwith)
 (openwith-mode t)
+
+;; ]
+
+;; [ promt
+
+(require 'promt)
 
 ;; ]
 

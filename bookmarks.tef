@@ -1,0 +1,81 @@
+;;;; Emacs Bookmark Format Version 1 ;;;; -*- coding: utf-8-emacs -*- 
+;;; This format is meant to be slightly human-readable;
+;;; nevertheless, you probably don't want to edit it.
+;;; -*- End Of Bookmark File Format Version Stamp -*-
+(("org-capture-last-stored"
+ (filename . "~/org/organizer")
+ (front-context-string . "** EMEAPS-108 Im")
+ (rear-context-string . "      #+END_SRC\n")
+ (position . 6127)
+ (annotation . "text"))
+("TEF - Starteam 18.15"
+ (filename . "c:/Projects/Telefonica_Germany_VP/Telefonica_VP_DEV_VPNG-1815/3-Implementation/")
+ (front-context-string . "Authentication\n ")
+ (rear-context-string . "096 11-06 12:56 ")
+ (position . 333)
+ (annotation . "The projects of the 18.15 starteam branch."))
+("TEF LOGS - Dataaccess"
+ (filename . "//ac-ps-nss04/opt/app/connect/apps/vp_nuance/logs/Telefonica/TEFDataaccess/")
+ (front-context-string)
+ (rear-context-string . ".15.00-SNAPSHOT\n")
+ (position . 2340)
+ (annotation . "This folder hosts the logfiles for the dataaccess module."))
+("TEF MOCKS - root folder"
+ (filename . "//ac-ps-nss04/Servers/SoapUI/mockResponses/")
+ (front-context-string . "customer\n  -rw-r")
+ (rear-context-string . "  0 09-12 13:10 ")
+ (position . 858)
+ (annotation . "The root folder of the telfonica mock data. "))
+("TEF LOGS - Root folder"
+ (filename . "//ac-ps-nss04/opt/app/connect/apps/vp_nuance/logs/Telefonica/")
+ (front-context-string . "CareSharedHL\n  d")
+ (rear-context-string . "768 11-13 09:07 ")
+ (position . 627)
+ (annotation . ""))
+("TEF LOGS - CareSharedHL"
+ (filename . "//ac-ps-nss04/opt/app/connect/apps/vp_nuance/logs/Telefonica/CareSharedHL/")
+ (front-context-string . "  //ac-ps-nss04/")
+ (rear-context-string)
+ (position . 1)
+ (annotation . "\nThis is the folder for the logfiles of the CareSharedHL module.\nThe organizsation of the log files is like this:\n\n - one folder per version\n - dev/cit/prod files in the version folders"))
+("TEF - Starteam root folder"
+ (filename . "c:/Projects/Telefonica_Germany_VP/")
+ (front-context-string . "0-Sales\n  drwxrw")
+ (rear-context-string . "  0 2018-02-15  ")
+ (position . 292)
+ (annotation . "The root folder of the telefonica project's starteam repository."))
+("TEF ORGA"
+ (filename . "~/Desktop/Telefonica/Scrum/")
+ (front-context-string . "MCE_TEF\n  drwxrw")
+ (rear-context-string . "  0 09-03 14:16 ")
+ (position . 298)
+ (annotation . "Folder with organizational information about Sprints of\nthe Telefonica VPNG Project."))
+("settings.ini"
+ (filename . "~/opt/virtual-desktop-enhancer/settings.ini")
+ (front-context-string . "\nDesktop2=2\nDesk")
+ (rear-context-string . "Right\nDesktop1=1")
+ (position . 928))
+("TEF LOGS - DEV System"
+ (filename . "//ac-ps-nss04/Servers/ApacheTomcat_DEV_ENV/logs/")
+ (front-context-string . "apachetomcat_dev")
+ (rear-context-string . "493 2017-08-16  ")
+ (position . 307)
+ (annotation . "Logfiles from the tomcat DEV server."))
+("TELEFONICA - entry jsp"
+ (filename . "c:/Projects/Telefonica_Germany_VP/3-Implementation/telefonica_main.jsp")
+ (front-context-string . "<?xml version=\"1")
+ (rear-context-string)
+ (position . 1)
+ (annotation . "Initial responder when calling test system"))
+("TEF LOGS - Genesys"
+ (filename . "//Ac-ps-gmcp850/VP_MediaControlPlatform_850/")
+ (front-context-string . "ccilib.VP_MediaC")
+ (rear-context-string . "205 2017-08-14  ")
+ (position . 306)
+ (annotation . "Logfiles for the Genesys Voice Platform."))
+("TEF MOCKS - PostPaidCustomer"
+ (filename . "//ac-ps-nss04/Servers/SoapUI/mockResponses/customer/brands/1/subscriptions/mobile/")
+ (front-context-string . "491508808000\n  d")
+ (rear-context-string . "e 0 09-15 12:59 ")
+ (position . 292))
+)

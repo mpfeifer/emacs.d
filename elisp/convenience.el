@@ -32,27 +32,6 @@
 ;; 
 ;;; Code:
 
-(defun find-file-dispatcher (arg)
-  "If on an org-link open it.
-If point is on any file open it.
-If projectile-find-file is available use it.
-Otherweise plain find-file."
-  (interactive "P")
-  (if (and
-       (eq major-mode 'org-mode)
-       (eq (get-char-property (point) 'face) 'org-link))
-      (org-open-at-point)
-    (let ((file-at-point (thing-at-point 'filename)))
-      (if (and file-at-point
-               (file-exists-p file-at-point))
-          (progn
-            (message (format "find-file-dispatcher found file at point: %s" file-at-point))
-            (find-file file-at-point))
-        (call-interactively   (if arg
-                                  'find-file
-                                'find-file-in-project))))))
-
-(global-set-key (kbd "C-x C-f") 'find-file-dispatcher)
 
 (defun mp-open-pdf-file (arg)
   "Open pdf file ARG in external viewer. (Its not working like this...)"

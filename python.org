@@ -1,0 +1,103 @@
+* example 1
+  - Inline the result image into emacs buffer
+  - Using (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
+    to instantly 
+#+BEGIN_SRC python :results file
+import matplotlib, numpy
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+fig=plt.figure(figsize=(4,2))
+x=numpy.linspace(-15,15)
+plt.plot(numpy.sin(x)/x)
+fig.tight_layout()
+plt.savefig('c:/temp/python-matplot-fig.png')
+return 'c:/temp/python-matplot-fig.png' # return filename to org-mode
+#+END_SRC
+
+#+RESULTS:
+[[file:c:/temp/python-matplot-fig.png]]
+
+* example 2
+  - Using matplotlib show() function to inspect the results.
+  - Not that emacs is waiting for matplotlib to return
+      
+#+BEGIN_SRC python
+import matplotlib.pyplot as plt
+import numpy as np
+
+t = np.arange(0.0, 2.0, 0.01)
+s = 1 + np.sin(2*np.pi*t)
+plt.plot(t, s)
+
+plt.xlabel('time (s)')
+plt.ylabel('voltage (mV)')
+plt.title('About as simple as it gets, folks')
+plt.grid(True)
+plt.savefig("test.png")
+plt.show()
+#+END_SRC  
+
+#+RESULTS:
+: None
+
+* example 3 barplot
+#+BEGIN_SRC python
+import matplotlib.pyplot as plt
+plt.rcdefaults()
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+plt.rcdefaults()
+fig, ax = plt.subplots()
+
+# Example data
+people = ('Tom', 'Dick', 'Harry', 'Slim', 'Jim')
+y_pos = np.arange(len(people))
+performance = 3 + 10 * np.random.rand(len(people))
+error = np.random.rand(len(people))
+
+ax.barh(y_pos, performance, xerr=error, align='center',
+        color='green', ecolor='black')
+ax.set_yticks(y_pos)
+ax.set_yticklabels(people)
+ax.invert_yaxis()  # labels read top-to-bottom
+ax.set_xlabel('Performance')
+ax.set_title('How fast do you want to go today?')
+
+plt.show()
+#+END_SRC  
+
+#+RESULTS:
+: None
+
+* example 4 histogram
+#+BEGIN_SRC python :results file
+"""
+===========================
+Frontpage histogram example
+===========================
+
+This example reproduces the frontpage histogram example.
+"""
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+random_state = np.random.RandomState(19680801)
+X = random_state.randn(10000)
+
+fig, ax = plt.subplots()
+ax.hist(X, bins=25, normed=True)
+x = np.linspace(-5, 5, 1000)
+ax.plot(x, 1 / np.sqrt(2*np.pi) * np.exp(-(x**2)/2), linewidth=4)
+ax.set_xticks([])
+ax.set_yticks([])
+fig.savefig("c:/temp/histogram_frontpage.png", dpi=25)  # results in 160x120 px image
+return "c:/temp/histogram_frontpage.png"
+
+#+END_SRC  
+
+#+RESULTS:
+[[file:c:/temp/histogram_frontpage.png]]
