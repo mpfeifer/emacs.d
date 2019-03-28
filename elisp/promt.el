@@ -32,10 +32,12 @@
 ;; 
 ;;; Code:
 
+(defvar java-project-root (concat (getenv "HOME") "/src"))
+
 (defun guess-package-name-for-current-buffer ()
   "See if this is a maven project with standard directory layout.
 If so calculate pacakge name from current directory name.
-TODO: Rewrite to use prompt.el"
+TODO: Rewrite to use promt.el"
   (let* ((dirname (file-name-directory (buffer-file-name)))
          (indicator "/src/main/java/")
          (package-name "undefined")
@@ -139,7 +141,7 @@ TODO: Rewrite to use prompt.el"
       (goto-char (point-min))
       (when (search-forward "BUILD SUCCESS")
         (progn
-          (treemacs-dir project-path)
+          (neotree-dir project-path)
           (other-window 1)
           (split-window-below -8)
           (find-file (concat project-path "/" artifact-id "/pom.xml"))
@@ -181,22 +183,28 @@ TODO: Rewrite to use prompt.el"
 (defvar mpx-promt-project-root-indicator-files (list "pom.xml" "angular.json" ".git"))
 
 (defun mpx-promt-project-indicator-in-cwd-p ()
-  "Set if a project root can be found. If so store the root directory and set a buffer local variable"
+  "Set if a project root can be found. If so store the root directory and set a buffer local variable"  
   (let ((known-project-files mpx-promt-project-root-indicator-files))
-    (if (and
-         (member t (mapcar 'file-exists-p known-project-files))
-         (not (member default-directory mpx-promt-projects)))
+    (if (member t (mapcar 'file-exists-p known-project-files))
         (progn
-          (mpx-promt-add-project default-directory)
+          (when (not (member default-directory mpx-promt-projects)) ;; side effect: add directory to list of known directories
+            (mpx-promt-add-project default-directory))
           t)
       nil)))
-        
+
+(defun mpx-get-working-directory ()
+  "Calculate current working directory (obsolete)."
+  (if (and (fboundp 'dired-mode)
+           (eq major-mode 'dired-mode))
+      dired-directory
+    (file-name-directory (buffer-file-name))))
+
 (defun mpx-find-closest-project-indicator ()
   "Traverse the directory tree upwards and look for the next project indicator file."
   (interactive)
-  (let ((cwd-bak default-directory)
+  (let ((cwd default-directory)
+        (cwd-bak default-directory)
         (cwd-last nil)
-        (cwd default-directory)
         (keep-going t)
         (result nil))
     (progn
@@ -220,7 +228,7 @@ TODO: Rewrite to use prompt.el"
     (when project-root
       (progn
         (message (format "Found project root %s for directory %s" project-root default-directory))
-        (setq mpx-promt-project-root project-root)
+        (setq-local mpx-promt-project-root project-root)
         (when (not (member project-root mpx-promt-projects))
           (mpx-promt-add-project project-root))))))
 
@@ -276,6 +284,12 @@ TODO: Rewrite to use prompt.el"
     (setq mpx-promt-projects (split-string projects))
     mpx-promt-projects))
 
+(defun mpx-prompt-remove-not-existing-projects ()
+  "Load list of known projects. Check if each exists. If not remove it from list. Store remaining existing projects."
+  (let ((updated-projects (seq-filter 'file-exists-p (mpx-promt-load-current-projects))))
+    (mpx-promt-store-current-projects updated-projects)
+    updated-projects))
+
 (mpx-promt-load-current-projects)
 
 (defun mpx-promt-store-current-projects (projects)
@@ -306,14 +320,16 @@ Otherweise plain find-file."
        (eq (get-char-property (point) 'face) 'org-link))
       (org-open-at-point)
     (let ((file-at-point (thing-at-point 'filename)))
-      (if (and file-at-point
-               (file-exists-p file-at-point))
-          (progn
-            (message (format "find-file-dispatcher found file at point: %s" file-at-point))
-            (find-file file-at-point))
-        (call-interactively   (if arg
-                                  'mpx-find-file-in-project
-                                'find-file))))))
+      (if (eq major-mode 'dired-mode)
+          (call-interactively #'mpx-find-file-in-project)
+        (if (and file-at-point
+                 (file-exists-p file-at-point))
+            (progn
+              (message (format "find-file-dispatcher found file at point: %s" file-at-point))
+              (find-file file-at-point))
+          (call-interactively   (if arg
+                                    'mpx-find-file-in-project
+                                  'find-file)))))))
 
 (global-set-key (kbd "C-x C-f") 'find-file-dispatcher)
 
@@ -330,10 +346,7 @@ Otherweise plain find-file."
 
 (defun mpx-help-on-tags ()
   (interactive)
-  (when (or
-         (not (buffer-live-p mpx-help-on-tags-buffer))
-         (null mpx-help-on-tags-buffer))
-    (setq mpx-help-on-tags-buffer (get-buffer-create "*tags-help*")))
+  (setq mpx-help-on-tags-buffer (get-buffer-create "*tags-help*"))
   (with-current-buffer mpx-help-on-tags-buffer
     (let ((tmp-string ""))
       (erase-buffer)
@@ -341,7 +354,7 @@ Otherweise plain find-file."
       (newline)
       (insert (format "%-24s: %s" "tags-file-name" (if (null tags-file-name) "nil" tags-file-name)))
       (newline)
-      (insert (format "%-24s: %s" "tags-table-list" (pretty-print-list tags-table-list)))
+      (insert (format "%-24s: %s" "tags-table-list" (pretty-print-list-line-by-line tags-table-list)))
       (newline)))
   (display-buffer-pop-up-window mpx-help-on-tags-buffer '((inhibit-switch-frame t))))
 
@@ -374,7 +387,23 @@ Otherweise plain find-file."
                  "No TAGS file was found"))
       t)))
 
+(defun mpx-open-project-directory-in-dired (project-dir)
+  "Open PROJECT-DIR in new frame using dired. If called interactively
+query user for directory."
+  (interactive (list (completing-read "Which project? " mpx-promt-projects)))
+  (dired-other-frame project-dir))
+
+(defun mpx-find-component ()
+  "Do completing read on all filenames indicating component files.
+ie. Files that match the regexp .*.component.ts. Only files below
+mpx-prompt-project-root/src are considered."
+  (interactive)
+  (completing-read "Welche Komponente suchst du? "
+                   (directory-files-recursively
+                    (concat mpx-promt-project-root "/src/") ".*\\.component\\.ts" )))
+
 (provide 'promt)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; promt.el ends here

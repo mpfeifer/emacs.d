@@ -1,8 +1,10 @@
-#contributor : Matthias
-#name :new paragraph for init.el
-#key:nk
+#contributor: Matthias
+#name: new paragraph for init.el
+#key: nk
 # --
 ;; [ ${1:name}
+
+(use-package ${1})
 
 $0
 

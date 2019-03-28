@@ -15,12 +15,12 @@
 (setq tomcat-home (getenv ""))
 (setq tomcat-start-script (format "%s/bin/startup.bat" tomcat-home))
 (setq tomcat-stop-script (format "%s/bin/shutdown.bat" tomcat-home))
-(setq jdk-location ""
-(setq diary-file ")
+(setq jdk-location "")
+(setq diary-file "")
 (setq mvn-home (getenv "M2_HOME"))
 (setq java-home (getenv "JAVA_HOME"))
 (setq host-local-javadoc-roots nil)
-                                "c
+(setq prefered-font-family "")
 (defconst pdf-reader "")
 
 (setq mpx-host-local-org-capture-templates

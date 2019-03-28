@@ -16,7 +16,7 @@
 
 ;;; Code:
 
-;; [ custom set variables
+;; [ Prolog and custom set variables
 
 (setq gc-cons-threshold (* 512 1024 1024)
       gc-cons-percentage 0.6)
@@ -31,6 +31,17 @@
 
 (add-to-list 'load-path "~/.emacs.d/elisp/")
 
+;; load host specific settings
+
+(require (intern (format "init-%s" (downcase 
+                                    (getenv (if (eq system-type 'windows-nt)
+                                                "COMPUTERNAME"
+                                              (if (or
+                                                   (eq system-type 'gnu/linux)
+                                                   (eq system-type 'cygwin))
+                                                  "HOSTNAME"
+                                                "default")))))))
+
 ;; ]
 
 ;; [ packages
@@ -40,17 +51,10 @@
 (setq package-enable-at-startup nil
       package-user-dir "~/.emacs.d/packages/")
 
-(let* ((no-ssl (and nil
-                    (memq system-type '(windows-nt ms-dos))
-                    (not (gnutls-available-p))))
-       (proto (if no-ssl "http" "https")))
-  ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
-  (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
-  ;;(add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t)
-  (when (< emacs-major-version 24)
-    ;; For important compatibility libraries like cl-lib
-    (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
-
+(setq package-archives (list 
+                        '("melpa" . "http://melpa.org/packages/")
+                        '("org" . "http://orgmode.org/elpa/")))
+(setq package-check-signature nil)
 (package-initialize)
 
 (global-set-key (kbd "<f7>") #'package-list-packages)
@@ -171,8 +175,6 @@
       auto-window-vscroll nil
       fill-column 72)
 
-(toggle-debug-on-error nil)
-
 (setq stack-trace-on-error '(buffer-read-only))
 
 (defsubst notify-available-p ()
@@ -252,17 +254,6 @@
 
 (global-set-key (kbd "M-Z") #'zap-up-to-char)
 
-;; load host specific settings
-
-(require (string-to-symbol (format "init-%s" (downcase 
-                                              (getenv (if (eq system-type 'windows-nt)
-                                                          "COMPUTERNAME"
-                                                        (if (or
-                                                             (eq system-type 'gnu/linux)
-                                                             (eq system-type 'cygwin))
-                                                            "HOSTNAME"
-                                                          "default")))))))
-
 (setq fill-column 72)
 
 ;; (auto-fill-mode) TODO: put this into modes
@@ -306,7 +297,7 @@ _p_rint        _m_ clock mru
   ("m" org-mru-clock-in)
   ("l" org-capture-goto-last-stored))
 
-(global-set-key (kbd "C-c h") 'hydra-global-org/body)
+(global-set-key (kbd "C-h o") 'hydra-global-org/body)
 ;; ]
 
 ;; [ promt
@@ -314,6 +305,12 @@ _p_rint        _m_ clock mru
 ;; some supportiative functions for project handling
 
 (require 'promt)
+
+(defun mpx-open-project-directory-in-dired (project-dir)
+  (interactive (list (completing-read "Which project? " mpx-promt-projects)))
+  (dired-other-frame project-dir))
+
+(global-set-key (kbd "C-c p") #'mpx-open-project-directory-in-dired)
 
 ;; ]
 
@@ -325,10 +322,22 @@ _p_rint        _m_ clock mru
 ;; operats on. The next larger marked part is then set to the region.
 ;; To customize add defun to er/try-expand-list in any mode hook.
 
+(defun mpx-mark-argument-in-argument-list ()
+  "Mark parmeter in current parameter list."
+  (interactive)
+  (let ((forward-regexp "[[:alnum:]: ,]+).*")
+        (backward-regexp ".*([[:alnum:]: ,]+"))
+    (when (and (looking-at forward-regexp)
+               (er/looking-back-on-line backward-regexp))
+      (re-search-forward "[,)]")
+      (set-mark (point))
+      (re-search-backward "[(,]")
+      (exchange-point-and-mark))))
+
 (use-package expand-region
   :config
   (global-set-key (kbd "C-v") 'er/expand-region)
-  (global-set-key (kbd "C-S-v") 'er/contract-region) 
+  (global-set-key (kbd "C-M-v") 'er/contract-region) 
   (eval-after-load 'ng2-mode '(require 'ng2-mode-expansions)))
 
 
@@ -366,16 +375,15 @@ _p_rint        _m_ clock mru
 
 ;; M-s h f or hi-lock-find-patterns
 
-(defhydra hydra-highlighting (:color blue
-                                     :hint nil)
+(defhydra highlighting-hydra (:color blue :hint nil)
   "
 Highlight                  Unhighlight
 ------------------------------------------------
-
-_l_ines matching regexp    regular _e_xpression
-_p_phrase                 
+_l_ines matching regexp      regular _e_xpression
+_p_hrase                 
 _r_egular expression
-lines containing _E_rror   lines containing E_r_ror
+lines containing _E_rror     lines containing E_r_ror
+
 "
   ("l" highlight-lines-matching-regexp)
   ("p" highlight-phrase)
@@ -387,6 +395,8 @@ lines containing _E_rror   lines containing E_r_ror
   ("r" (call-interactively '(lambda ()
                               (interactive)
                               (unhighlight-regexp "^.*ERROR.*$")))))
+
+(global-set-key (kbd "C-h h") 'highlighting-hydra/body)
 
 ;; ]
 
@@ -416,6 +426,8 @@ lines containing _E_rror   lines containing E_r_ror
 
 ;; [ encoding systems
 
+(set-language-environment "UTF-8")
+
 ;; (modify-coding-system-alist 'file ".*cygwin.*\.sh" 'utf-8-unix)
 ;; (modify-coding-system-alist 'file ".*cygwin.*\.py[23]?" 'utf-8-unix)
 
@@ -425,11 +437,10 @@ lines containing _E_rror   lines containing E_r_ror
 
 (use-package fill-column-indicator)
 
-
 ;; how to set fonts:
 ;; https://www.emacswiki.org/emacs/SetFonts
 
-(defun mpx-set-fonts ()
+(defun mpx-set-fonts (family fontsize)
   (interactive)
   "Set prefered fonts."
   (when (eq system-type 'windows-nt)
@@ -440,22 +451,23 @@ lines containing _E_rror   lines containing E_r_ror
                       org-level-4
                       org-level-5))
         (set-face-attribute face nil
-                            :family "Hack"
-                            :height 80
+                            :family family
+                            :height fontsize
                             :weight 'normal
                             :width 'normal))
       (set-face-attribute 'default nil
-                          :family "Hack"
-                          :height 80
+                          :family family
+                          :height fontsize
                           :weight 'normal
                           :width 'normal)
       (set-face-attribute 'mode-line nil
-                          :family "Hack"
-                          :height 80
+                          :family family
+                          :height fontsize
                           :weight 'normal
                           :width 'normal))))
 
-(run-with-timer 15 nil 'mpx-set-fonts)
+(run-with-timer 15 nil #'(lambda ()
+                           (mpx-set-fonts prefered-font-family 100)))
 
 (use-package stripe-buffer)
 
@@ -475,7 +487,14 @@ lines containing _E_rror   lines containing E_r_ror
                  (side            . bottom)
                  (window-height   . 0.3))))
 
-(setq frame-title-format '("Emacs://%f "))
+(set-default 'frame-title-format '(:eval 
+                                   (if (boundp 'mpx-promt-project-root)
+                                       (format "Emacs: %%b [%s]"
+                                               (car
+                                                (cdr
+                                                 (reverse
+                                                  (split-string mpx-promt-project-root "/")))))
+                                     (format "Emacs: %%b"))))
 
 (when window-system
   (progn
@@ -510,22 +529,16 @@ lines containing _E_rror   lines containing E_r_ror
 
 ;; [ the mode line
 
-(let ((line (face-attribute 'mode-line :underline)))
-  (set-face-attribute 'mode-line          nil :overline   line)
-  (set-face-attribute 'mode-line-inactive nil :overline   line)
-  (set-face-attribute 'mode-line-inactive nil :underline  line)
-  (set-face-attribute 'mode-line          nil :box        nil)
-  (set-face-attribute 'mode-line-inactive nil :box        nil)
-  (set-face-attribute 'mode-line-inactive nil :background "#f9f2d9"))
-
 (use-package moody
+  :disabled
   :config
   (setq x-underline-at-descent-line t)
   (moody-replace-mode-line-buffer-identification)
   (moody-replace-vc-mode))
 
 (use-package minions
-  :config (minions-mode 1))
+  :config
+  (minions-mode 1))
 
 (which-function-mode)
 
@@ -632,7 +645,7 @@ lines containing _E_rror   lines containing E_r_ror
                                 " " filename)))
 
   (defun ibuffer-mode-hook-extender ()
-    (ibuffer-auto-mode 1) ;; auto updates
+    (ibuffer-auto-mode 0) ;; auto updates disabled
     (hl-line-mode)
     (define-key ibuffer-mode-map (kbd "M-<RET>") 'ibuffer-visit-buffer-other-frame)
     (define-key ibuffer-mode-map (kbd "p") 'ibuffer-show-file-path))
@@ -818,6 +831,12 @@ _r_eload snippets                 _i_nsert snippet
 
 ;; ]
 
+;; [ tide
+
+(use-package tide)
+
+;; ]
+
 ;; [ js2 javascript
 
 (defun js2-mode-setup ()
@@ -850,6 +869,7 @@ _r_eload snippets                 _i_nsert snippet
 (use-package js2-mode
   :config
   (add-to-list 'auto-mode-alist '("\\.js\\'" . js2-mode))
+  (add-to-list 'auto-mode-alist '("\\.es\\'" . js2-mode))
   (add-hook 'js2-mode-hook 'js2-mode-setup))
 
 ;; ]
@@ -922,7 +942,6 @@ _r_eload snippets                 _i_nsert snippet
 (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
 
 (defun org-mode-setup ()
-
   ;;  "Stop the org-level headers from increasing in height relative to the other text."
   (org-hide-block-all)
   (org-clock-persistence-insinuate)
@@ -946,6 +965,7 @@ _r_eload snippets                 _i_nsert snippet
         org-clock-auto-clock-resolution (quote when-no-clock-is-running)
         org-clock-report-include-clocking-task t
         org-confirm-babel-evaluate nil
+        org-log-note-clock-out t
         org-default-notes-file "~/org/organizer"
         org-directory "~/org/"
         org-ellipsis "…"
@@ -1044,15 +1064,17 @@ _r_eload snippets                 _i_nsert snippet
 
 ;; ]
 
-;; [ speedbar treemacs
+;; [ sr-speedbar neotree
 
-(use-package neotree)
+(use-package neotree
+  :bind( "<f6>" . neotree-toggle))
 
 (use-package sr-speedbar
+  :disabled
   :bind ("<f6>" . sr-speedbar-toggle)
   :config
-  :disabled
-  (setq speedbar-fetch-etags-arguments (quote ("--declarations" "-D" "-I" "-o" "-"))
+  (setq speedbar-fetch-etags-arguments (quote
+                                        ("--declarations" "-D" "-I" "-o" "-"))
         speedbar-sort-tags t
         speedbar-ag-hierarchy-method (quote (speedbar-sort-tag-hierarchy))
         speedbar-use-imenu-flag nil
@@ -1077,29 +1099,12 @@ _r_eload snippets                 _i_nsert snippet
 
 ;; TODO Change window handling for xref popups
 
-
-
-;;(add-standard-display-buffer-entry "*xref*")
-
-(defun close-window-by-buffer-name (name)
-  (interactive "b")
-  (let ((buffer-name name)
-        (buffer nil)
-        (buffer-window nil))
-    (setq buffer (get-buffer buffer-name))
-    (setq buffer-window (if (bufferp buffer)
-                            (get-buffer-window buffer)
-                          nil))
-    (when (windowp buffer-window)
-      (delete-window buffer-window))))
-
-(defun close-xref-buffer ()
-  (close-window-by-buffer-name "*xref"))
+;; (add-standard-display-buffer-entry "*xref*")
 
 (setq tags-revert-without-query t)
 
 ;; use C-o in xref buffer to display match in other window
-
+;; use TAB in xref buffer to go to location and close xref buffer
 (global-set-key (kbd "M-*") #'xref-pop-marker-stack)
 (global-set-key (kbd "M-.") #'xref-find-definitions)
 
@@ -1169,12 +1174,12 @@ _r_eload snippets                 _i_nsert snippet
     (when add-openssl-dict
       (progn
         (local-set-key (kbd "C-h o") 'openssl-help))))
-  (local-set-key (kbd "C-h c") 'c++-help)
-  (local-set-key (kbd "C-x a") 'align-regexp)
   (add-to-list 'er/try-expand-list 'mark-def-undef-block)
   (add-to-list 'er/try-expand-list 'mark-if-endif-block)
   (local-set-key (kbd "C-c C-c") 'compile)
-  (local-set-key (kbd "C-M-j") 'imenu))
+  (local-set-key (kbd "C-h c") 'c++-help)
+  (local-set-key (kbd "C-M-j") 'imenu)
+  (local-set-key (kbd "C-x a") 'align-regexp))
 
 (add-hook 'c++-mode-hook 'c-mode-setup)
 (add-hook 'c-mode-hook 'c-mode-setup)
@@ -1257,20 +1262,49 @@ and display corresponding buffer in new frame."
     (error
      (message "This frame is the last remaining frame. It cannot be deleted."))))
 
-(global-set-key (kbd "<f1>") #'detach-window)
-(global-set-key (kbd "<f2>") #'make-frame)
-(global-set-key (kbd "<f3>") #'mpx-delete-frame)
-(global-set-key (kbd "C-x 2") #'split-window-below)
-(global-set-key (kbd "C-x 3") #'split-window-right)
+(defconst mpx-window-ops-use-hydra 't)
 
-(defvar windows-ops-keymap
-  (make-sparse-keymap)
-  "Keymap for windmove commands.")
-
-(global-set-key (kbd "C-x w") windows-ops-keymap)
-(define-key windows-ops-keymap (kbd "s") #'swap-buffers)
-(define-key windows-ops-keymap (kbd "r") #'rotate-windows)
-
+(if mpx-window-ops-use-hydra
+    (progn
+      (defhydra window-ops-hydra (:color blue :hint nil)
+        "
+Windows        Frames     Buffers         Moving
+----------------------------------------------------------
+Split _r_ight    De_t_ach     _s_wap            j← k→
+Split _l_eft     _d_elete     r_o_tate          h↑ l↓
+_f_it to Buffer  _m_ake       _e_diff"
+        ("d" mpx-delete-frame)
+        ("e" ediff-this)
+        ("f" fit-window-to-buffer)
+        ("g" windmove-right)
+        ("l" split-window-left)
+        ("m" make-frame)
+        ("o" rotate-windows)
+        ("r" split-window-right)
+        ("s" swap-buffers)
+        ("t" detach-window)
+        ("<left>" windmove-left)
+        ("<up>" windmove-up)
+        ("<down>" windmove-down)
+        ("<right>" windmove-right)
+        ("j" windmove-left)
+        ("h" windmove-up)
+        ("l" windmove-down)
+        ("k" windmove-right))
+      (global-set-key (kbd "C-h w") 'window-ops-hydra/body))
+  (progn
+    (defvar windows-ops-keymap
+      (make-sparse-keymap)
+      "Keymap for windmove commands.")
+    (global-set-key (kbd "C-x w") windows-ops-keymap)
+    (define-key windows-ops-keymap (kbd "s") #'swap-buffers)
+    (define-key windows-ops-keymap (kbd "r") #'rotate-windows)
+    (define-key windows-ops-keymap (kbd "<f1>") #'detach-window)
+    (define-key windows-ops-keymap (kbd "<f2>") #'make-frame)
+    (define-key windows-ops-keymap (kbd "<f3>") #'mpx-delete-frame)
+    (define-key windows-ops-keymap (kbd "C-x 2") #'split-window-below)
+    (define-key windows-ops-keymap (kbd "C-x 3") #'split-window-right)
+    (define-key windows-ops-keymap (kbd "C-x =") #'fit-window-to-buffer)))
 
 ;; ]
 
@@ -1294,7 +1328,7 @@ and display corresponding buffer in new frame."
 
 ;; ]
 
-;; [ info browser
+;; [ man info help mode
 
 ;; To read plain info file from the filesystem: "C-u C-h i"
 
@@ -1305,13 +1339,19 @@ and display corresponding buffer in new frame."
 
 (defun Info-mode-setup ()
   "Personal info mode hook."
-  (define-key Info-mode-map (kbd "C-s") 'isearch-forward-symbol-at-point) )
+  (define-key Info-mode-map (kbd "C-M-s") 'isearch-forward-symbol-at-point))
 
 (add-hook 'Info-mode-hook 'Info-mode-setup)
 
-;; ]
-
-;; [ man info help mode
+;; Have info open new buffer on each invocation
+(global-set-key (kbd "C-h i") #'(lambda ()
+                                  (interactive)
+                                  (select-frame (make-frame))
+                                  (let* ((info-new-buffer-name (generate-new-buffer-name "*info*"))
+                                         (info-buffer nil))
+                                    (progn
+                                      (setq info-buffer (get-buffer-create info-new-buffer-name))
+                                      (info nil info-buffer)))))
 
 (defsubst scroll-up-one-line ()
   (interactive)
@@ -1330,9 +1370,19 @@ and display corresponding buffer in new frame."
 (require 'man)
 
 (defun mpx-help-mode-setup ()
-  (local-set-key (kbd "S-q") 'kill-buffer-and-window))
+  (local-set-key (kbd "q") 'kill-buffer-and-window))
 
 (add-hook 'help-mode-hook 'mpx-help-mode-setup)
+
+(add-to-list 'display-buffer-alist
+             `(,(regexp-quote "*Help*")
+               (display-buffer-reuse-window
+                display-buffer-at-bottom
+                display-buffer-in-side-window)
+               (reusable-frames . visible)
+               (side            . bottom)
+               (window-height   . 0.3)))
+
 
 ;; ]
 
@@ -1361,6 +1411,12 @@ and display corresponding buffer in new frame."
       "nil"
     (reduce '(lambda (a b) (format "%s, %s" a b)) tlist)))
 
+(defun pretty-print-list-line-by-line (tlist)
+  "Get simple string representation for TLIST."
+  (if (null tlist)
+      "nil"
+    (concat "\n    - " (reduce '(lambda (a b) (format "%s %s %s"  a "\n    - " b)) tlist))))
+
 (use-package jtags
   :config
   (add-hook 'java-mode-hook 'jtags-mode))
@@ -1368,12 +1424,18 @@ and display corresponding buffer in new frame."
 ;; Add tags file for jdk if it exists
 
 
-(when (and
-       (not (null jdk-location))
-       (let ((jdk-tags-file (concat jdk-location "/src/TAGS")))
-         (message "Loading jdk TAGS file from " jdk-tags-file)
-         (file-exists-p jdk-tags-file)
-         (mpx-add-tags-file jdk-tags-file))))
+(defun mpx-add-jdk-tags-to-tags-files-list ()
+  (when (not (null (concat jdk-location "/src")))
+    (let ((jdk-src (concat jdk-location "/src/")))
+      (progn
+        (message "Loading jdk TAGS for jdk")
+        (mapc #'(lambda (file)
+                  (when (and
+                         (file-directory-p (concat jdk-src file))
+                         (file-exists-p (concat jdk-src file "/TAGS")))
+                    (progn
+                      (mpx-add-tags-file (concat jdk-src file "/TAGS")))))
+              (directory-files jdk-src))))))
 
 ;;(setq tags-revert-without-query 't)
 
@@ -1393,6 +1455,10 @@ and display corresponding buffer in new frame."
   (setq c-comment-start-regexp "(@|/(/|[*][*]?))")
   (modify-syntax-entry ?@ "< b" java-mode-syntax-table)
   (mpx-load-closest-tags-file)
+  ;; mark line point is in
+  (hl-line-mode)
+  (display-line-numbers-mode)
+  (mpx-add-jdk-tags-to-tags-files-list)
   ;;
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
@@ -1526,7 +1592,7 @@ T - tag prefix
               ("Z" dired-do-compress)
               ("q" nil)
               ("." nil :color blue))
-            (define-key dired-mode-map (kbd "C-h h") 'hydra-dired/body)
+            (define-key dired-mode-map (kbd "C-h d") 'hydra-dired/body)
             ))
 
 (put 'dired-find-alternate-file 'disabled nil)
@@ -1580,10 +1646,10 @@ T - tag prefix
             (when (not (and (null beg) (null end)))
               (setq tag (buffer-substring-no-properties beg end))))))
       (if tag
-        (progn
-          (insert ">")
-          (save-excursion
-            (insert (format "</%s>" tag))))
+          (progn
+            (insert ">")
+            (save-excursion
+              (insert (format "</%s>" tag))))
         (progn
           (insert ">")
           (message "No tag found"))))))
@@ -1611,13 +1677,10 @@ T - tag prefix
 
 ;; ]
 
-;; [ ivy,avy,ido&co
-
-;; see http://oremacs.com/swiper/ for manual
+;; [ ivy, avy, ido & co
 
 (use-package ivy
   :config
-  :disabled
   (setq ivy-fixed-height-minibuffer t
         ;; add recentf and bookmarks to ivy-switch-buffer completion candidates
         ivy-use-virtual-buffers t
@@ -1625,6 +1688,7 @@ T - tag prefix
 
   (ivy-mode))
 
+;; see http://oremacs.com/swiper/ for manual
 (use-package swiper
   ;; I really don't like it, but next time I change my mind about it
   ;; I just want to have this snippet of emacs lisp code available.
@@ -1661,8 +1725,7 @@ T - tag prefix
 ;; autopep8, yapf, epc
 ;; to obtain dependencies use for example: "python -m pip install importmagic"
 
-(use-package jedi
-  :disabled)
+(use-package jedi)
 
 (defun python-mode-setup ()
   "Personal python mode hook extension."
@@ -1676,7 +1739,6 @@ T - tag prefix
   (company-mode))
 
 (use-package elpy
-  :disabled
   :config
   (elpy-enable)
   (setq python-indent-offset 4
@@ -1741,82 +1803,41 @@ and then do re-implement restclient-bookmarks and project files with this."
       (write-file mpx-restclient-bookmarks-file))))
 ;; ]
 
-;; [ html editing web mode
+;; [ markdown
 
-(add-to-list 'auto-mode-alist '("\\.html\\'" . web-mode))
-(add-to-list 'auto-mode-alist '("\\.jsp\\'" . web-mode))
+(use-package markdown-mode)
+
+;; ]
+
+;; [ angular2 html editing web mode
+
+(require 'webdev-tools)
 
 (use-package web-mode
   :config
-  (add-hook 'web-mode-hook 'web-mode-setup))
+  (add-hook 'web-mode-hook 'web-mode-setup)
+  (add-to-list 'auto-mode-alist '("\\.jsp\\'" . web-mode)))
 
 (defun web-mode-setup ()
   (local-set-key (kbd ">") 'mpx-magic->)
+  (yas-minor-mode)
+  (hl-line-mode)
   (setq indent-tabs-mode nil
         web-mode-markup-indent-offset 4))
 
-(defun html-post-processing ()
-  "This method looks for a couple of key-strings and replaces them with some meaningful values."
-  (save-excursion
-    (goto-char (point-min))
-    (when (re-search-forward "%TITLE%" nil t)
-      (replace-match (replace-regexp-in-string (regexp-quote ".html") "" (buffer-name) 'fixedcase)))
-    (goto-char (point-min))
-    (when (re-search-forward "%CSSFILE%" nil t)
-      (replace-match (replace-regexp-in-string (regexp-quote ".html") ".css" (buffer-name) 'fixedcase) 'fixedcase))
-    (when (re-search-forward "%TESTEE%" nil t)
-      (replace-match (replace-regexp-in-string (regexp-quote "-test.html") ".js" (buffer-name) 'fixedcase) 'fixedcase))
-    (when (re-search-forward "%UNITTESTS%" nil t)
-      (replace-match (replace-regexp-in-string (regexp-quote "-test.html") "-test.js" (buffer-name) 'fixedcase) 'fixedcase))))
+;; Make sure that this is loaded after web-mode if you prefer
+;; ng2-html-mode over web-mode in angular projects
+(use-package ng2-mode
+  :config
+  (require 'angular-helpers)
+  (add-hook 'ng2-ts-mode-hook #'(lambda ()
+                                  (hl-line-mode)
+                                  (display-line-numbers-mode)
+                                  (setq c-basic-offset 4)))
+  (add-hook 'ng2-html-mode-hook #'(lambda ()
+                                    (hl-line-mode))))
 
-(define-auto-insert '("\\.html\\'" . "HTML5 Skeleton")
-  [ '(nil
-      "<!DOCTYPE html>\n"
-      "<html>\n"
-      "<head>\n"
-      "<meta charset=\"UTF-8\" />\n"
-      "<title>%TITLE%</title>\n"
-      "<script src=\"jquery-3.1.0.js\"></script>\n"
-      "<script src=\"jquery-ui-1.12.0.js\"></script>\n"
-      "<script src=\"subrx.js\"></script>\n"
-      "<link rel=\"stylesheet\" href=\"%CSSFILE%\" />\n"
-      "</head>\n"
-      "<body>\n"
-      "</body>\n"
-      "</html>\n" )
-    indent-buffer 
-    html-post-processing ] )
-
-;; this auto-insert must be defined *after* the one for *.html files
-(define-auto-insert '("-test.html\\'" . "HTML5 Skeleton for QUnit test")
-  [ '(nil
-      "<!DOCTYPE html>\n"
-      "<html>\n"
-      "<head>\n"
-      "<meta charset=\"UTF-8\" />\n"
-      "<title>QUnit Testcase</title>\n"
-      "<link rel=\"stylesheet\" href=\"qunit-2.0.1.css\" />\n"
-      "</head>\n"
-      "<body>\n"
-      "<div id=\"qunit\"></div>\n"
-      "<div id=\"qunit-fixture\"></div>\n"
-      "<script src=\"qunit-2.0.1.js\"></script>\n"
-      "<script src=\"%TESTEE%\"></script>\n"
-      "<script src=\"%UNITTESTS%\"></script>\n"
-      "</body>\n"
-      "</html>\n" )
-    indent-buffer 
-    html-post-processing ] )
-
-(defun html-project-post-processing (name)
-  "This method looks for strings %CSSFILE% and %TITLE% and replaces them with some meaningful values ."
-  (save-excursion
-    (goto-char (point-min))
-    (when (re-search-forward "%TITLE%" nil t)
-      (replace-match name))
-    (goto-char (point-min))
-    (when (re-search-forward "%CSSFILE%" nil t)
-      (replace-match (replace-regexp-in-string (regexp-quote ".html") ".css" (buffer-name) 'fixedcase) 'fixedcase))))
+(add-to-list 'auto-mode-alist '("\\.component.html\\'" . ng2-html-mode))
 
 ;; ]
 
@@ -1841,10 +1862,10 @@ and then do re-implement restclient-bookmarks and project files with this."
 (defun php-mode-extension ()
   (setq indent-tabs-mode nil
         c-basic-offset 4
-        php-template-compatibility nil) )
+        php-template-compatibility nil)
+  (local-set-key (kbd "C-h o") #'mp-php-online-help))
 
 (use-package php-mode
-  :bind ("C-h o" . mp-php-online-help) 
   :config
   (add-hook 'php-mode-hook 'php-mode-extension) )
 
@@ -1875,7 +1896,9 @@ and then do re-implement restclient-bookmarks and project files with this."
 
 (defun shx-find-variables ()
   "Extract list of variable names from shell script"
-  (re-seq "^\\([0-9a-zA-Z_]+\\)=.*$" (buffer-substring-no-properties (point-min) (point-max)) 1))
+  (let ((undeclared (re-seq "^\\([0-9a-zA-Z_]+\\)=.*$" (buffer-substring-no-properties (point-min) (point-max)) 1))
+        (declared (re-seq "^declare.*[[:space:]]\\([0-9a-zA-Z_]+\\)\\(=.*\\)?$" (buffer-substring-no-properties (point-min) (point-max)) 1)))
+    (sort (append declared undeclared) 'string<)))
 
 (defun shx-insert-variable ()
   "docstring"
@@ -1886,8 +1909,10 @@ and then do re-implement restclient-bookmarks and project files with this."
 
 (defun sh-mode-setup ()
   (interactive)
-  (setq imenu-generic-expression (list '("Variables" "^\\([a-zA-Z0-9_]*\\)=.*$" 1)
-                                       '(nil "^\\(function \\)?\\([a-z0-9A-Z_]+\\)() {$" 2)))
+  (setq imenu-generic-expression
+        (list
+         '(nil "^\\(declare.*[[:space:]]\\)?\\([0-9a-zA-Z_]+\\)\\(=.*\\)?$" 2)
+         '("functions" "^\\(function \\)?\\([a-z0-9A-Z_]+\\)() {$" 2)))
   (local-set-key (kbd "$") 'shx-insert-variable)
   (fci-mode)
   (set-fill-column 120))
@@ -1935,7 +1960,6 @@ and then do re-implement restclient-bookmarks and project files with this."
 ;; [ magit
 
 (use-package magit
-  :disabled
   :config
 
   (setq magit-completing-read-function 'ivy-completing-read)
@@ -1948,7 +1972,13 @@ and then do re-implement restclient-bookmarks and project files with this."
     (call-interactively 'magit-status)
     (when arg
       (delete-other-windows) ) )
-
+  (require 'magit-todos)
+  (require 'magit-find-file)
+  (add-to-list 'display-buffer-alist
+               '("magit:.*"
+                 (display-buffer-pop-up-frame
+                  display-buffer-reuse-window)
+                 (reusable-frames . visible)))
   (global-set-key (kbd "<f12>") 'magit-status-wrapper))
 
 ;; ]
@@ -2021,28 +2051,24 @@ and then do re-implement restclient-bookmarks and project files with this."
    ac-use-fuzzy t
    ac-dwim t
    ac-use-menu-map t
-   ac-use-quick-help nil
-   ac-user-dictionary (quote ("")))
+   ac-use-quick-help nil)
 
   (global-set-key (kbd "C-c C-<SPC>") 'auto-complete)
 
-  ;; Test for git gutter mode
-  
   (define-key ac-menu-map "\C-n" 'ac-next)
   (define-key ac-menu-map "\C-p" 'ac-previous)
   (define-key ac-menu-map "\C-s" 'ac-isearch)
   (define-key ac-mode-map (kbd "C-x /") 'ac-complete-filename)
 
-  (add-to-list 'ac-modes 'web-mode)
-
   (dolist (mode (list 'xml-mode 'web-mode 'sh-mode
-                      'emacs-lisp-mode 'java-mode))
+                      'emacs-lisp-mode 'java-mode
+                      'js2-mode))
     (add-to-list 'ac-modes mode))
 
   ;; Just in case linum mode and ac interfer
   (ac-linum-workaround)
 
-  (defun mp-ac-setup-for-emacs-lisp ()
+  (defun mp-ac-setup-for-emacs-lisp-mode ()
     "Turn on auto-complete mode and set ac-sources for emacs-lisp-mode."
     (setq ac-sources '(ac-source-yasnippet
                        ac-source-filename
@@ -2053,7 +2079,7 @@ and then do re-implement restclient-bookmarks and project files with this."
                        ac-source-symbols))
     (auto-complete-mode t) )
 
-  (add-hook 'emacs-lisp-mode-hook 'mp-ac-setup-for-emacs-lisp)
+  (add-hook 'emacs-lisp-mode-hook 'mp-ac-setup-for-emacs-lisp-mode)
 
   (defun mp-ac-setup-for-c-mode ()
     "Turn on auto-complete mode and set ac-sources for c/c++-mode."
@@ -2173,48 +2199,6 @@ and then do re-implement restclient-bookmarks and project files with this."
   :pin melpa
   :interpreter
   ("scala" . scala-mode))
-
-;; ]
-
-;; [ origami
-
-
-(defun mp/enable-origami()
-  (local-set-key (kbd "M-+") 'origami-toggle-node)
-  (global-unset-key (kbd "M-o"))
-  (local-set-key (kbd "M-o") 'mp/origami-map)
-  (define-key mp/origami-map (kbd "c") 'mp/origami-close-map)
-  (define-key mp/origami-map (kbd "o") 'mp/origami-open-map)
-  (origami-mode))
-
-(use-package origami
-  :disabled
-  ;; https://github.com/gregsexton/origami.el
-
-  :init
-
-  (defvar mp/origami-open-map (make-sparse-keymap))
-  (defvar mp/origami-close-map (make-sparse-keymap))
-  (defvar mp/origami-map (make-sparse-keymap))
-
-  :config
-
-  (define-key mp/origami-map (kbd "u") 'origami-undo)
-  (define-key mp/origami-map (kbd "r") 'origami-redo)
-  (define-key mp/origami-map (kbd "f") 'origami-forward-fold-same-level)
-  (define-key mp/origami-map (kbd "p") 'origami-backward-fold-same-level)
-  (define-key mp/origami-close-map (kbd "a") 'origami-close-all-nodes)
-  (define-key mp/origami-close-map (kbd "n") 'origami-close-node)
-  (define-key mp/origami-close-map (kbd "s") 'origami-show-only-node)
-  (define-key mp/origami-open-map (kbd "a") 'origami-open-all-nodes)
-  (define-key mp/origami-open-map (kbd "n") 'origami-open-node)
-
-  (add-hook 'emacs-lisp-mode-hook 'mp/enable-origami)
-  (add-hook 'xml-mode-hook 'mp/enable-origami)
-  (add-hook 'nxml-mode-hook 'mp/enable-origami)
-  (add-hook 'python-mode-hook 'mp/enable-origami)
-  (add-hook 'web-mode-hook 'mp/enable-origami)
-  (add-hook 'java-mode-hook 'mp/enable-origami))
 
 ;; ]
 
@@ -2381,12 +2365,16 @@ jso_n_-mode    _x_ml-mode
   ("s" scratch-goto-shl-mode)
   ("x" scratch-goto-xml-mode))
 
-(global-set-key (kbd "C-c s") 'hydra-global-scratch/body)
+(global-set-key (kbd "C-h s") 'hydra-global-scratch/body)
 
 
 ;; ]
 
 ;; [ dashboard
+
+;; TODO Unify recentf, bookmarks and projects.
+;;      These all print a list of files with a custom heading
+;;      - Have alternating colors
 
 (defun fx-file-modified-in-last-24-hours (path)
   "Compare if file at PATH has been modified more recently then TIMESTAMP."
@@ -2429,34 +2417,36 @@ jso_n_-mode    _x_ml-mode
 (defun dashboard-insert-qod (num-items)
   ;;  (message "[dashboard] Inserting quote of the day")
   (dashboard-insert-heading "Quote of the day: ")
-  (let ((dashboard-cache (concat
-                          (expand-file-name user-emacs-directory)
-                          "quote_of_the_day"))
-        (from 0)
-        (to 0)
-        (qod nil)
-        (response-buffer nil)
-        (response nil))
-    (progn
-      (setq response
-            (if (and (file-exists-p dashboard-cache)
-                     (fx-file-modified-in-last-24-hours dashboard-cache))
-                (with-temp-buffer
-                  (insert-file-contents dashboard-cache)
-                  (buffer-string))
-              (progn
-                (setq response-buffer (url-retrieve-synchronously "https://quotes.rest/qod" t))
-                (with-current-buffer response-buffer
-                  (goto-char (point-min))
-                  (search-forward "{")
-                  (backward-char 1)
-                  (write-region (point) (point-max) dashboard-cache)
-                  (buffer-substring-no-properties (point) (point-max))))))
-      (let* ((parsed-response (json-read-from-string response))
-             (qod (read-quote-of-the-day parsed-response))
-             (author (read-author parsed-response)))
-        (newline)
-        (dashboard-pretty-print-qod qod author)))))
+  (condition-case nil
+      (let ((dashboard-cache (concat
+                              (expand-file-name user-emacs-directory)
+                              "quote_of_the_day"))
+            (from 0)
+            (to 0)
+            (qod nil)
+            (response-buffer nil)
+            (response nil))
+        (progn
+          (setq response
+                (if (and (file-exists-p dashboard-cache)
+                         (fx-file-modified-in-last-24-hours dashboard-cache))
+                    (with-temp-buffer
+                      (insert-file-contents dashboard-cache)
+                      (buffer-string))
+                  (progn
+                    (setq response-buffer (url-retrieve-synchronously "https://quotes.rest/qod" t))
+                    (with-current-buffer response-buffer
+                      (goto-char (point-min))
+                      (search-forward "{")
+                      (backward-char 1)
+                      (write-region (point) (point-max) dashboard-cache)
+                      (buffer-substring-no-properties (point) (point-max))))))
+          (let* ((parsed-response (json-read-from-string response))
+                 (qod (read-quote-of-the-day parsed-response))
+                 (author (read-author parsed-response)))
+            (newline)
+            (dashboard-pretty-print-qod qod author))))
+    (error (insert "No quote of the day is available."))))
 
 (defun read-quote-of-the-day (parsed-response)
   "Extract quote of the day from PARSED-RESPONSE."
@@ -2514,27 +2504,20 @@ jso_n_-mode    _x_ml-mode
   (newline)
   (dashboard-system-info-insert-load-path))
 
-(defun dashboard-get-nice-recentf-list ()
-  "docstring"
-  (mapcar #'(lambda (entry) (format "%s (%s/%s)" (car entry) (cdr entry) (car entry)))
-          (-zip
-           (mapcar 'file-name-nondirectory recentf-list) 
-           (mapcar 'file-name-directory recentf-list))))
-
 (defun dashboard-insert-recentx-list (list-display-name list)
   "Render LIST-DISPLAY-NAME title and items of LIST."
   (when (car list)
     (dashboard-insert-heading list-display-name)
-    (mapc (lambda (el)
-            (insert "\n    ")
-            (widget-create 'push-button
-                           :action `(lambda (&rest ignore) (find-file-existing ,(format "%s/%s" (cdr el) (car el))))
-                           :mouse-face 'highlight
-                           :follow-link "\C-m"
-                           :button-prefix ""
-                           :button-suffix ""
-                           :format "%[%t%]"
-                           (format "%-32s - %s" (car el) (cdr el))))
+    (mapc '(lambda (el)
+             (insert "\n    ")
+             (widget-create 'push-button
+                            :action `(lambda (&rest ignore) (find-file-existing ,el))
+                            :mouse-face 'highlight
+                            :follow-link "\C-m"
+                            :button-prefix ""
+                            :button-suffix ""
+                            :format "%[%t%]"
+                            (format "%s" el)))
           list)))
 
 (defun dashboard-insert-recentx (list-size)
@@ -2542,9 +2525,7 @@ jso_n_-mode    _x_ml-mode
   (recentf-mode)
   (when (dashboard-insert-recentx-list
 	 "Recent Files:"
-	 (dashboard-subseq (-zip
-                            (mapcar 'file-name-nondirectory recentf-list) 
-                            (mapcar 'file-name-directory recentf-list))
+	 (dashboard-subseq recentf-list
                            0 list-size))
     (dashboard-insert-shortcut "r" "Recent Files:")))
 
@@ -2569,47 +2550,11 @@ jso_n_-mode    _x_ml-mode
 
 ;; ]
 
-;; [ angular2
-
-(use-package ng2-mode)
-
-(defun mpx-open-component-in-frame (component)
-  "Assume a component consists of three files (a css file, a ts file and a html file)
-and open all of these in a new frame like this:
-
-+------------------------+---------------+
-| .ts-file               |.html-file     |
-|                        |               |
-|                        |               |
-|                        |               |
-|                        |               |
-|                        +---------------+
-|                        |.css-file      |
-|                        |               |
-|                        |               |
-|                        |               |
-|                        |               |
-+------------------------+---------------+
-
-TODO: find files in the file system"
-  (interactive "sWhich component? ")
-  (let* ((project-root (mpx-promt-find-project-root))
-         (css-file (format "%s/src/app/%s/%s.component.css" project-root component component))
-         (ts-file (format "%s/src/app/%s/%s.component.ts" project-root  component component))
-         (html-file (format "%s/src/app/%s/%s.component.html" project-root  component component)))
-    (select-frame (make-frame))
-    (find-file ts-file)
-    (split-window-right-select)
-    (find-file html-file)
-    (split-window-below-select)
-    (find-file css-file)))
-
-;; ]
-
 ;; [ json
 
 (require 'json)
 (use-package json-mode)
+
 ;; ]
 
 ;; [ openwith
@@ -2625,14 +2570,37 @@ TODO: find files in the file system"
 
 ;; ]
 
+
+;; [ projectile
+
+(use-package projectile)
+
+;; ]
+
+
 ;; [ Finalizer
 
 (require 'convenience)
 
-(setq gc-cons-threshold (* 1024 1024 64)
+(setq gc-cons-threshold (* 1024 1024 256)
       gc-cons-percentage 0.3)
 
+(toggle-debug-on-error nil)
 
 (notify "[Emacs] init.el fully loaded")
+
+(setq-default mode-line-format (list
+                        " ⊕%b: "
+                        " ⊕" mode-line-position
+                        " ⊕" vc-mode
+                        " ⊕" minions-mode-line-modes
+                        " ⊕" mode-line-misc-info
+                        "["
+                        mode-line-front-space
+                        mode-line-mule-info
+                        mode-line-client
+                        mode-line-modified
+                        "]"
+                        mode-line-end-spaces))
 
 ;; ]
