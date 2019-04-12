@@ -318,21 +318,35 @@ _p_rint        _m_ clock mru
 
 ;; Very handy package. Sets er/try-expand-list on a per mode basis to
 ;; a list of defuns. Each defun marks part of the
-;; buffer. Incrementally largens the part of the buffer a defun
-;; operats on. The next larger marked part is then set to the region.
+;; buffer. Incrementally largens the region by checking defuns.
 ;; To customize add defun to er/try-expand-list in any mode hook.
 
-(defun mpx-mark-argument-in-argument-list ()
-  "Mark parmeter in current parameter list."
+(defun er/mark-table-cell ()
+  "Mark a table cell"
   (interactive)
-  (let ((forward-regexp "[[:alnum:]: ,]+).*")
-        (backward-regexp ".*([[:alnum:]: ,]+"))
-    (when (and (looking-at forward-regexp)
-               (er/looking-back-on-line backward-regexp))
-      (re-search-forward "[,)]")
-      (set-mark (point))
-      (re-search-backward "[(,]")
-      (exchange-point-and-mark))))
+  (search-backward "|")
+  (set-mark (+ 1 (point)))
+  (search-forward "|" nil nil 2)
+  (backward-char)
+  (exchange-point-and-mark))
+
+(defun er/mark-table-row ()
+  "Mark a table row"
+  (interactive)
+  (beginning-of-line)
+  (search-forward "|")
+  (backward-char)
+  (set-mark (point))
+  (end-of-line)
+  (search-backward "|")
+  (forward-char)
+  (exchange-point-and-mark))
+
+(defun mpx-er-org-extensions ()
+  (add-to-list 'er/try-expand-list 'er/mark-table-cell)
+  (add-to-list 'er/try-expand-list 'er/mark-table-row))
+
+(add-hook 'org-mode-hook 'mpx-er-org-extensions)
 
 (use-package expand-region
   :config
