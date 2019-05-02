@@ -1,8 +1,0 @@
-c:/Users/matthias.pfeifer/src/EP01/
-c:/Users/matthias.pfeifer/.emacs.d/
-c:/Users/matthias.pfeifer/src/ispeak/
-c:/Users/matthias.pfeifer/src/nct/main-app/model/
-c:/Users/matthias.pfeifer/src/nct/main-app/
-c:/Users/matthias.pfeifer/src/nct/frontend/
-c:/Users/matthias.pfeifer/src/nct/nct-ng/
-c:/Users/matthias.pfeifer/src/nct/main-app/rest/

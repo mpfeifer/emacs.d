@@ -44,3 +44,4 @@ elisp/n.el
 email.txt
 .\#*
 promt.txt
+transient/

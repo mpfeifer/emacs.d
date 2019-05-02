@@ -35,7 +35,6 @@
 (defun mpx-java-mode-set-buffer-locals ()
   "Called from java-mode-hook sets buffer local variables for java-mode."
   (defvar-local java-classpath nil "Java classpath. This will be set by .dir-locals.el (hopefully).")
-  (defvar-local java-local-project-root nil "Buffer local location of current project root.")
   (defvar-local java-classes-cache nil "Cache for the current classpath classes."))
 
 (add-hook 'java-mode-hook 'mpx-java-mode-set-buffer-locals)
@@ -110,11 +109,99 @@ With prefix argument insert classname with package name. Otherwise omit package 
 (defun java-mode-process-dir-locals ()
   (when (derived-mode-p 'java-mode)
     (progn
-      (when (stringp java-local-project-root)
+      (when (and
+             (featurep 'java-local-project-root)
+             (stringp java-local-project-root))
         ;; sell the stock from emacs-maven-plugin:
         (progn
           (setq-local java-classes-cache (java-read-classes-from-classpath java-classpath) ))
         (local-set-key (kbd "C-x c") 'java-insert-classname-completing-read)))))
+
+(defun java-guess-package-name-for-current-buffer ()
+  "See if this is a maven project with standard directory layout.
+If so calculate pacakge name from current directory name.
+TODO: Rewrite to use promt.el"
+  (let* ((dirname (file-name-directory (buffer-file-name)))
+         (indicator "/src/main/java/")
+         (package-name "undefined")
+         (matched-string nil))
+    (if (string-match (concat ".*" indicator "\\(.*\\)") dirname)
+        (progn
+          (setq matched-string (match-string 1 dirname))
+          (unless matched-string ;; if indicator is not found just take
+            (setq matched-string dirname)) ;; whole path for the package-name
+          (setq package-name matched-string)
+          (when (string-suffix-p "/" package-name)
+            (setq package-name (substring package-name 0 -1)))
+          (when (string-prefix-p "/" package-name)
+            (setq package-name (substring package-name 1)))
+          (setq package-name (replace-regexp-in-string "/" "." package-name))
+          (setq package-name (replace-regexp-in-string "\\.\\." "." package-name)))
+      (setq package-name (read-from-minibuffer "Cannot guess package name. Please provide a full package name:")))
+    package-name))
+
+(defun java-preprocessor()
+  (let ((classname (file-name-sans-extension (buffer-name)))
+        (packagename (guess-package-name-for-current-buffer)))
+    (while (search-forward "CLASSNAME" nil t)
+      (replace-match classname t))
+    (goto-char (point-min))
+    (while (search-forward "PACKAGE" nil t)
+      (replace-match packagename t) ) ) )
+
+(defun mpx-add-tags-file (tags-file)
+  "Conveniance helper to add TAGS-FILE to tags-table-list."
+  (interactive "fWhich TAGS file? ")
+  (if (member tags-file tags-table-list)
+      (message (format "Tags file %s is already in tags-table-list" tags-file))
+    (progn
+      (message (format "Tags file %s added to tags-table-list" tags-file))
+      (add-to-list 'tags-table-list tags-file  t nil))))
+
+(defvar mpx-help-on-tags-buffer nil)
+
+(defun mpx-help-on-tags ()
+  (interactive)
+  (setq mpx-help-on-tags-buffer (get-buffer-create "*tags-help*"))
+  (with-current-buffer mpx-help-on-tags-buffer
+    (let ((tmp-string ""))
+      (erase-buffer)
+      (insert (format "%-24s: %s" "tags-table-files" (pretty-print-list tags-table-files)))
+      (newline)
+      (insert (format "%-24s: %s" "tags-file-name" (if (null tags-file-name) "nil" tags-file-name)))
+      (newline)
+      (insert (format "%-24s: %s" "tags-table-list" (pretty-print-list-line-by-line tags-table-list)))
+      (newline)))
+  (display-buffer-pop-up-window mpx-help-on-tags-buffer '((inhibit-switch-frame t))))
+
+(defun mpx-load-closest-tags-file ()
+  "Traverse the directory tree upwards and look for the next pom.xml and TAGS file"
+  (interactive)
+  (let ((cwd-bak default-directory)
+        (cwd-last nil)
+        (cwd default-directory)
+        (keep-going t)
+        (tags-file-found nil))
+    (progn
+      (while keep-going
+        (progn
+          ;;          (message "Checking directory " cwd)
+          (if (file-exists-p "TAGS")
+              (progn
+                (mpx-add-tags-file (concat cwd "TAGS"))
+                (setq keep-going nil
+                      tags-file-found t))
+            (progn
+              (cd "..")
+              (setq cwd-last cwd
+                    cwd default-directory)
+              (when (string= cwd-last cwd)
+                (setq keep-going nil))))))
+      (setq default-directory cwd-bak)
+      (message (if tags-file-found
+                   "TAGS file was found and added to tags-table-list"
+                 "No TAGS file was found"))
+      t)))
 
 (add-hook 'hack-local-variables-hook 'java-mode-process-dir-locals)
 

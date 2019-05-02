@@ -34,38 +34,6 @@
 
 (defvar java-project-root (concat (getenv "HOME") "/src"))
 
-(defun guess-package-name-for-current-buffer ()
-  "See if this is a maven project with standard directory layout.
-If so calculate pacakge name from current directory name.
-TODO: Rewrite to use promt.el"
-  (let* ((dirname (file-name-directory (buffer-file-name)))
-         (indicator "/src/main/java/")
-         (package-name "undefined")
-         (matched-string nil))
-    (if (string-match (concat ".*" indicator "\\(.*\\)") dirname)
-        (progn
-          (setq matched-string (match-string 1 dirname))
-          (unless matched-string ;; if indicator is not found just take
-            (setq matched-string dirname)) ;; whole path for the package-name
-          (setq package-name matched-string)
-          (when (string-suffix-p "/" package-name)
-            (setq package-name (substring package-name 0 -1)))
-          (when (string-prefix-p "/" package-name)
-            (setq package-name (substring package-name 1)))
-          (setq package-name (replace-regexp-in-string "/" "." package-name))
-          (setq package-name (replace-regexp-in-string "\\.\\." "." package-name)))
-      (setq package-name (read-from-minibuffer "Cannot guess package name. Please provide a full package name:")))
-    package-name))
-
-(defun java-preprocessor()
-  (let ((classname (file-name-sans-extension (buffer-name)))
-        (packagename (guess-package-name-for-current-buffer)))
-    (while (search-forward "CLASSNAME" nil t)
-      (replace-match classname t))
-    (goto-char (point-min))
-    (while (search-forward "PACKAGE" nil t)
-      (replace-match packagename t) ) ) )
-
 (defun copy-template (filename target-file alist)
   "Copy FILENAME to TARGET-FILE. Then replace keys with values looked up in ALIST"
   (with-temp-buffer
@@ -80,8 +48,8 @@ TODO: Rewrite to use promt.el"
     (write-file target-file nil)))
 
 (defun start-website (name)
-  "Create a new web project with NAME.  Create initial html, js, css file."
-  (interactive "MProjectname? ")
+  "Create a new web site with initial html, js and css file. NAME will be the project folder."
+  (interactive "MSite name? ")
   (let ((projectroot (concat web-project-root name)))
     (unless (file-exists-p projectroot)
       (mkdir projectroot))
@@ -105,10 +73,11 @@ TODO: Rewrite to use promt.el"
     (switch-to-buffer (concat name ".html"))
     (html-project-post-processing name)))
 
-(global-set-key (kbd "C-c 4") #'start-web-project)
+(global-set-key (kbd "C-c 4") 'start-website)
 
 
 (defun start-new-web-application (group-id artifact-id version-number)
+  "Creates a new maven war project by calling maven archetype for web applications."
   ;; TODO replace maven archetype with copy-file statements
   ;; include jquery, bootsrap and datatable by default
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
@@ -151,6 +120,7 @@ TODO: Rewrite to use promt.el"
       (goto-char (point-max)) ) ) )
 
 (defun start-new-maven-project (group-id artifact-id version-number)
+  "Create a simple maven project using jar packaging."
   (interactive "MGroup-id: \nMArtifact-id: \nMVersion-number: ")
   (let* ((project-root (concat (expand-file-name java-project-root) artifact-id))
          (target-pom (concat project-root "/pom.xml"))

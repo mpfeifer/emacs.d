@@ -276,13 +276,14 @@
 (defhydra hydra-global-org (:color blue
                                    :hint nil)
   "
-Timer^^        ^Clock^         ^Capture^
---------------------------------------------------
-s_t_art        _w_ clock in    _c_apture
- _s_top        _o_ clock out   _l_ast capture
+Timer^^        ^Clock^       
+-----------------------------
+s_t_art        _w_ clock in  
+ _s_top        _o_ clock out 
 _r_eset        _j_ clock goto
 _p_rint        _m_ clock mru
-"
+               _c_ cancel clock
+               _d_ display clock"
   ("t" org-timer-start)
   ("s" org-timer-stop)
   ;; Need to be at timer
@@ -293,33 +294,18 @@ _p_rint        _m_ clock mru
   ("o" org-clock-out)
   ;; Visit the clocked task from any buffer
   ("j" org-clock-goto)
-  ("c" org-capture)
   ("m" org-mru-clock-in)
-  ("l" org-capture-goto-last-stored))
-
-(global-set-key (kbd "C-h o") 'hydra-global-org/body)
-;; ]
-
-;; [ promt
-
-;; some supportiative functions for project handling
-
-(require 'promt)
-
-(defun mpx-open-project-directory-in-dired (project-dir)
-  (interactive (list (completing-read "Which project? " mpx-promt-projects)))
-  (dired-other-frame project-dir))
-
-(global-set-key (kbd "C-c p") #'mpx-open-project-directory-in-dired)
+  ("c" org-clock-cancel)
+  ("d" org-clock-display))
 
 ;; ]
 
 ;; [ expand region
 
 ;; Very handy package. Sets er/try-expand-list on a per mode basis to
-;; a list of defuns. Each defun marks part of the
-;; buffer. Incrementally largens the region by checking defuns.
-;; To customize add defun to er/try-expand-list in any mode hook.
+;; a list of functions. Each defun marks part of the buffer.
+;; Incrementally largens the region by checking these functions.
+;; To customize add function to er/try-expand-list in any mode hook.
 
 (defun er/mark-table-cell ()
   "Mark a table cell"
@@ -344,7 +330,8 @@ _p_rint        _m_ clock mru
 
 (defun mpx-er-org-extensions ()
   (add-to-list 'er/try-expand-list 'er/mark-table-cell)
-  (add-to-list 'er/try-expand-list 'er/mark-table-row))
+  (add-to-list 'er/try-expand-list 'er/mark-table-row)
+  (define-key org-mode-map (kbd "C-h o") 'hydra-global-org/body))
 
 (add-hook 'org-mode-hook 'mpx-er-org-extensions)
 
@@ -409,8 +396,6 @@ lines containing _E_rror     lines containing E_r_ror
   ("r" (call-interactively '(lambda ()
                               (interactive)
                               (unhighlight-regexp "^.*ERROR.*$")))))
-
-(global-set-key (kbd "C-h h") 'highlighting-hydra/body)
 
 ;; ]
 
@@ -1402,6 +1387,8 @@ _f_it to Buffer  _m_ake       _e_diff"
 
 ;; [ java mode
 
+(require 'java-x)
+
 (defun mpx-java-mode-smart-newline ()
   (interactive)
   (cond ((eq font-lock-doc-face (face-at-point))
@@ -1435,8 +1422,7 @@ _f_it to Buffer  _m_ake       _e_diff"
   :config
   (add-hook 'java-mode-hook 'jtags-mode))
 
-;; Add tags file for jdk if it exists
-
+;; Add tags files for jdk if it exists
 
 (defun mpx-add-jdk-tags-to-tags-files-list ()
   (when (not (null (concat jdk-location "/src")))
@@ -1449,7 +1435,7 @@ _f_it to Buffer  _m_ake       _e_diff"
                          (file-exists-p (concat jdk-src file "/TAGS")))
                     (progn
                       (mpx-add-tags-file (concat jdk-src file "/TAGS")))))
-              (directory-files jdk-src))))))
+              (directory-files-recursively jdk-src "^.*TAGS$"))))))
 
 ;;(setq tags-revert-without-query 't)
 
@@ -1472,7 +1458,6 @@ _f_it to Buffer  _m_ake       _e_diff"
   ;; mark line point is in
   (hl-line-mode)
   (display-line-numbers-mode)
-  (mpx-add-jdk-tags-to-tags-files-list)
   ;;
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
@@ -1628,7 +1613,7 @@ T - tag prefix
 
 (add-to-list 'auto-insert-alist '("pom.xml$" . [ "pom.xml" ]))
 
-(setq xml-file-patterns (list ".*\\.wadl'" ".*\\.xul\\'" ".*\\..rdf\\'" ".*\\.xsd\\'" ".*\\.wsdl\\'"))
+(setq xml-file-patterns (list ".*\\.wadl'" ".*\\.xul\\'" ".*\\..rdf\\'" ".*\\.xsd\\'" ".*\\.wsdl\\'" ".*\\.grxml\\'"))
 
 (dolist (pattern xml-file-patterns)
   (add-to-list 'auto-mode-alist (cons pattern 'xml-mode)))
@@ -1688,6 +1673,54 @@ T - tag prefix
   "Mode for editing maven pom.xml files.")
 
 (add-to-list 'auto-mode-alist (cons "pom.xml" 'maven-mode))
+
+(defconst mpx-maven-output-buffer-name "*mvn*")
+
+(defun mpx-maven-output-buffer ()
+  (interactive)
+  (when (bufferp mpx-maven-output-buffer-name)
+    (let ((kill-buffer-query-functions nil)
+          (kill-buffer-hook nil))
+      (kill-buffer mpx-maven-output-buffer-name)))
+  (get-buffer-create mpx-maven-output-buffer-name))
+
+(defun mpx-maven (cmd)
+  "Effectifly call \"mvn CMD\""
+  (interactive)
+  (let ((default-directory (projectile-project-root)))
+    (call-process "mvn" nil (mpx-maven-output-buffer) t cmd)
+    (display-buffer mpx-maven-output-buffer-name)))
+
+(add-to-list 'display-buffer-alist
+             `(,mpx-maven-output-buffer-name
+               (display-buffer-at-bottom display-buffer-reuse-window display-buffer-in-side-window)
+               (reusable-frames . visible)
+               (window-height . 15)))
+
+(defun mpx-maven-clean ()
+  (interactive)
+  (mpx-maven "clean"))
+
+(defun mpx-maven-validate ()
+  (interactive) (mpx-maven "validate"))
+
+(defun mpx-maven-compile ()
+  (interactive) (mpx-maven "compile"))
+
+(defun mpx-maven-test ()
+  (interactive) (mpx-maven "test"))
+
+(defun mpx-maven-package ()
+  (interactive) (mpx-maven "package"))
+
+(defun mpx-maven-verify ()
+  (interactive) (mpx-maven "verify"))
+
+(defun mpx-maven-install ()
+  (interactive) (mpx-maven "install"))
+
+(defun mpx-maven-deploy ()
+  (interactive) (mpx-maven "deploy"))
 
 ;; ]
 
@@ -1843,7 +1876,7 @@ and then do re-implement restclient-bookmarks and project files with this."
 ;; ng2-html-mode over web-mode in angular projects
 (use-package ng2-mode
   :config
-  (require 'angular-helpers)
+  ;;  (require 'angular-helpers)
   (add-hook 'ng2-ts-mode-hook #'(lambda ()
                                   (hl-line-mode)
                                   (display-line-numbers-mode)
@@ -2078,9 +2111,6 @@ and then do re-implement restclient-bookmarks and project files with this."
                       'emacs-lisp-mode 'java-mode
                       'js2-mode))
     (add-to-list 'ac-modes mode))
-
-  ;; Just in case linum mode and ac interfer
-  (ac-linum-workaround)
 
   (defun mp-ac-setup-for-emacs-lisp-mode ()
     "Turn on auto-complete mode and set ac-sources for emacs-lisp-mode."
@@ -2486,22 +2516,18 @@ jso_n_-mode    _x_ml-mode
   (newline))
 
 (defun dashboard-insert-known-projects-list (list-display-name)
-  "Render LIST-DISPLAY-NAME title and items of LIST."
-  (let ((projects (with-temp-buffer (insert-file-contents-literally mpx-promt-projects-file)
-                                    (split-string (buffer-substring-no-properties (point-min) (point-max))))))
-    (when (car projects)
-      (dashboard-insert-heading list-display-name)
-      (mapc (lambda (el)
-              (insert "\n    ")
-              (widget-create 'push-button
-                             :action `(lambda (&rest ignore) (find-file-existing ,(format "%s" el)))
-                             :mouse-face 'highlight
-                             :follow-link "\C-m"
-                             :button-prefix ""
-                             :button-suffix ""
-                             :format "%[%t%]"
-                             (format "%s" el)))
-            projects))))
+  (dashboard-insert-heading list-display-name)
+  (mapc (lambda (el)
+          (insert "\n    ")
+          (widget-create 'push-button
+                         :action `(lambda (&rest ignore) (find-file-existing ,(format "%s" el)))
+                         :mouse-face 'highlight
+                         :follow-link "\C-m"
+                         :button-prefix ""
+                         :button-suffix ""
+                         :format "%[%t%]"
+                         (format "%s" el)))
+        projectile-known-projects))
 
 
 (defun dashboard-system-info-insert-load-path ()
@@ -2578,37 +2604,112 @@ jso_n_-mode    _x_ml-mode
 
 ;; ]
 
-;; [ promt
-
-(require 'promt)
-
-;; ]
-
-
 ;; [ projectile
 
-(use-package projectile)
+;; Also see http://batsov.com/projectile/
+
+(use-package projectile
+  :config
+  (setq projectile-completion-system 'ivy
+        projectile-indexing-method 'alien
+        projectile-enable-caching t
+        projectile-switch-project-action 'projectile-dired
+        projectile-track-known-projects-automatically nil)
+  (projectile-mode))
+
+(defun projectile-available-p ()
+  "Determine if we are anywhere where calling projectile functions makes sense."
+  (fboundp 'projectile-project-root))
+
+(defhydra hydra-projectile (:color lightblue
+                            :hint nil)
+  "
+     PROJECTILE: %(projectile-project-root)
+
+     Find File          Search/Tags       Buffers              Cache
+------------------------------------------------------------------------------------------
+  _F_: file            _t_: xref find tag  _i_: Ibuffer           _c_: cache clear
+ _ff_: file dwim                         _b_: switch to buffer  _x_: remove known project
+ _fd_: file curr dir   _o_: multi-occur    _K_: Kill all buffers  _X_: cleanup non-existing
+  _r_: recent file                                            ^^^^_z_: cache current
+  _d_: find dir
+
+"
+  ("a"   projectile-ag)
+  ("b"   projectile-switch-to-buffer)
+  ("c"   projectile-invalidate-cache)
+  ("d"   projectile-find-dir)
+  ("F"   projectile-find-file)
+  ("ff"  projectile-find-file-dwim)
+  ("fd"  projectile-find-file-in-directory)
+  ("t"   xref-find-definitions-other-window)
+  ("i"   projectile-ibuffer)
+  ("K"   projectile-kill-buffers)
+  ("m"   projectile-multi-occur)
+  ("o"   projectile-multi-occur)
+  ("P"   projectile-switch-project "switch project")
+  ("p"   projectile-switch-project)
+  ("s"   projectile-switch-project)
+  ("r"   projectile-recentf)
+  ("x"   projectile-remove-known-project)
+  ("X"   projectile-cleanup-known-projects)
+  ("z"   projectile-cache-current-file)
+  ("`"   hydra-projectile-other-window/body "other window")
+  ("q"   nil "cancel" :color blue))
+
+(global-set-key (kbd "C-h C-p") 'hydra-projectile/body)
+
+(defhydra hydra-maven-projectile (:color lightblue :hint nil :exit t)
+  "
+PROJECTILE: %(projectile-project-root)
+
+
+lifecycle     ^clean^          ^default^
+^^^^^^^^-----------------------------------------------------------------
+           _c_: clean       _v_: validate
+                          _C_: compile
+                          _t_: test
+                          _p_: package     
+                          _V_: verify
+                          _i_: install
+                          _d_: deploy        
+"
+  ("c" mpx-maven-clean)
+  ("v" mpx-maven-validate)
+  ("C" mpx-maven-compile)
+  ("t" mpx-maven-test)
+  ("p" mpx-maven-package)
+  ("V" mpx-maven-verify)
+  ("i" mpx-maven-install)
+  ("d" mpx-maven-deploy))
+
+(defun mpx-maven-hydra-wrapper ()
+  (interactive)
+  (if (projectile-available-p)
+      (hydra-maven-projectile/body)
+    (message "Projectile is not available. Calling maven hydra makes no sense.")))
+
+(define-key java-mode-map (kbd "C-h C-m") 'mpx-maven-hydra-wrapper)
 
 ;; ]
-
 
 ;; [ Finalizer
 
 (require 'convenience)
 
-(setq gc-cons-threshold (* 1024 1024 256)
-      gc-cons-percentage 0.3)
+(setq gc-cons-threshold (* 1024 1024 16)
+      gc-cons-percentage 0.1)
 
 (toggle-debug-on-error nil)
 
 (notify "[Emacs] init.el fully loaded")
 
 (setq-default mode-line-format (list
-                        " ⊕%b: "
-                        " ⊕" mode-line-position
-                        " ⊕" vc-mode
-                        " ⊕" minions-mode-line-modes
-                        " ⊕" mode-line-misc-info
+                        " →%b: "
+                        " →" mode-line-position ;; ⊕
+                        " →" vc-mode
+                        " →" minions-mode-line-modes
+                        " →" mode-line-misc-info
                         "["
                         mode-line-front-space
                         mode-line-mule-info
