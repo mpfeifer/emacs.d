@@ -1,5 +1,7 @@
-;;; init.el --- Emacs initialization file
 ;; -*- lexical-binding: t; -*-
+;;
+;;
+;;; init.el --- Emacs initialization file
 ;;
 ;;; Commentary:
 ;;  This is the Emacs initialization file.  Emacs reads it when
@@ -543,6 +545,29 @@ lines containing _E_rror     lines containing E_r_ror
 
 (setq which-func-unknown "∅")
 
+(defconst mpx-standard-mode-line-format (list
+                                         "→ " (propertize
+                                               "%b"
+                                               'face 'mode-line-buffer-id
+                                               'help-echo (when (fboundp 'projectile-project-root)
+                                                            (concat "Projectile root: "
+                                                                    (let ((pr (projectile-project-root)))
+                                                                      (if pr
+                                                                          (format "%s" pr)
+                                                                        "undefined")))))
+                                         " | "
+                                         mode-line-position "|";; ⊕
+                                         vc-mode " | "
+                                         minions-mode-line-modes
+                                         " | " mode-line-misc-info
+                                         "| "
+                                         mode-line-mule-info
+                                         mode-line-client
+                                         mode-line-modified
+                                         " |"))
+
+(setq-default mode-line-format mpx-standard-mode-line-format)
+
 ;; ]
 
 ;; [ backup & auto-save
@@ -940,8 +965,15 @@ _r_eload snippets                 _i_nsert snippet
 
 (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
 
+(use-package pretty-symbols)
+
 (defun org-mode-setup ()
   ;;  "Stop the org-level headers from increasing in height relative to the other text."
+
+  (push '("[ ]" .  "☐") prettify-symbols-alist)
+  (push '("[X]" . "☑" ) prettify-symbols-alist)
+  (push '("[-]" . "❍" ) prettify-symbols-alist)
+  (prettify-symbols-mode)
   (org-hide-block-all)
   (org-clock-persistence-insinuate)
   ;;  (flyspell-mode)
@@ -972,10 +1004,12 @@ _r_eload snippets                 _i_nsert snippet
         org-log-into-drawer t
         org-special-ctrl-a/e t
         org-special-ctrl-k t
-        org-src-fontify-natively t)
+        org-src-fontify-natively t
+        org-todo-keywords '((sequence "TODO" "DOING" "DONE" "|" "IDEA")))
+
   (local-set-key (kbd "<return>") #'org-return-indent)
   (local-set-key (kbd "C-'") #'imenu)
-  ;;  (setenv "GRAPHVIZ_DOT" "/usr/bin/dot")
+
   (org-babel-do-load-languages
    'org-babel-load-languages
    '((plantuml . t)
@@ -1261,17 +1295,19 @@ and display corresponding buffer in new frame."
     (error
      (message "This frame is the last remaining frame. It cannot be deleted."))))
 
-(defconst mpx-window-ops-use-hydra 't)
+(defconst mpx-ui-ops-use-hydra 't)
 
-(if mpx-window-ops-use-hydra
+(if mpx-ui-ops-use-hydra
     (progn
-      (defhydra window-ops-hydra (:color blue :hint nil)
+      (defhydra ui-ops-hydra (:color blue :hint nil)
         "
 Windows        Frames     Buffers         Moving
 ----------------------------------------------------------
 Split _r_ight    De_t_ach     _s_wap            j← k→
 Split _l_eft     _d_elete     r_o_tate          h↑ l↓
-_f_it to Buffer  _m_ake       _e_diff"
+_f_it to Buffer  _m_ake       _e_diff
+                          _R_evert
+                          _M_inions Menu"
         ("d" mpx-delete-frame)
         ("e" ediff-this)
         ("f" fit-window-to-buffer)
@@ -1280,6 +1316,7 @@ _f_it to Buffer  _m_ake       _e_diff"
         ("m" make-frame)
         ("o" rotate-windows)
         ("r" split-window-right)
+        ("R" revert-buffer)
         ("s" swap-buffers)
         ("t" detach-window)
         ("<left>" windmove-left)
@@ -1289,8 +1326,9 @@ _f_it to Buffer  _m_ake       _e_diff"
         ("j" windmove-left)
         ("h" windmove-up)
         ("l" windmove-down)
-        ("k" windmove-right))
-      (global-set-key (kbd "C-h w") 'window-ops-hydra/body))
+        ("k" windmove-right)
+        ("M" minions-minor-modes-menu))
+      (global-set-key (kbd "C-h C-u") 'ui-ops-hydra/body))
   (progn
     (defvar windows-ops-keymap
       (make-sparse-keymap)
@@ -1591,7 +1629,7 @@ T - tag prefix
               ("Z" dired-do-compress)
               ("q" nil)
               ("." nil :color blue))
-            (define-key dired-mode-map (kbd "C-h d") 'hydra-dired/body)
+            (define-key dired-mode-map (kbd "C-h C-h") 'hydra-dired/body)
             ))
 
 (put 'dired-find-alternate-file 'disabled nil)
@@ -1880,8 +1918,10 @@ and then do re-implement restclient-bookmarks and project files with this."
   (add-hook 'ng2-ts-mode-hook #'(lambda ()
                                   (hl-line-mode)
                                   (display-line-numbers-mode)
+                                  (auto-complete-mode)
                                   (setq c-basic-offset 4)))
   (add-hook 'ng2-html-mode-hook #'(lambda ()
+                                    (local-set-key (kbd ">") 'mpx-magic->)
                                     (hl-line-mode))))
 
 (add-to-list 'auto-mode-alist '("\\.component.html\\'" . ng2-html-mode))
@@ -1947,11 +1987,16 @@ and then do re-implement restclient-bookmarks and project files with this."
         (declared (re-seq "^declare.*[[:space:]]\\([0-9a-zA-Z_]+\\)\\(=.*\\)?$" (buffer-substring-no-properties (point-min) (point-max)) 1)))
     (sort (append declared undeclared) 'string<)))
 
+
+(defconst shx-bash-builtin-variables (list "BASH" "BASHOPTS" "BASHPID" "BASH_ALIASES" "BASH_ARGC" "BASH_ARGV" "BASH_CMDS" "BASH_COMMAND" "BASH_EXECUTION_STRING" "BASH_LINENO" "BASH_LOADABLES_PATH" "BASH_REMATCH" "BASH_SOURCE" "BASH_SUBSHELL" "BASH_VERSINFO" "BASH_VERSION" "COMP_CWORD" "COMP_KEY" "COMP_LINE" "COMP_POINT" "COMP_TYPE" "COMP_WORDBREAKS" "COMP_WORDS" "COPROC" "DIRSTACK" "EUID" "FUNCNAME" "GROUPS" "HISTCMD" "HOSTNAME" "HOSTTYPE" "LINENO" "MACHTYPE" "MAPFILE" "OLDPWD" "OPTARG" "OPTIND" "OSTYPE" "PIPESTATUS" "PPID" "PWD" "RANDOM" "READLINE_LINE" "READLINE_POINT" "REPLY" "SECONDS" "SHELLOPTS" "SHLVL" "UID" "BASH_COMPAT" "BASH_ENV" "BASH_XTRACEFD" "CDPATH" "CHILD_MAX" "COLUMNS" "COMPREPLY" "EMACS" "ENV" "EXECIGNORE" "FCEDIT" "FIGNORE" "FUNCNEST" "GLOBIGNORE" "HISTCONTROL" "HISTFILE" "HISTIGNORE" "HISTSIZE" "HISTTIMEFORMAT" "HOME" "HOSTFILE" "IFS" "IGNOREEOF" "INPUTRC" "LANG" "LC_ALL" "LC_COLLATE" "LC_CTYPE" "LC_MESSAGES" "LC_NUMERIC" "LC_TIME" "LINES" "MAIL" "MAILCHECK" "MAILPATH" "OPTERR" "PATH" "POSIXLY_CORRECT" "PROMPT_COMMAND" "PROMPT_DIRTRIM" "PS0" "PS1" "PS2" "PS3" "PS4" "SHELL" "TIMEFORMAT" "TMOUT" "TMPDIR" "auto_resume" "histchars"))
+
 (defun shx-insert-variable ()
   "docstring"
   (interactive)
   (insert "${")
-  (insert (completing-read "Variable? " (shx-find-variables)))
+  (insert (completing-read "Variable? " (append 
+                                         (shx-find-variables)
+                                         shx-bash-builtin-variables)))
   (insert "}"))
 
 (defun sh-mode-setup ()
@@ -1962,6 +2007,7 @@ and then do re-implement restclient-bookmarks and project files with this."
          '("functions" "^\\(function \\)?\\([a-z0-9A-Z_]+\\)() {$" 2)))
   (local-set-key (kbd "$") 'shx-insert-variable)
   (fci-mode)
+  (display-line-numbers-mode)
   (set-fill-column 120))
 
 (add-hook 'sh-mode-hook 'sh-mode-setup)
@@ -2540,8 +2586,7 @@ jso_n_-mode    _x_ml-mode
   (newline)
   (insert "    User init file: " user-init-file)
   (newline)
-  (insert "    User init file: " user-init-file)
-  (newline)
+  (insert "        load-path : ")
   (dashboard-system-info-insert-load-path))
 
 (defun dashboard-insert-recentx-list (list-display-name list)
@@ -2610,6 +2655,14 @@ jso_n_-mode    _x_ml-mode
 
 (use-package projectile
   :config
+  (global-set-key (kbd "C-x C-f") (lambda () (interactive)
+                                    (if (featurep 'projectile-project-root)
+                                        (projectile-find-file-dwim))
+                                    (call-interactively 'find-file)))
+  (global-set-key (kbd "C-x b") (lambda () (interactive)
+                                  (if (featurep 'projectile-project-root)
+                                      (projectile-switch-to-buffer)
+                                    (call-interactively 'switch-to-buffer))))
   (setq projectile-completion-system 'ivy
         projectile-indexing-method 'alien
         projectile-enable-caching t
@@ -2704,18 +2757,6 @@ lifecycle     ^clean^          ^default^
 
 (notify "[Emacs] init.el fully loaded")
 
-(setq-default mode-line-format (list
-                        " →%b: "
-                        " →" mode-line-position ;; ⊕
-                        " →" vc-mode
-                        " →" minions-mode-line-modes
-                        " →" mode-line-misc-info
-                        "["
-                        mode-line-front-space
-                        mode-line-mule-info
-                        mode-line-client
-                        mode-line-modified
-                        "]"
-                        mode-line-end-spaces))
+(setq mode-line-format mpx-standard-mode-line-format)
 
 ;; ]
