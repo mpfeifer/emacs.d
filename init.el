@@ -1818,10 +1818,9 @@ T - tag prefix
   (setq-local comment-multi-line t)
   (local-set-key (kbd "M-#") 'comment-dwim)
   (jedi:setup)
-  (when auto-complete-mode
-    (auto-complete-mode -1))
-  (setq company-backends '(elpy-company-backend))
-  (company-mode))
+  (auto-complete-mode 1)
+  (company-mode -1)
+  (setq ac-sources (list 'ac-source-jedi-direct 'ac-source-words-in-same-mode-buffers)))
 
 (use-package elpy
   :config
@@ -1915,11 +1914,16 @@ and then do re-implement restclient-bookmarks and project files with this."
 (use-package ng2-mode
   :config
   ;;  (require 'angular-helpers)
+
   (add-hook 'ng2-ts-mode-hook #'(lambda ()
                                   (hl-line-mode)
                                   (display-line-numbers-mode)
                                   (auto-complete-mode)
+                                  (setq ac-sources '(ac-source-yasnippet
+                                                     ac-source-filename
+                                                     ac-source-files-in-current-dir))
                                   (setq c-basic-offset 4)))
+
   (add-hook 'ng2-html-mode-hook #'(lambda ()
                                     (local-set-key (kbd ">") 'mpx-magic->)
                                     (hl-line-mode))))
