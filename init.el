@@ -54,8 +54,10 @@
       package-user-dir "~/.emacs.d/packages/")
 
 (setq package-archives (list 
+                        '("elpa" . "http://elpa.gnu.org/packages/")
                         '("melpa" . "http://melpa.org/packages/")
                         '("org" . "http://orgmode.org/elpa/")))
+
 (setq package-check-signature nil)
 (package-initialize)
 
@@ -70,6 +72,7 @@
 (global-set-key (kbd "<f4>") 'package-list-packages-no-fetch)
 
 (add-hook 'package-menu-mode-hook 'hl-line-mode)
+(add-hook 'package-menu-mode-hook 'stripe-buffer-mode)
 
 (defun mpx-get-hostname ()
   "Get hostname in a windows/linux/cygwin agnostic way."
@@ -275,6 +278,14 @@
 
 ;; [ hydra
 
+
+(defhydra hydra-magit (:color blue :hint nil)
+  "
+History^^
+------------------------------------------
+for _f_ile"
+  ("f" magit-log-buffer-file ))
+
 (defhydra hydra-global-org (:color blue
                                    :hint nil)
   "
@@ -468,7 +479,7 @@ lines containing _E_rror     lines containing E_r_ror
                           :width 'normal))))
 
 (run-with-timer 15 nil #'(lambda ()
-                           (mpx-set-fonts prefered-font-family 100)))
+                           (mpx-set-fonts prefered-font-family 120)))
 
 (use-package stripe-buffer)
 
@@ -489,12 +500,12 @@ lines containing _E_rror     lines containing E_r_ror
                  (window-height   . 0.3))))
 
 (set-default 'frame-title-format '(:eval 
-                                   (if (boundp 'mpx-promt-project-root)
+                                   (if (projectile-project-root)
                                        (format "Emacs: %%b [%s]"
                                                (car
                                                 (cdr
                                                  (reverse
-                                                  (split-string mpx-promt-project-root "/")))))
+                                                  (split-string (projectile-project-root) "/")))))
                                      (format "Emacs: %%b"))))
 
 (when window-system
@@ -629,7 +640,7 @@ lines containing _E_rror     lines containing E_r_ror
 (use-package ibuffer
   :bind ("C-x C-b" . ibuffer)
   :init
-
+  
   (define-ibuffer-column dirname
     (:name "Directory" :inline nil)
     (let ((result (buffer-name))
@@ -648,8 +659,8 @@ lines containing _E_rror     lines containing E_r_ror
                          (file-name-directory buf-file-name)
                        nil)))
       (if dir-name
-          (let* ((result (if (> (length dir-name) 47)
-                             (concat "⋯" (substring dir-name (- (length dir-name) 47)))
+          (let* ((result (if (> (length dir-name) 199)
+                             (concat "⋯" (substring dir-name (- (length dir-name) 199)))
                            dir-name)))
             (if result
                 result
@@ -658,11 +669,11 @@ lines containing _E_rror     lines containing E_r_ror
 
   (setq ibuffer-show-empty-filter-groups nil
         ;;      ibuffer-formats '(( mark (git-status-mini) modified read-only "|"
-        ibuffer-formats '(( mark (additional-info  48 48 :right :elide)
-                                 "|" (name 24 24 :left :elide)
-                                 "|" (mode 16 16 :left :elide)
-                                 "|" (size 9 -1 :left)
-                                 "[" modified read-only "] " 
+        ibuffer-formats '(( mark "[" modified read-only "] " 
+                                 (name 40 40 :left :elide)
+;;                                 "|" (mode 16 16 :left :elide)
+                                 "|" (size 12 12 :left)
+                                 " | " (additional-info  20 200 :left :elide)
                                  ) ;; filename-and-process)
                           (mark " "
                                 (name 16 -1)
@@ -671,8 +682,12 @@ lines containing _E_rror     lines containing E_r_ror
   (defun ibuffer-mode-hook-extender ()
     (ibuffer-auto-mode 0) ;; auto updates disabled
     (hl-line-mode)
+    (stripe-buffer-mode)
+    (define-key ibuffer-mode-map (kbd "<RET>") 'ibuffer-visit-buffer-other-window)
     (define-key ibuffer-mode-map (kbd "M-<RET>") 'ibuffer-visit-buffer-other-frame)
-    (define-key ibuffer-mode-map (kbd "p") 'ibuffer-show-file-path))
+    (define-key ibuffer-mode-map (kbd "p") 'ibuffer-show-file-path)
+    (ibuffer-vc-set-filter-groups-by-vc-root)
+    (ibuffer-do-sort-by-filename/process))
   
   (add-hook 'ibuffer-mode-hook 'ibuffer-mode-hook-extender))
 
@@ -869,6 +884,8 @@ _r_eload snippets                 _i_nsert snippet
   (setq-local comment-auto-fill-only-comments t)
   (auto-fill-mode 1)
   (setq-local comment-multi-line t)
+  (stripe-buffer-mode)
+  (display-line-numbers-mode)  
   (local-set-key (kbd "RET") 'c-indent-new-comment-line))
 
 (define-auto-insert '("\\.js\\'" . "Javscript Skeleton")
@@ -967,6 +984,8 @@ _r_eload snippets                 _i_nsert snippet
 
 (use-package pretty-symbols)
 
+(require 'ob-js)
+
 (defun org-mode-setup ()
   ;;  "Stop the org-level headers from increasing in height relative to the other text."
 
@@ -1005,6 +1024,7 @@ _r_eload snippets                 _i_nsert snippet
         org-special-ctrl-a/e t
         org-special-ctrl-k t
         org-src-fontify-natively t
+        org-src-tab-acts-natively t
         org-todo-keywords '((sequence "TODO" "DOING" "DONE" "|" "IDEA")))
 
   (local-set-key (kbd "<return>") #'org-return-indent)
@@ -1020,6 +1040,7 @@ _r_eload snippets                 _i_nsert snippet
      (dot . t)
      (gnuplot . t)
      (java . t)
+     (js . t)
      (perl . t)
      (http . t)
      (shell . t) ) ) )
@@ -1082,6 +1103,7 @@ _r_eload snippets                 _i_nsert snippet
         (select-window (get-buffer-window "*prodigy*")))))
 
   (defun prodigy-mode-setup ()
+    (stripe-buffer-mode)
     (local-set-key (kbd "n") 'prodigy-next-line)
     (local-set-key (kbd "p") 'prodigy-previous-line))
 
@@ -1099,7 +1121,42 @@ _r_eload snippets                 _i_nsert snippet
 
 ;; [ sr-speedbar neotree
 
+(use-package treemacs
+  :bind ("<f6>" . treemacs)
+  :config
+  
+  (defhydra hydra-treemacs (:color blue)
+    "
+Project/Workspace                Files
+---------------------------------------------------------------------------------
+_a_dd project to workspace         copy _p_ath at point
+add and display current _p_roject  create _d_ir
+copy project _r_oot                create _f_ile
+create _w_orkspace                 _d_elete file/dir
+collapse al_l_ projects
+collapse ot_h_er projects
+move project up (↑)
+move project down (↓)
+_r_emove project
+"
+    ("a" treemacs-add-project-to-workspace)
+    ("p" treemacs-add-and-display-current-project)
+    ("f" treemacs-create-file)
+    ("d" treemacs-create-dir)
+    ("r" treemacs-copy-project-root)
+    ("w" treemacs-create-workspace)
+    ("d" treemacs-delete)
+    ("l" treemacs-collapse-all-projects)
+    ("h" treemacs-collapse-other-projects)
+    ("<down>" treemacs-move-project-down)
+    ("<up>" treemacs-move-project-up)
+    ("r" treemacs-remove-project-from-workspace))
+
+    (add-hook 'treemacs-mode-hook '(lambda ()
+                                     (local-set-key (kbd "C-h C-m") 'hydra-treemacs/body))))
+
 (use-package neotree
+  :disabled
   :bind( "<f6>" . neotree-toggle))
 
 (use-package sr-speedbar
@@ -1502,13 +1559,7 @@ _f_it to Buffer  _m_ake       _e_diff
   ;; navigate camel cased words
   (subword-mode)
   ;; Get help with javadoc (need to have this working for non-jdk classes too
-  (local-set-key (kbd "C-h j") 'javadoc-lookup)
-  ;; Turn on auto-complete mode and set ac-sources
-  (auto-complete-mode 1)
-  (setq ac-sources '(ac-source-yasnippet
-                     ac-source-classpath
-                     ac-source-dictionary
-                     ac-source-words-in-same-mode-buffers)))
+  (local-set-key (kbd "C-h j") 'javadoc-lookup))
 
 (add-hook 'java-mode-hook 'java-mode-setup)
 
@@ -1645,7 +1696,8 @@ T - tag prefix
 (defun xml-mode-setup ()
   (local-set-key (kbd "C-x <return>") 'sgml-close-tag)
   (setq nxml-slash-auto-complete-flag t)
-  (local-set-key (kbd ">" 'mpx-magic->)))
+  (local-set-key (kbd ">" 'mpx-magic->))
+  (local-set-key (kbd "C-h C-m") 'hydra-xml/body))
 
 (add-hook 'xml-mode-hook 'xml-mode-setup)
 
@@ -1693,6 +1745,15 @@ T - tag prefix
 
 (setq nxml-child-indent 4
       nxml-attribute-indent 4)
+
+(defhydra hydra-xml (:color blue :hint nil)
+    "
+xml mode hydra^^
+----------------------------------------------
+_p_: pretty print buffer
+
+"
+    ("p" xml-pretty-print-buffer))
 
 ;; [ ant mode
 
@@ -1818,8 +1879,7 @@ T - tag prefix
   (setq-local comment-multi-line t)
   (local-set-key (kbd "M-#") 'comment-dwim)
   (jedi:setup)
-  (auto-complete-mode 1)
-  (company-mode -1)
+  (company-mode 1)
   (setq ac-sources (list 'ac-source-jedi-direct 'ac-source-words-in-same-mode-buffers)))
 
 (use-package elpy
@@ -1846,7 +1906,23 @@ T - tag prefix
 
 ;; ]
 
-;; [ restclient mode
+;; [ http rest client mode
+
+(use-package know-your-http-well
+  :bind ("C-h C-h" . hydra-http/body)
+  :config
+
+  (defhydra hydra-http (:color blue :hint nil)
+    "
+Know your HTTP well^^
+----------------------------------------------
+_h_: Headers    _m_: Methods
+_r_: Relations  _s_: Status codes
+"
+    ("h" http-header)
+    ("m" http-method)
+    ("r" http-relation)
+    ("s" http-status-code)))
 
 (use-package restclient
   :config
@@ -1917,11 +1993,7 @@ and then do re-implement restclient-bookmarks and project files with this."
 
   (add-hook 'ng2-ts-mode-hook #'(lambda ()
                                   (hl-line-mode)
-                                  (display-line-numbers-mode)
-                                  (auto-complete-mode)
-                                  (setq ac-sources '(ac-source-yasnippet
-                                                     ac-source-filename
-                                                     ac-source-files-in-current-dir))
+                                  (display-line-numbers-mode)                                  
                                   (setq c-basic-offset 4)))
 
   (add-hook 'ng2-html-mode-hook #'(lambda ()
@@ -2023,8 +2095,17 @@ and then do re-implement restclient-bookmarks and project files with this."
 ;; Note: use /ssh:hostname.domain:/path/to/file to access remote files.
 ;; For ease of use: Make sure that ssh access is granted via public key
 
-(setq tramp-default-method "ssh"
+(setq tramp-default-method (if (eq system-type 'windows-nt)
+			       "plink"
+			     "ssh")
       tramp-auto-save-directory "~/.emacs.d/auto-save/")
+
+(defun mpx/connect-to-remote-host (host)
+  (interactive (list 
+                (completing-read "Which host do you want to connect to?" remote-hosts)))
+  (find-file (format "/plink:root@%s:/" host)))
+
+(global-set-key (kbd "C-h C-t") 'mpx/connect-to-remote-host)
 
 ;; ]
 
@@ -2058,6 +2139,8 @@ and then do re-implement restclient-bookmarks and project files with this."
 
 (use-package magit
   :config
+
+  (global-set-key (kbd "C-h C-v") 'hydra-magit/body) ;; C-h C-v - v for version control
 
   (setq magit-completing-read-function 'ivy-completing-read)
 
@@ -2122,121 +2205,22 @@ and then do re-implement restclient-bookmarks and project files with this."
 
 ;; ]
 
-
-;; [ auto-complete
-
-(use-package ac-etags
-  :config
-  :disabled
-  (ac-etags-setup))
-
-(use-package ac-php
-  :disabled)
-
-(use-package auto-complete
-  :config
-  (require 'auto-complete)
-  (require 'auto-complete-config)
-
-  (setq
-   ac-auto-show-menu 0.2
-   ac-auto-start 0.2
-   ac-comphist-file "~/.emacs.d/ac-comphist.dat"
-   ac-dictionary-directories (quote ("~/.emacs.d/dictionaries/"))   ;; mode specific dictionaries
-   ac-dictionary-files (quote ("~/.emacs.d/dictionaries/personal")) ;; personal dictionary
-   ac-quick-help-delay 0.2
-   ac-use-fuzzy t
-   ac-dwim t
-   ac-use-menu-map t
-   ac-use-quick-help nil)
-
-  (global-set-key (kbd "C-c C-<SPC>") 'auto-complete)
-
-  (define-key ac-menu-map "\C-n" 'ac-next)
-  (define-key ac-menu-map "\C-p" 'ac-previous)
-  (define-key ac-menu-map "\C-s" 'ac-isearch)
-  (define-key ac-mode-map (kbd "C-x /") 'ac-complete-filename)
-
-  (dolist (mode (list 'xml-mode 'web-mode 'sh-mode
-                      'emacs-lisp-mode 'java-mode
-                      'js2-mode))
-    (add-to-list 'ac-modes mode))
-
-  (defun mp-ac-setup-for-emacs-lisp-mode ()
-    "Turn on auto-complete mode and set ac-sources for emacs-lisp-mode."
-    (setq ac-sources '(ac-source-yasnippet
-                       ac-source-filename
-                       ac-source-files-in-current-dir
-                       ac-source-features
-                       ac-source-functions
-                       ac-source-variables
-                       ac-source-symbols))
-    (auto-complete-mode t) )
-
-  (add-hook 'emacs-lisp-mode-hook 'mp-ac-setup-for-emacs-lisp-mode)
-
-  (defun mp-ac-setup-for-c-mode ()
-    "Turn on auto-complete mode and set ac-sources for c/c++-mode."
-    (setq ac-sources  (list
-                       'ac-source-yasnippet
-                       'ac-source-etags
-                       'ac-source-dictionary
-                       'ac-source-words-in-same-mode-buffers))
-    (auto-complete-mode 1) )
-
-  (add-hook 'c-mode-hook 'mp-ac-setup-for-c-mode)
-  (add-hook 'c++-mode-hook 'mp-ac-setup-for-c-mode)
-
-  (defvar ac-source-classpath-cache nil)
-
-  (defun ac-source-classpath-init ()
-    (setq ac-source-classpath-cache (java-read-classes-from-classpath)))
-
-  (defvar ac-source-classpath
-    '((init . ac-source-classpath-init)
-      (candidates . ac-source-classpath-cache)
-      (prefix . "^import \\(.*\\)")))
-
-  (defun mp-ac-setup-for-php-mode ()
-    "Turn on auto-complete mode and set ac-sources for ac-php."
-    (require 'ac-php)    
-    (setq ac-sources  (list
-                       'ac-source-yasnippet
-                       'ac-source-php
-                       'ac-source-words-in-same-mode-buffers) )
-    (auto-complete-mode 1))
-
-  (add-hook 'php-mode-hook 'mp-ac-setup-for-php-mode)
-
-  (defun mp-ac-setup-for-shell-mode ()
-    "Turn on auto-complete mode and set ac-sources for shell-mode."
-    (define-key ac-mode-map (kbd "C-c /") 'ac-complete-filename) 
-    (auto-complete-mode 1) )
-
-  (add-hook 'shell-mode-hook 'mp-ac-setup-for-shell-mode) ) ;; end of use-package
-
-;; ]
-
 ;; [ company
 
 ;; (require 'cl-lib)
 ;; (require 'company)
 
 (use-package company-php
-  :disabled
   :config
   (add-hook 'php-mode-hook
             '(lambda ()
                (require 'company-php)
                (setq company-backends '(company-ac-php-backend )))))
 
-;;(use-package company-statistics)
+;; (use-package company-statistics)
 
 (use-package company
-  :disabled
   :config
-  ;; see company-backends for company backends
-  ;; (make-variable-buffer-local 'company-backends)
   (require 'company-template))
 
 ;; ]
@@ -2317,7 +2301,7 @@ and then do re-implement restclient-bookmarks and project files with this."
                                 (font-lock-add-keywords nil '(("\\(SCHWERWIEGEND\\)" 1 font-lock-warning-face t)))
                                 (define-key logview-mode-map  (kbd "<") 'beginning-of-buffer)
                                 (define-key logview-mode-map (kbd ">") 'end-of-buffer)
-                                (define-key logview-mode-map (kbd "C-h h") 'hydra-highlighting/body)))
+                                (define-key logview-mode-map (kbd "C-h C-m") 'hydra-highlighting/body)))
 
 (define-derived-mode ndf-logview-mode view-mode
   "ndf-logview"
@@ -2459,7 +2443,7 @@ jso_n_-mode    _x_ml-mode
   ("s" scratch-goto-shl-mode)
   ("x" scratch-goto-xml-mode))
 
-(global-set-key (kbd "C-h s") 'hydra-global-scratch/body)
+(global-set-key (kbd "C-h C-s") 'hydra-global-scratch/body)
 
 
 ;; ]
@@ -2581,7 +2565,7 @@ jso_n_-mode    _x_ml-mode
 
 
 (defun dashboard-system-info-insert-load-path ()
-  (dashboard-insert-list load-path "     - "))
+  (dashboard-insert-list load-path "                       - "))
 
 (defun dashboard-system-info (numitems)
   (dashboard-insert-heading "Emacs system information:")
@@ -2591,6 +2575,7 @@ jso_n_-mode    _x_ml-mode
   (insert "    User init file: " user-init-file)
   (newline)
   (insert "        load-path : ")
+  (newline)
   (dashboard-system-info-insert-load-path))
 
 (defun dashboard-insert-recentx-list (list-display-name list)
@@ -2653,39 +2638,58 @@ jso_n_-mode    _x_ml-mode
 
 ;; ]
 
-;; [ projectile
+;; [ projectile and ffap
+
+(defun mpx-find-file-dispatcher (prefix-arg) 
+  "Look if there is a file at point. Otherwiese try
+projectile find file and finally plain find-file. With
+PREFIX-ARG open files in other window."
+  (interactive "P")
+  (let ((file-at-point (thing-at-point 'filename)))
+    (if (file-exists-p (or
+                        file-at-point
+                        "no-file"))
+        (when prefix-arg
+          (find-file-other-window file-at-point))
+      (let ((find-file-function 
+             (if prefix-arg
+                 (if (projectile-project-root)
+                     (call-interactively 'projectile-find-file-dwim-other-frame)
+                   'find-file-other-frame)
+               (if (projectile-project-root)
+                   (call-interactively 'projectile-find-file)
+                 'find-file))))))))
+
+(defun mpx-switch-buffer-dispatcher (prefix-arg)
+  "Call switch buffer variation according to context"
+  (interactive "P")
+  (if (or prefix-arg
+          (not (projectile-project-root)))
+      (call-interactively 'switch-to-buffer)    
+    (projectile-switch-to-buffer)))
+
 
 ;; Also see http://batsov.com/projectile/
 
 (use-package projectile
   :config
-  (global-set-key (kbd "C-x C-f") (lambda () (interactive)
-                                    (if (featurep 'projectile-project-root)
-                                        (projectile-find-file-dwim))
-                                    (call-interactively 'find-file)))
-  (global-set-key (kbd "C-x b") (lambda () (interactive)
-                                  (if (featurep 'projectile-project-root)
-                                      (projectile-switch-to-buffer)
-                                    (call-interactively 'switch-to-buffer))))
+  (global-set-key (kbd "C-x f") 'projectile-find-file)
+  (global-set-key (kbd "C-x b") 'mpx-switch-buffer-dispatcher)
   (setq projectile-completion-system 'ivy
         projectile-indexing-method 'alien
         projectile-enable-caching t
         projectile-switch-project-action 'projectile-dired
         projectile-track-known-projects-automatically nil)
-  (projectile-mode))
-
-(defun projectile-available-p ()
-  "Determine if we are anywhere where calling projectile functions makes sense."
-  (fboundp 'projectile-project-root))
+  (projectile-global-mode))
 
 (defhydra hydra-projectile (:color lightblue
                             :hint nil)
   "
      PROJECTILE: %(projectile-project-root)
 
-     Find File          Search/Tags       Buffers              Cache
-------------------------------------------------------------------------------------------
-  _F_: file            _t_: xref find tag  _i_: Ibuffer           _c_: cache clear
+  Find File          Search/Tags       Buffers              Cache                      Projects
+---------------------------------------------------------------------------------------------------------------
+  _F_: file            _t_: xref find tag  _i_: Ibuffer           _c_: cache clear             _w_: Start new website
  _ff_: file dwim                         _b_: switch to buffer  _x_: remove known project
  _fd_: file curr dir   _o_: multi-occur    _K_: Kill all buffers  _X_: cleanup non-existing
   _r_: recent file                                            ^^^^_z_: cache current
@@ -2702,17 +2706,15 @@ jso_n_-mode    _x_ml-mode
   ("t"   xref-find-definitions-other-window)
   ("i"   projectile-ibuffer)
   ("K"   projectile-kill-buffers)
-  ("m"   projectile-multi-occur)
   ("o"   projectile-multi-occur)
   ("P"   projectile-switch-project "switch project")
-  ("p"   projectile-switch-project)
-  ("s"   projectile-switch-project)
   ("r"   projectile-recentf)
   ("x"   projectile-remove-known-project)
   ("X"   projectile-cleanup-known-projects)
   ("z"   projectile-cache-current-file)
   ("`"   hydra-projectile-other-window/body "other window")
-  ("q"   nil "cancel" :color blue))
+  ("q"   nil "cancel" :color blue)
+  ("w" start-website))
 
 (global-set-key (kbd "C-h C-p") 'hydra-projectile/body)
 
@@ -2750,6 +2752,12 @@ lifecycle     ^clean^          ^default^
 
 ;; ]
 
+;; [ occur mode
+
+(add-standard-display-buffer-entry "*Occur*")
+
+;; ]
+
 ;; [ Finalizer
 
 (require 'convenience)
@@ -2764,3 +2772,4 @@ lifecycle     ^clean^          ^default^
 (setq mode-line-format mpx-standard-mode-line-format)
 
 ;; ]
+(put 'list-timers 'disabled nil)

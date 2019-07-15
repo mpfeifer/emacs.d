@@ -1,24 +1,36 @@
-;;; n.el
+;;; ndf-mode.el --- 
+;; 
+;; Description: Major mode for editing ndf xml files
+;; Author: Matthias
+;; Keywords: ndf xml
+;; Dependencies: 
+;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; NSS log files
-
-(define-derived-mode nss-config-file-mode view-mode
-  "NSS"
-  "Mode for reading speech server config files")
-
-(defun nss/clean-out-comments ()
-  "Remove empty lines and comment lines from current buffer"
-  (when nss-config-file-mode
-    (progn
-      (goto-char (point-min))
-      (set-mark (point))
-      (goto-char (point-max))
-      (exchange-point-and-mark)
-      (flush-lines "^$\\|^#.*")
-      (sort-lines nil (point-min) (point-max)))))
-
-;; [ ndf mode
+;; 
+;; Changelog: 
+;; 
+;; 0.2 (Thu Jul 11 14:09:54 2019): Initial release
+;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 
+;; This program is free software; you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License as
+;; published by the Free Software Foundation; either version 3, or
+;; (at your option) any later version.
+;; 
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;; General Public License for more details.
+;; 
+;; You should have received a copy of the GNU General Public License
+;; along with this program; see the file COPYING.  If not, write to
+;; the Free Software Foundation, Inc., 51 Franklin Street, Fifth
+;; Floor, Boston, MA 02110-1301, USA.
+;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 
+;;; Code:
 
 (define-derived-mode ndf-xml-mode xml-mode
   "NDF"
@@ -41,19 +53,5 @@
 
 (add-hook 'ndf-xml-mode-hook 'ndf-xml-mode-setup)
 
-;; ]
-
-(define-derived-mode nar-log-mode view-mode
-  "Nar"
-  "Mode for reading nar log files")
-
-(add-hook 'nar-log-mode-hook '(lambda ()
-                           (local-set-key (kbd "n") 'next-line)
-                           (local-set-key (kbd "p") 'previous-line)
-                           (local-set-key (kbd "f") 'forward-word)
-                           (hl-line-mode)))
-
-(provide 'n)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; n.el ends here
+;;; ndf-mode.el ends here

@@ -2,11 +2,11 @@
 
 
 (defgroup Custom-X
-  nil "All things related to my customization"
+  nil "All things related to my extensions to the emacs customizations"
   :group 'Emacs)
 
 (defgroup External-Utilities
-  nil "List of extern tools"
+  nil "List of external tools"
   :group 'Custom-X)
 
 (defgroup development
@@ -65,7 +65,7 @@
 
 (defcustom web-application-root
   java-project-root
-  "New web projects are stored in this directory."
+  "New web application projects are stored in this directory."
   :group 'Web-X)
 
 (defcustom

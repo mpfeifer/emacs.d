@@ -1,2 +1,2 @@
 echo invoking %1
- < nul
+%1 < nul

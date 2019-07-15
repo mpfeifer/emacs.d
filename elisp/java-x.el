@@ -142,7 +142,7 @@ TODO: Rewrite to use promt.el"
 
 (defun java-preprocessor()
   (let ((classname (file-name-sans-extension (buffer-name)))
-        (packagename (guess-package-name-for-current-buffer)))
+        (packagename (java-guess-package-name-for-current-buffer)))
     (while (search-forward "CLASSNAME" nil t)
       (replace-match classname t))
     (goto-char (point-min))
