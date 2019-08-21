@@ -72,7 +72,6 @@
 (global-set-key (kbd "<f4>") 'package-list-packages-no-fetch)
 
 (add-hook 'package-menu-mode-hook 'hl-line-mode)
-(add-hook 'package-menu-mode-hook 'stripe-buffer-mode)
 
 (defun mpx-get-hostname ()
   "Get hostname in a windows/linux/cygwin agnostic way."
@@ -276,40 +275,17 @@
 
 ;; ]
 
-;; [ hydra
+;; [ prog mode
 
+(defun mpx-prog-mode-setup ()
+  "Hook run by prog-mode."
+  (hl-line-mode)
+  (display-line-numbers-mode)
+  (yas-minor-mode)
+  (projectile-mode)
+  (company-mode))
 
-(defhydra hydra-magit (:color blue :hint nil)
-  "
-History^^
-------------------------------------------
-for _f_ile"
-  ("f" magit-log-buffer-file ))
-
-(defhydra hydra-global-org (:color blue
-                                   :hint nil)
-  "
-Timer^^        ^Clock^       
------------------------------
-s_t_art        _w_ clock in  
- _s_top        _o_ clock out 
-_r_eset        _j_ clock goto
-_p_rint        _m_ clock mru
-               _c_ cancel clock
-               _d_ display clock"
-  ("t" org-timer-start)
-  ("s" org-timer-stop)
-  ;; Need to be at timer
-  ("r" org-timer-set-timer)
-  ;; Print timer value to buffer
-  ("p" org-timer)
-  ("w" (org-clock-in '(4)))
-  ("o" org-clock-out)
-  ;; Visit the clocked task from any buffer
-  ("j" org-clock-goto)
-  ("m" org-mru-clock-in)
-  ("c" org-clock-cancel)
-  ("d" org-clock-display))
+(setq prog-mode-hook (list 'mpx-prog-mode-setup))
 
 ;; ]
 
@@ -319,6 +295,8 @@ _p_rint        _m_ clock mru
 ;; a list of functions. Each defun marks part of the buffer.
 ;; Incrementally largens the region by checking these functions.
 ;; To customize add function to er/try-expand-list in any mode hook.
+
+;; TODO have expand region recognize unary tags in html eg <img ... />
 
 (defun er/mark-table-cell ()
   "Mark a table cell"
@@ -343,8 +321,7 @@ _p_rint        _m_ clock mru
 
 (defun mpx-er-org-extensions ()
   (add-to-list 'er/try-expand-list 'er/mark-table-cell)
-  (add-to-list 'er/try-expand-list 'er/mark-table-row)
-  (define-key org-mode-map (kbd "C-h o") 'hydra-global-org/body))
+  (add-to-list 'er/try-expand-list 'er/mark-table-row))
 
 (add-hook 'org-mode-hook 'mpx-er-org-extensions)
 
@@ -352,7 +329,7 @@ _p_rint        _m_ clock mru
   :config
   (global-set-key (kbd "C-v") 'er/expand-region)
   (global-set-key (kbd "C-M-v") 'er/contract-region) 
-  (eval-after-load 'ng2-mode '(require 'ng2-mode-expansions)))
+  (eval-after-load 'ng2-mode '(require 'angular-helpers)))
 
 
 ;; ]
@@ -388,27 +365,6 @@ _p_rint        _m_ clock mru
 ;; Inserts a list of Hi-Lock patterns into the buffer
 
 ;; M-s h f or hi-lock-find-patterns
-
-(defhydra highlighting-hydra (:color blue :hint nil)
-  "
-Highlight                  Unhighlight
-------------------------------------------------
-_l_ines matching regexp      regular _e_xpression
-_p_hrase                 
-_r_egular expression
-lines containing _E_rror     lines containing E_r_ror
-
-"
-  ("l" highlight-lines-matching-regexp)
-  ("p" highlight-phrase)
-  ("r" highlight-regexp)
-  ("e" unhighlight-regexp)
-  ("E" (call-interactively '(lambda ()
-                              (interactive)
-                              (highlight-lines-matching-regexp "ERROR" 'hi-pink))))
-  ("r" (call-interactively '(lambda ()
-                              (interactive)
-                              (unhighlight-regexp "^.*ERROR.*$")))))
 
 ;; ]
 
@@ -481,12 +437,24 @@ lines containing _E_rror     lines containing E_r_ror
 (run-with-timer 15 nil #'(lambda ()
                            (mpx-set-fonts prefered-font-family 120)))
 
-(use-package stripe-buffer)
+(use-package stripe-buffer
+  :disabled
+  :config
+
+  (defconst mpx-stripe-buffer-modes (list 'emacs-lisp-mode 'java-mode 'ibuffer-mode 'logview-mode))
+
+  (defun mpx-stripe-buffer-configuration-change-handler ()
+    (if (> (length (window-list)) 1)
+        (stripe-buffer-mode -1)
+      (when (member major-mode mpx-stripe-buffer-modes)
+        (stripe-buffer-mode 1))))
+
+  (add-hook 'window-configuration-change-hook 'mpx-stripe-buffer-configuration-change-handler))
 
 (use-package theme-changer
+  :disabled
   :config
-  (change-theme '(material-light) '(material))
-  (require 'hl-line))
+  (change-theme 'material-light 'material))
 
 (defun add-standard-display-buffer-entry (name)
   "Add an entry to display-buffer-alist for buffers called NAME."
@@ -499,14 +467,7 @@ lines containing _E_rror     lines containing E_r_ror
                  (side            . bottom)
                  (window-height   . 0.3))))
 
-(set-default 'frame-title-format '(:eval 
-                                   (if (projectile-project-root)
-                                       (format "Emacs: %%b [%s]"
-                                               (car
-                                                (cdr
-                                                 (reverse
-                                                  (split-string (projectile-project-root) "/")))))
-                                     (format "Emacs: %%b"))))
+(set-default 'frame-title-format '(:eval (format "%%b")))
 
 (when window-system
   (progn
@@ -601,14 +562,6 @@ lines containing _E_rror     lines containing E_r_ror
 
 ;; [ ibuffer
 
-;; (define-ibuffer-sorter ibuffer-sorter-alphabetic-by-path
-;;   "Sort the buffers by their filename (including path).
-;; Ordering is lexicographic."
-;;   (:description "buffer name")
-;;   (string-lessp
-;;    (buffer-file-name (car a))
-;;    (buffer-file-name (car b))))
-
 (defadvice ibuffer-center-recenter (around ibuffer-point-to-most-recent activate)
   "Open ibuffer with cursor pointed to most recent (non-minibuffer) buffer name"
   (let ((recent-buffer-name
@@ -634,8 +587,8 @@ lines containing _E_rror     lines containing E_r_ror
                      (file-directory (file-name-directory filename))
                      (just-filename (file-name-nondirectory filename)))
                 (setq input file-directory))))
-        (setq input "Buffer is not backed by a file"))
-      (message input))))
+        (setq info "Buffer is not backed by a file"))
+      (message info))))
 
 (use-package ibuffer
   :bind ("C-x C-b" . ibuffer)
@@ -682,7 +635,6 @@ lines containing _E_rror     lines containing E_r_ror
   (defun ibuffer-mode-hook-extender ()
     (ibuffer-auto-mode 0) ;; auto updates disabled
     (hl-line-mode)
-    (stripe-buffer-mode)
     (define-key ibuffer-mode-map (kbd "<RET>") 'ibuffer-visit-buffer-other-window)
     (define-key ibuffer-mode-map (kbd "M-<RET>") 'ibuffer-visit-buffer-other-frame)
     (define-key ibuffer-mode-map (kbd "p") 'ibuffer-show-file-path)
@@ -693,30 +645,7 @@ lines containing _E_rror     lines containing E_r_ror
 
 ;; ]
 
-;; [ emacs lisp mode
-
-(defvar elx-debug-ignored-errors nil
-  "Keep backup of DEBUG-IGNORED-ERRORS erros before overwriting variable")
-
-(defun elx-debug-on-error (arg)
-  "Do debug on error with no ignored errors at all. When prefix ARG is present
-restore former values for debug-on-error and debug-ignored-errors."
-  (interactive "P")
-  (if arg
-      (progn
-        (setq debug-on-error nil
-              debug-ignored-errors elx-debug-ignored-errors
-              elx-debug-ignored-errors nil)
-        (message "Debug on error disabled"))
-    (progn
-      (setq elx-debug-ignored-errors (if elx-debug-ignored-errors
-                                         elx-debug-ignored-errors
-                                       debug-ignored-errors)
-            debug-on-error t
-            debug-ignored-errors nil)
-      (message "Debug on error enabled"))))
-
-(global-set-key (kbd "C-x C-d") 'elx-debug-on-error)
+;; [ emacs lisp mode elisp
 
 (defun elisp-preprocessor()
   "Process emacs lisp template file and replace place holder."
@@ -773,9 +702,9 @@ restore former values for debug-on-error and debug-ignored-errors."
   (byte-compile-file (buffer-file-name)))
 
 (defun emacs-lisp-mode-setup ()
+  (projectile-mode)
   (when (string= (buffer-name) "init.el")
     (dotemacs-mode-hook))
-  (hl-line-mode)
   (local-set-key (kbd "C-;") 'comment-dwim)
   (local-set-key (kbd "C-c C-c") 'byte-compile-current-buffer)
   (electric-pair-mode) )
@@ -839,36 +768,7 @@ restore former values for debug-on-error and debug-ignored-errors."
   (yas-load-directory yasnippet-my-snippets-dir)
   (require 'warnings)
   ;; do not complain when snippets change buffer contents
-  (add-to-list 'warning-suppress-types '(yasnippet backquote-change))
-  ;; enable yasnippet mode in some modes:
-  (add-hook 'python-mode-hook 'yas-minor-mode)
-  (add-hook 'java-mode-hook 'yas-minor-mode)
-  (add-hook 'emacs-lisp-mode-hook 'yas-minor-mode)
-  (add-hook 'js2-mode-hook 'yas-minor-mode)
-  (add-hook 'xml-mode-hook 'yas-minor-mode)
-  (add-hook 'nxml-mode-hook 'yas-minor-mode)
-  (add-hook 'maven-mode-hook 'yas-minor-mode)
-  (add-hook 'ant-mode-hook 'yas-minor-mode)
-  (add-hook 'sh-mode-hook 'yas-minor-mode))
-;; [ hydra
-
-(defhydra hydra-yasnippets (:color blue
-                                   :hint nil)
-  "
-Yasnippet - Yasnippet - Yasnippet - Yasnippet - Yasnippet
----------------------------------------------------------
-_n_ew snippet for current mode    _e_dit existing snippet
-_r_eload snippets                 _i_nsert snippet
-"
-  ("n" yas-new-snippet)
-  ("e" yas-visit-snippet-file)
-  ;; Need to be at timer
-  ("r" yas-reload-all)
-  ("i" yas-insert-snippet))
-
-(define-key yas-minor-mode-map (kbd "C-h y") 'hydra-yasnippets/body)
-
-;; ]
+  (add-to-list 'warning-suppress-types '(yasnippet backquote-change)))
 
 ;; [ tide
 
@@ -879,13 +779,12 @@ _r_eload snippets                 _i_nsert snippet
 ;; [ js2 javascript
 
 (defun js2-mode-setup ()
+  (projectile-mode)
   (setq indent-tabs-mode nil
         js-indent-level 4)
   (setq-local comment-auto-fill-only-comments t)
   (auto-fill-mode 1)
   (setq-local comment-multi-line t)
-  (stripe-buffer-mode)
-  (display-line-numbers-mode)  
   (local-set-key (kbd "RET") 'c-indent-new-comment-line))
 
 (define-auto-insert '("\\.js\\'" . "Javscript Skeleton")
@@ -895,17 +794,6 @@ _r_eload snippets                 _i_nsert snippet
       " * File created on " (format-time-string "%A, %e %B %Y.") \n
       " */" \n \n \n )
     indent-buffer ] )
-
-(defun create-qunit-test-for-current-buffer ()
-  (interactive)
-  (let ((test-html-file (replace-regexp-in-string (regexp-quote ".js") "-test.html" (buffer-name)))
-        (test-js-file (replace-regexp-in-string (regexp-quote ".js") "-test.js" (buffer-name))))
-    (progn
-      (find-file test-html-file)
-      (goto-char (point-min))
-      (split-window (selected-window) 15)
-      (other-window 1)
-      (find-file test-js-file))))
 
 (use-package js2-mode
   :config
@@ -1103,7 +991,6 @@ _r_eload snippets                 _i_nsert snippet
         (select-window (get-buffer-window "*prodigy*")))))
 
   (defun prodigy-mode-setup ()
-    (stripe-buffer-mode)
     (local-set-key (kbd "n") 'prodigy-next-line)
     (local-set-key (kbd "p") 'prodigy-previous-line))
 
@@ -1124,36 +1011,10 @@ _r_eload snippets                 _i_nsert snippet
 (use-package treemacs
   :bind ("<f6>" . treemacs)
   :config
-  
-  (defhydra hydra-treemacs (:color blue)
-    "
-Project/Workspace                Files
----------------------------------------------------------------------------------
-_a_dd project to workspace         copy _p_ath at point
-add and display current _p_roject  create _d_ir
-copy project _r_oot                create _f_ile
-create _w_orkspace                 _d_elete file/dir
-collapse al_l_ projects
-collapse ot_h_er projects
-move project up (↑)
-move project down (↓)
-_r_emove project
-"
-    ("a" treemacs-add-project-to-workspace)
-    ("p" treemacs-add-and-display-current-project)
-    ("f" treemacs-create-file)
-    ("d" treemacs-create-dir)
-    ("r" treemacs-copy-project-root)
-    ("w" treemacs-create-workspace)
-    ("d" treemacs-delete)
-    ("l" treemacs-collapse-all-projects)
-    ("h" treemacs-collapse-other-projects)
-    ("<down>" treemacs-move-project-down)
-    ("<up>" treemacs-move-project-up)
-    ("r" treemacs-remove-project-from-workspace))
-
-    (add-hook 'treemacs-mode-hook '(lambda ()
-                                     (local-set-key (kbd "C-h C-m") 'hydra-treemacs/body))))
+  (require 'treemacs)
+  (add-hook 'treemacs-mode-hook '(lambda ()
+                                   ;; this space is left blank
+                                   t )))
 
 (use-package neotree
   :disabled
@@ -1352,54 +1213,6 @@ and display corresponding buffer in new frame."
     (error
      (message "This frame is the last remaining frame. It cannot be deleted."))))
 
-(defconst mpx-ui-ops-use-hydra 't)
-
-(if mpx-ui-ops-use-hydra
-    (progn
-      (defhydra ui-ops-hydra (:color blue :hint nil)
-        "
-Windows        Frames     Buffers         Moving
-----------------------------------------------------------
-Split _r_ight    De_t_ach     _s_wap            j← k→
-Split _l_eft     _d_elete     r_o_tate          h↑ l↓
-_f_it to Buffer  _m_ake       _e_diff
-                          _R_evert
-                          _M_inions Menu"
-        ("d" mpx-delete-frame)
-        ("e" ediff-this)
-        ("f" fit-window-to-buffer)
-        ("g" windmove-right)
-        ("l" split-window-left)
-        ("m" make-frame)
-        ("o" rotate-windows)
-        ("r" split-window-right)
-        ("R" revert-buffer)
-        ("s" swap-buffers)
-        ("t" detach-window)
-        ("<left>" windmove-left)
-        ("<up>" windmove-up)
-        ("<down>" windmove-down)
-        ("<right>" windmove-right)
-        ("j" windmove-left)
-        ("h" windmove-up)
-        ("l" windmove-down)
-        ("k" windmove-right)
-        ("M" minions-minor-modes-menu))
-      (global-set-key (kbd "C-h C-u") 'ui-ops-hydra/body))
-  (progn
-    (defvar windows-ops-keymap
-      (make-sparse-keymap)
-      "Keymap for windmove commands.")
-    (global-set-key (kbd "C-x w") windows-ops-keymap)
-    (define-key windows-ops-keymap (kbd "s") #'swap-buffers)
-    (define-key windows-ops-keymap (kbd "r") #'rotate-windows)
-    (define-key windows-ops-keymap (kbd "<f1>") #'detach-window)
-    (define-key windows-ops-keymap (kbd "<f2>") #'make-frame)
-    (define-key windows-ops-keymap (kbd "<f3>") #'mpx-delete-frame)
-    (define-key windows-ops-keymap (kbd "C-x 2") #'split-window-below)
-    (define-key windows-ops-keymap (kbd "C-x 3") #'split-window-right)
-    (define-key windows-ops-keymap (kbd "C-x =") #'fit-window-to-buffer)))
-
 ;; ]
 
 ;; [ ediff
@@ -1545,14 +1358,13 @@ _f_it to Buffer  _m_ake       _e_diff
   (setq browser-url-browser-function 'browse-url-chromium))
 
 (defun java-mode-setup()
+  (projectile-mode)
   (local-set-key (kbd "C-h t") 'mpx-help-on-tags)
   ;; Treat Java 1.5 @-style annotations as comments.
   (setq c-comment-start-regexp "(@|/(/|[*][*]?))")
   (modify-syntax-entry ?@ "< b" java-mode-syntax-table)
   (mpx-load-closest-tags-file)
   ;; mark line point is in
-  (hl-line-mode)
-  (display-line-numbers-mode)
   ;;
   (setq-local comment-auto-fill-only-comments t)
   (setq-local comment-multi-line t)
@@ -1569,6 +1381,8 @@ _f_it to Buffer  _m_ake       _e_diff
 ;; ]
 
 ;; [ dired
+
+;; TODO Get font github-octicons and then do all-the-icons-dired-mode
 
 (setq dired-dwim-target t) ;; Make dired guess the target of a copy operation
 
@@ -1605,16 +1419,12 @@ _f_it to Buffer  _m_ake       _e_diff
               (file2 (if (cdr files)
                          (cadr files)
                        (read-file-name
-                        "file: "
+                        "second file? "
                         (dired-dwim-target-directory)))))
           (if (file-newer-than-file-p file1 file2)
               (ediff-files file2 file1)
-            (ediff-files file1 file2))
-          (add-hook 'ediff-after-quit-hook-internal
-                    (lambda ()
-                      (setq ediff-after-quit-hook-internal nil)
-                      (set-window-configuration wnd))))
-      (error "no more than 2 files should be marked"))))
+            (ediff-files file1 file2)))
+      (error "Cannot ediff with more than 2 files marked"))))
 
 (add-hook 'dired-mode-hook
           (lambda ()
@@ -1623,65 +1433,15 @@ _f_it to Buffer  _m_ake       _e_diff
                                 :weight 'normal
                                 :width 'normal)
             (hl-line-mode)
-            (define-key dired-mode-map "f" 'dired-show-only)
+            (all-the-icons-dired-mode)
+            (put 'dired-find-alternate-file 'disabled nil)
+            (define-key dired-mode-map "f" 'dired-show-only) ;; _f_ilter list of files by regexp
             (define-key dired-mode-map "e" 'ora-ediff-files)
             (define-key dired-mode-map (kbd "<backspace>")
               (lambda () (interactive) (find-alternate-file "..")))
+            (define-key dired-mode-map (kbd "<enter>") 'dired-find-alternate-file)
             (define-key dired-mode-map (kbd "c") 'dired-2pane-copy-over)
-            (define-key dired-mode-map (kbd "TAB") 'other-window)
-            
-            (defhydra hydra-dired (:hint nil :color "#268bd2")
-              "
-_+_ mkdir          _v_iew           _m_ark             _(_ details        _i_nsert-subdir    wdired
-_C_opy             _O_ view other   _U_nmark all       _)_ omit-mode      _$_ hide-subdir    C-x C-q : edit
-_D_elete           _o_pen other     _u_nmark           _l_ redisplay      _w_ kill-subdir    C-c C-c : commit
-_R_ename           _M_ chmod        _t_oggle           _g_ revert buf     _e_ ediff          C-c ESC : abort
-_Y_ rel symlink    _G_ chgrp        _E_xtension mark   _s_ort             _=_ pdiff
-_S_ymlink          ^ ^              _F_ind marked      _._ toggle hydra   \\ flyspell
-_r_sync            ^ ^              ^ ^                ^ ^                _?_ summary
-_z_ compress-file  _A_ find regexp
-_Z_ compress       _Q_ repl regexp
-
-T - tag prefix
-"
-              ("\\" dired-do-ispell)
-              ("(" dired-hide-details-mode)
-              (")" dired-omit-mode)
-              ("+" dired-create-directory)
-              ("=" diredp-ediff)         ;; smart diff
-              ("?" dired-summary)
-              ("$" diredp-hide-subdir-nomove)
-              ("A" dired-do-find-regexp)
-              ("C" dired-do-copy)        ;; Copy all marked files
-              ("D" dired-do-delete)
-              ("E" dired-mark-extension)
-              ("e" dired-ediff-files)
-              ("F" dired-do-find-marked-files)
-              ("G" dired-do-chgrp)
-              ("g" revert-buffer)        ;; read all directories again (refresh)
-              ("i" dired-maybe-insert-subdir)
-              ("l" dired-do-redisplay)   ;; relist the marked or singel directory
-              ("M" dired-do-chmod)
-              ("m" dired-mark)
-              ("O" dired-display-file)
-              ("o" dired-find-file-other-window)
-              ("Q" dired-do-find-regexp-and-replace)
-              ("R" dired-do-rename)
-              ("r" dired-do-rsynch)
-              ("S" dired-do-symlink)
-              ("s" dired-sort-toggle-or-edit)
-              ("t" dired-toggle-marks)
-              ("U" dired-unmark-all-marks)
-              ("u" dired-unmark)
-              ("v" dired-view-file)      ;; q to exit, s to search, = gets line #
-              ("w" dired-kill-subdir)
-              ("Y" dired-do-relsymlink)
-              ("z" diredp-compress-this-file)
-              ("Z" dired-do-compress)
-              ("q" nil)
-              ("." nil :color blue))
-            (define-key dired-mode-map (kbd "C-h C-h") 'hydra-dired/body)
-            ))
+            (define-key dired-mode-map (kbd "o") 'other-window)))
 
 (put 'dired-find-alternate-file 'disabled nil)
 
@@ -1693,15 +1453,16 @@ T - tag prefix
 
 (require 'sgml-mode)
 
-(defun xml-mode-setup ()
-  (local-set-key (kbd "C-x <return>") 'sgml-close-tag)
-  (setq nxml-slash-auto-complete-flag t)
-  (local-set-key (kbd ">" 'mpx-magic->))
-  (local-set-key (kbd "C-h C-m") 'hydra-xml/body))
+(require 'nxml-mode)
 
-(add-hook 'xml-mode-hook 'xml-mode-setup)
+(defun nxml-mode-setup ()
+  (local-set-key (kbd "C-x <return>") 'sgml-close-tag)
+  (setq nxml-slash-auto-complete-flag t))
+
+(add-hook 'nxml-mode-hook 'nxml-mode-setup)
 
 (add-to-list 'auto-insert-alist '("pom.xml$" . [ "pom.xml" ]))
+;; (add-to-list 'auto-insert-alist '("*scratch-xml-mode*" . [ "empty.xml" ]))
 
 (setq xml-file-patterns (list ".*\\.wadl'" ".*\\.xul\\'" ".*\\..rdf\\'" ".*\\.xsd\\'" ".*\\.wsdl\\'" ".*\\.grxml\\'"))
 
@@ -1746,14 +1507,8 @@ T - tag prefix
 (setq nxml-child-indent 4
       nxml-attribute-indent 4)
 
-(defhydra hydra-xml (:color blue :hint nil)
-    "
-xml mode hydra^^
-----------------------------------------------
-_p_: pretty print buffer
+(add-hook 'nxml-mode-hook 'mpx-prog-mode-setup)
 
-"
-    ("p" xml-pretty-print-buffer))
 
 ;; [ ant mode
 
@@ -1762,6 +1517,16 @@ _p_: pretty print buffer
   "Mode for editing ant build.xml files.")
 
 (add-to-list 'auto-mode-alist (cons "build.xml" 'ant-mode))
+
+;; ]
+
+;; [ yaml yml mode
+
+(use-package yaml-mode
+  :config
+  (add-hook 'yaml-mode-hook 'mpx-prog-mode-setup))
+
+(use-package yaml-imenu)
 
 ;; ]
 
@@ -1801,25 +1566,32 @@ _p_: pretty print buffer
   (mpx-maven "clean"))
 
 (defun mpx-maven-validate ()
-  (interactive) (mpx-maven "validate"))
+  (interactive)
+  (mpx-maven "validate"))
 
 (defun mpx-maven-compile ()
-  (interactive) (mpx-maven "compile"))
+  (interactive)
+  (mpx-maven "compile"))
 
 (defun mpx-maven-test ()
-  (interactive) (mpx-maven "test"))
+  (interactive)
+  (mpx-maven "test"))
 
 (defun mpx-maven-package ()
-  (interactive) (mpx-maven "package"))
+  (interactive)
+  (mpx-maven "package"))
 
 (defun mpx-maven-verify ()
-  (interactive) (mpx-maven "verify"))
+  (interactive)
+  (mpx-maven "verify"))
 
 (defun mpx-maven-install ()
-  (interactive) (mpx-maven "install"))
+  (interactive)
+  (mpx-maven "install"))
 
 (defun mpx-maven-deploy ()
-  (interactive) (mpx-maven "deploy"))
+  (interactive)
+  (mpx-maven "deploy"))
 
 ;; ]
 
@@ -1879,8 +1651,7 @@ _p_: pretty print buffer
   (setq-local comment-multi-line t)
   (local-set-key (kbd "M-#") 'comment-dwim)
   (jedi:setup)
-  (company-mode 1)
-  (setq ac-sources (list 'ac-source-jedi-direct 'ac-source-words-in-same-mode-buffers)))
+  (company-mode 1))
 
 (use-package elpy
   :config
@@ -1900,7 +1671,8 @@ _p_: pretty print buffer
                        elpy-module-highlight-indentation
                        elpy-module-yasnippet
                        elpy-module-sane-defaults))
-        elpy-rpc-backend nil
+        
+        elpy-rpc-backend "jedi"
         elpy-rpc-error-timeout 15
         elpy-syntax-check-command "flake8") )
 
@@ -1908,21 +1680,7 @@ _p_: pretty print buffer
 
 ;; [ http rest client mode
 
-(use-package know-your-http-well
-  :bind ("C-h C-h" . hydra-http/body)
-  :config
-
-  (defhydra hydra-http (:color blue :hint nil)
-    "
-Know your HTTP well^^
-----------------------------------------------
-_h_: Headers    _m_: Methods
-_r_: Relations  _s_: Status codes
-"
-    ("h" http-header)
-    ("m" http-method)
-    ("r" http-relation)
-    ("s" http-status-code)))
+(use-package know-your-http-well)
 
 (use-package restclient
   :config
@@ -1930,37 +1688,6 @@ _r_: Relations  _s_: Status codes
   (add-to-list 'auto-mode-alist '("\\.rcm\\'" . restclient-mode))
   (add-to-list 'auto-insert-alist '(".*\\.rst?$" . [ "template.rst" ] ) ))
 
-(defvar mpx-restclient-bookmarks-file "~/.emacs.d/restclient-bookmarks.txt")
-
-(defvar mpx-restclient-bookmarks nil)
-
-(defun mpx-load-restclient-bookmarks ()
-  "Retrieve list of restclient bookmarks.
-TODO: Have more generic functions read-list-from-file, store-list-to-file
-and then do re-implement restclient-bookmarks and project files with this."
-  (let ((bookmarks-text nil))
-    (with-temp-buffer (insert-file-contents-literally mpx-restclient-bookmarks-file)
-                      (setq bookmarks-text (buffer-substring-no-properties (point-min) (point-max))))
-    (setq mpx-restclient-bookmarks (split-string bookmarks-text)))
-  mpx-restclient-bookmarks)
-
-(defun mpx-add-restclient-bookmark (url)
-  (interactive "MAdd url: ")
-  "Add ROOT-FOLDER to list of known bookmarks."
-  (message (concat "Adding " url " to list of restclient bookmarks"))
-  (let ((bookmarks (mpx-load-restclient-bookmarks)))
-    (add-to-list 'bookmarks url)
-    (mpx-restclient-save-bookmarks bookmarks)))
-
-(defun mpx-restclient-save-bookmarks (bookmarks)
-  (interactive (list mpx-restclient-bookmarks))
-  (with-temp-buffer
-    (progn
-      (dolist (bookmark bookmarks)
-        (progn
-          (insert bookmark)
-          (newline)))
-      (write-file mpx-restclient-bookmarks-file))))
 ;; ]
 
 ;; [ markdown
@@ -1971,8 +1698,6 @@ and then do re-implement restclient-bookmarks and project files with this."
 
 ;; [ angular2 html editing web mode
 
-(require 'webdev-tools)
-
 (use-package web-mode
   :config
   (add-hook 'web-mode-hook 'web-mode-setup)
@@ -1980,8 +1705,6 @@ and then do re-implement restclient-bookmarks and project files with this."
 
 (defun web-mode-setup ()
   (local-set-key (kbd ">") 'mpx-magic->)
-  (yas-minor-mode)
-  (hl-line-mode)
   (setq indent-tabs-mode nil
         web-mode-markup-indent-offset 4))
 
@@ -1989,16 +1712,14 @@ and then do re-implement restclient-bookmarks and project files with this."
 ;; ng2-html-mode over web-mode in angular projects
 (use-package ng2-mode
   :config
-  ;;  (require 'angular-helpers)
-
   (add-hook 'ng2-ts-mode-hook #'(lambda ()
-                                  (hl-line-mode)
-                                  (display-line-numbers-mode)                                  
+                                  (mpx-prog-mode-setup)
                                   (setq c-basic-offset 4)))
 
   (add-hook 'ng2-html-mode-hook #'(lambda ()
+                                    (mpx-prog-mode-setup)
                                     (local-set-key (kbd ">") 'mpx-magic->)
-                                    (hl-line-mode))))
+                                    )))
 
 (add-to-list 'auto-mode-alist '("\\.component.html\\'" . ng2-html-mode))
 
@@ -2025,7 +1746,7 @@ and then do re-implement restclient-bookmarks and project files with this."
 (defun php-mode-extension ()
   (setq indent-tabs-mode nil
         c-basic-offset 4
-        php-template-compatibility nil)
+        php-mode-template-compatibility nil)
   (local-set-key (kbd "C-h o") #'mp-php-online-help))
 
 (use-package php-mode
@@ -2090,6 +1811,19 @@ and then do re-implement restclient-bookmarks and project files with this."
 
 ;; ]
 
+;; [ shell pop
+
+(use-package shell-pop
+  :disabled ;; -> spawing child process: invalid argument
+  :bind (("C-t" . shell-pop))
+  :config
+  (setq shell-pop-shell-type (quote ("ansi-term" "*ansi-term*" (lambda nil (ansi-term shell-pop-term-shell)))))
+  (setq shell-pop-term-shell "c://cygwin64//bin//bash.exe")
+  ;; need to do this manually or not picked up by `shell-pop'
+  (shell-pop--set-shell-type 'shell-pop-shell-type shell-pop-shell-type))
+
+;; ]
+
 ;; [ tramp
 
 ;; Note: use /ssh:hostname.domain:/path/to/file to access remote files.
@@ -2139,9 +1873,7 @@ and then do re-implement restclient-bookmarks and project files with this."
 
 (use-package magit
   :config
-
-  (global-set-key (kbd "C-h C-v") 'hydra-magit/body) ;; C-h C-v - v for version control
-
+  
   (setq magit-completing-read-function 'ivy-completing-read)
 
   (defun magit-status-wrapper (arg)
@@ -2172,7 +1904,8 @@ and then do re-implement restclient-bookmarks and project files with this."
 
 (use-package git-gutter
   :config
-  (setq git-gutter:update-interval 5) )
+  (setq git-gutter:update-interval 5)
+  (global-git-gutter-mode))
 
 ;; ]
 
@@ -2208,7 +1941,7 @@ and then do re-implement restclient-bookmarks and project files with this."
 ;; [ company
 
 ;; (require 'cl-lib)
-;; (require 'company)
+
 
 (use-package company-php
   :config
@@ -2221,6 +1954,8 @@ and then do re-implement restclient-bookmarks and project files with this."
 
 (use-package company
   :config
+;; (require 'company)
+  (setq company-tooltip-align-annotations t)
   (require 'company-template))
 
 ;; ]
@@ -2239,15 +1974,15 @@ and then do re-implement restclient-bookmarks and project files with this."
 (add-standard-display-buffer-entry "*compilation*")
 
 (defun compilation-mode-setup ()
-  ;; (next-error-follow-minor-mode)
-  (local-set-key (kbd "q") 'kill-buffer)  
-  (local-set-key (kbd "C-q") 'kill-buffer-and-window))
+  ;;  (next-error-follow-minor-mode)
+  (local-set-key (kbd "q") 'kill-current-buffer)  
+  (local-set-key (kbd "Q") 'kill-buffer-and-window))
 
 (add-hook 'compilation-mode-hook 'compilation-mode-setup)
 
 (use-package auto-compile
   :config
-  (auto-compile-on-load-mode)
+  (turn-on-auto-compile-mode)
   (auto-compile-on-save-mode))
 
 (require 'ansi-color)
@@ -2294,14 +2029,12 @@ and then do re-implement restclient-bookmarks and project files with this."
   "Mode for viewing log files.")
 
 (add-hook 'logview-mode-hook '(lambda ()
-                                (stripe-buffer-mode)
                                 (hl-line-mode)
                                 (font-lock-add-keywords nil '(("\\(INFORMATION\\)" 1 font-lock-warning-face t)))
                                 (font-lock-add-keywords nil '(("\\(WARNUNG\\)" 1 font-lock-warning-face t)))
                                 (font-lock-add-keywords nil '(("\\(SCHWERWIEGEND\\)" 1 font-lock-warning-face t)))
                                 (define-key logview-mode-map  (kbd "<") 'beginning-of-buffer)
-                                (define-key logview-mode-map (kbd ">") 'end-of-buffer)
-                                (define-key logview-mode-map (kbd "C-h C-m") 'hydra-highlighting/body)))
+                                (define-key logview-mode-map (kbd ">") 'end-of-buffer)))
 
 (define-derived-mode ndf-logview-mode view-mode
   "ndf-logview"
@@ -2425,26 +2158,6 @@ and then do re-implement restclient-bookmarks and project files with this."
   (interactive)
   (scratch-goto-mode 'sh-mode))
 
-(defhydra hydra-global-scratch (:color blue :hint nil)
-  "
-Mode^^
-----------------------------------------------
-_t_ext-mode    _p_ython-mode        _o_rg-mode
-_j_ava-mode    emacs-_l_isp-mode    _s_h-mode
-jso_n_-mode    _x_ml-mode
-
-"
-  ("n" scratch-goto-json-mode)
-  ("t" scratch-goto-text-mode)
-  ("l" scratch-goto-emacs-lisp-mode)
-  ("p" scratch-goto-python-mode)
-  ("j" scratch-goto-java-mode)
-  ("o" scratch-goto-org-mode)
-  ("s" scratch-goto-shl-mode)
-  ("x" scratch-goto-xml-mode))
-
-(global-set-key (kbd "C-h C-s") 'hydra-global-scratch/body)
-
 
 ;; ]
 
@@ -2545,25 +2258,6 @@ jso_n_-mode    _x_ml-mode
       (insert spacer elem)
       (newline))))
 
-(defun dashboard-insert-mpx-projects (numitems)
-  (dashboard-insert-known-projects-list "Known projects:")
-  (newline))
-
-(defun dashboard-insert-known-projects-list (list-display-name)
-  (dashboard-insert-heading list-display-name)
-  (mapc (lambda (el)
-          (insert "\n    ")
-          (widget-create 'push-button
-                         :action `(lambda (&rest ignore) (find-file-existing ,(format "%s" el)))
-                         :mouse-face 'highlight
-                         :follow-link "\C-m"
-                         :button-prefix ""
-                         :button-suffix ""
-                         :format "%[%t%]"
-                         (format "%s" el)))
-        projectile-known-projects))
-
-
 (defun dashboard-system-info-insert-load-path ()
   (dashboard-insert-list load-path "                       - "))
 
@@ -2606,13 +2300,11 @@ jso_n_-mode    _x_ml-mode
 (use-package dashboard
   :config
   (add-to-list 'dashboard-item-generators '(qod . dashboard-insert-qod))
-  (add-to-list 'dashboard-item-generators '(mpx-projects . dashboard-insert-mpx-projects))
   (add-to-list 'dashboard-item-generators '(recentx . dashboard-insert-recentx))
   (add-to-list 'dashboard-item-generators '(sysinfo . dashboard-system-info))
 
   (setq dashboard-items '((qod . nil)
                           ;;                          (agenda . 10)
-                          (mpx-projects . 10)
                           (recentx . 15)
                           (bookmarks . 10)
                           (sysinfo . 1)))
@@ -2638,117 +2330,37 @@ jso_n_-mode    _x_ml-mode
 
 ;; ]
 
-;; [ projectile and ffap
+;; [ projectile and ffip
 
-(defun mpx-find-file-dispatcher (prefix-arg) 
-  "Look if there is a file at point. Otherwiese try
-projectile find file and finally plain find-file. With
-PREFIX-ARG open files in other window."
-  (interactive "P")
-  (let ((file-at-point (thing-at-point 'filename)))
-    (if (file-exists-p (or
-                        file-at-point
-                        "no-file"))
-        (when prefix-arg
-          (find-file-other-window file-at-point))
-      (let ((find-file-function 
-             (if prefix-arg
-                 (if (projectile-project-root)
-                     (call-interactively 'projectile-find-file-dwim-other-frame)
-                   'find-file-other-frame)
-               (if (projectile-project-root)
-                   (call-interactively 'projectile-find-file)
-                 'find-file))))))))
-
-(defun mpx-switch-buffer-dispatcher (prefix-arg)
-  "Call switch buffer variation according to context"
+(defun mpx-find-file-dispatcher (prefix-arg)
+  "Call find-file variation."
   (interactive "P")
   (if (or prefix-arg
-          (not (projectile-project-root)))
-      (call-interactively 'switch-to-buffer)    
-    (projectile-switch-to-buffer)))
+          (not (and (featurep 'projectile)
+                    (projectile-project-root))))
+      (call-interactively 'find-file)
+    (projectile-find-file)))
 
+(defun mpx-switch-buffer-dispatcher (prefix-arg)
+  "Call switch buffer variation."
+  (interactive "P")
+  (if (or prefix-arg
+          (not (and (featurep 'projectile)
+                    (projectile-project-root))))
+      (call-interactively 'switch-to-buffer)
+    (projectile-switch-to-buffer)))
 
 ;; Also see http://batsov.com/projectile/
 
 (use-package projectile
   :config
-  (global-set-key (kbd "C-x f") 'projectile-find-file)
+  (global-set-key (kbd "C-x f") 'mpx-find-file-dispatcher)
   (global-set-key (kbd "C-x b") 'mpx-switch-buffer-dispatcher)
   (setq projectile-completion-system 'ivy
         projectile-indexing-method 'alien
         projectile-enable-caching t
         projectile-switch-project-action 'projectile-dired
-        projectile-track-known-projects-automatically nil)
-  (projectile-global-mode))
-
-(defhydra hydra-projectile (:color lightblue
-                            :hint nil)
-  "
-     PROJECTILE: %(projectile-project-root)
-
-  Find File          Search/Tags       Buffers              Cache                      Projects
----------------------------------------------------------------------------------------------------------------
-  _F_: file            _t_: xref find tag  _i_: Ibuffer           _c_: cache clear             _w_: Start new website
- _ff_: file dwim                         _b_: switch to buffer  _x_: remove known project
- _fd_: file curr dir   _o_: multi-occur    _K_: Kill all buffers  _X_: cleanup non-existing
-  _r_: recent file                                            ^^^^_z_: cache current
-  _d_: find dir
-
-"
-  ("a"   projectile-ag)
-  ("b"   projectile-switch-to-buffer)
-  ("c"   projectile-invalidate-cache)
-  ("d"   projectile-find-dir)
-  ("F"   projectile-find-file)
-  ("ff"  projectile-find-file-dwim)
-  ("fd"  projectile-find-file-in-directory)
-  ("t"   xref-find-definitions-other-window)
-  ("i"   projectile-ibuffer)
-  ("K"   projectile-kill-buffers)
-  ("o"   projectile-multi-occur)
-  ("P"   projectile-switch-project "switch project")
-  ("r"   projectile-recentf)
-  ("x"   projectile-remove-known-project)
-  ("X"   projectile-cleanup-known-projects)
-  ("z"   projectile-cache-current-file)
-  ("`"   hydra-projectile-other-window/body "other window")
-  ("q"   nil "cancel" :color blue)
-  ("w" start-website))
-
-(global-set-key (kbd "C-h C-p") 'hydra-projectile/body)
-
-(defhydra hydra-maven-projectile (:color lightblue :hint nil :exit t)
-  "
-PROJECTILE: %(projectile-project-root)
-
-
-lifecycle     ^clean^          ^default^
-^^^^^^^^-----------------------------------------------------------------
-           _c_: clean       _v_: validate
-                          _C_: compile
-                          _t_: test
-                          _p_: package     
-                          _V_: verify
-                          _i_: install
-                          _d_: deploy        
-"
-  ("c" mpx-maven-clean)
-  ("v" mpx-maven-validate)
-  ("C" mpx-maven-compile)
-  ("t" mpx-maven-test)
-  ("p" mpx-maven-package)
-  ("V" mpx-maven-verify)
-  ("i" mpx-maven-install)
-  ("d" mpx-maven-deploy))
-
-(defun mpx-maven-hydra-wrapper ()
-  (interactive)
-  (if (projectile-available-p)
-      (hydra-maven-projectile/body)
-    (message "Projectile is not available. Calling maven hydra makes no sense.")))
-
-(define-key java-mode-map (kbd "C-h C-m") 'mpx-maven-hydra-wrapper)
+        projectile-track-known-projects-automatically nil))
 
 ;; ]
 
@@ -2758,18 +2370,23 @@ lifecycle     ^clean^          ^default^
 
 ;; ]
 
+;; [ hydra
+
+(use-package hydra)
+
+(require 'hydras) ;; local 'package' with all my hydras
+
+;; ]
+
 ;; [ Finalizer
 
-(require 'convenience)
-
-(setq gc-cons-threshold (* 1024 1024 16)
-      gc-cons-percentage 0.1)
-
-(toggle-debug-on-error nil)
+(setq gc-cons-threshold (* 1024 1024 32)
+      gc-cons-percentage 10.0)
 
 (notify "[Emacs] init.el fully loaded")
 
 (setq mode-line-format mpx-standard-mode-line-format)
 
 ;; ]
+
 (put 'list-timers 'disabled nil)

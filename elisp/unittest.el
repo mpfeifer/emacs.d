@@ -21,7 +21,7 @@
 ;; 
 ;;; Commentary: 
 ;; 
-;; 
+;; Just some lines of emacs lisp to play with ert.
 ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 

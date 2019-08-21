@@ -35,12 +35,19 @@
 
 (require 'promt)
 
+(defun mpx-get-project-root ()
+  "See if projectile is available. If so return project root. Otherwise return ."
+  (if (featurep 'projectile)
+      (projectile-project-root)
+    "./"))
+
 (defun mpx-find-component-files ()
   "Get all a list of al file in current project that match the pattern .*.component.ts"
   (directory-files-recursively
-   (concat mpx-promt-project-root "/src/") ".*\\.component\\.ts" ))
+   (concat (mpx-get-project-root) "/src/") ".*\\.component\\.ts" ))
 
 (defun mpx-find-component-files-for-tag (tag)
+  "Find the component file that defines the current tag by checking the selector field."
   (let* ((component-files (mpx-find-component-files))
          (component-file (seq-filter #'(lambda (file)
                                          (with-temp-buffer
@@ -67,6 +74,7 @@ Where separators are <, >, <whitespace> or / "
       (buffer-substring-no-properties beos eos))))
 
 (defun mpx-find-component-for-tag (tag)
+  "UI Function for finding file for component at point."
   (interactive (list (mpx-angular-symbol-at-point)))
   (let ((component-file (mpx-find-component-files-for-tag tag)))
     (cond 
@@ -93,9 +101,7 @@ and open all of these in a new frame like this:
 |                        |               |
 |                        |               |
 |                        |               |
-+------------------------+---------------+
-
-TODO: find files in the file system"
++------------------------+---------------+"
   (interactive (list (mpx-angular-symbol-at-point)))
   (let* ((component (mpx-find-component-files-for-tag tag))
          (tsfile (cond
@@ -132,9 +138,7 @@ and open all of these in a new frame like this:
 |                        |               |
 |                        |               |
 |                        |               |
-+------------------------+---------------+
-
-TODO: find files in the file system"
++------------------------+---------------+"
   (interactive (list
                 (completing-read
                  "Which componennt do you want to edit?"
@@ -150,6 +154,33 @@ TODO: find files in the file system"
     (find-file css-file)))
 
 (define-key ng2-html-map (kbd "C-c C-.") 'mpx-find-component-for-tag)    
+
+
+;; TODO Following is untested
+
+(require 'expand-region-core)
+
+(defun ng2-mark-decorator ()
+  (interactive)
+  (let* ((decoration-start nil)
+         (decoration-end nil))
+    (progn
+      (save-excursion
+        (search-backward "@")
+        (setq decoration-start (point))
+        (search-forward "})")
+        (setq decoration-end (point)))
+      (goto-char (decoration-start))
+      (set-mark decoration-end))))
+
+
+(defun er/add-ng2-mark-decorator ()
+  "Add decorator expansion in ng2-mode buffers"
+  (set (make-local-variable 'er/try-expand-list) (append
+                                                  er/try-expand-list
+                                                  '(ng2-mark-decorator))))
+
+(er/enable-mode-expansions 'ng2-mode 'er/add-ng2-mark-decorator)
 
 (provide 'angular-helpers)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

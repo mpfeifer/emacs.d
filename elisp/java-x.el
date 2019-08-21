@@ -122,12 +122,12 @@ With prefix argument insert classname with package name. Otherwise omit package 
 If so calculate pacakge name from current directory name.
 TODO: Rewrite to use promt.el"
   (let* ((dirname (file-name-directory (buffer-file-name)))
-         (indicator "/src/main/java/")
+         (indicator "/src/\\(main\\|test\\)/java/")
          (package-name "undefined")
          (matched-string nil))
     (if (string-match (concat ".*" indicator "\\(.*\\)") dirname)
         (progn
-          (setq matched-string (match-string 1 dirname))
+          (setq matched-string (match-string 2 dirname))
           (unless matched-string ;; if indicator is not found just take
             (setq matched-string dirname)) ;; whole path for the package-name
           (setq package-name matched-string)

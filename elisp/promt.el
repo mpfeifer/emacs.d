@@ -9,25 +9,28 @@
 ;; 
 ;; Changelog: 
 ;; 
-;; VERSION (24.12.2018): Initial release
-;; 
+;; 1.0 (24.12.2018): Initial release
+;; 1.1 (15.07.2019): Redesign
+;;
+;;
+;;
+;;
+;;
+;;
+;;
+;;
+;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 
-;; This program is free software; you can redistribute it and/or
-;; modify it under the terms of the GNU General Public License as
-;; published by the Free Software Foundation; either version 3, or
-;; (at your option) any later version.
-;; 
-;; This program is distributed in the hope that it will be useful,
-;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-;; General Public License for more details.
-;; 
-;; You should have received a copy of the GNU General Public License
-;; along with this program; see the file COPYING.  If not, write to
-;; the Free Software Foundation, Inc., 51 Franklin Street, Fifth
-;; Floor, Boston, MA 02110-1301, USA.
-;; 
+;; Description:
+;;
+;; Some lines of code to bootstrap some small projects for.
+;;
+;; TODO
+;;
+;; - which project types are there
+;; - offer a nice hydra that allows project creation
+;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 
 ;;; Code:
@@ -44,6 +47,16 @@
         (while (search-forward key nil t)
           (replace-match value t))))
     (write-file target-file nil)))
+
+(defun html-project-post-processing (name)
+  "This method looks for strings %CSSFILE% and %TITLE% and replaces them with some meaningful values ."
+  (save-excursion
+    (goto-char (point-min))
+    (when (re-search-forward "%TITLE%" nil t)
+      (replace-match name))
+    (goto-char (point-min))
+    (when (re-search-forward "%CSSFILE%" nil t)
+      (replace-match (replace-regexp-in-string (regexp-quote ".html") ".css" (buffer-name) 'fixedcase) 'fixedcase))))
 
 (defun start-website (name)
   "Create a new web site with initial html, js and css file. NAME will be the project folder."
@@ -66,6 +79,17 @@
     (copy-file "~/.emacs.d/templates/qunit-2.0.1.css" (concat projectroot "/"))
     (switch-to-buffer (concat name ".html"))
     (html-project-post-processing name)))
+
+(defun create-qunit-test-for-current-buffer ()
+  (interactive)
+  (let ((test-html-file (replace-regexp-in-string (regexp-quote ".js") "-test.html" (buffer-name)))
+        (test-js-file (replace-regexp-in-string (regexp-quote ".js") "-test.js" (buffer-name))))
+    (progn
+      (find-file test-html-file)
+      (goto-char (point-min))
+      (split-window (selected-window) 15)
+      (other-window 1)
+      (find-file test-js-file))))
 
 (defun start-new-web-application (group-id artifact-id version-number)
   "Creates a new maven war project by calling maven archetype for web applications."
@@ -154,8 +178,61 @@ Last tested: 15.07.19."
     (find-file main-class)
     (save-buffer)))
 
-(provide 'promt)
+(defun html-post-processing ()
+  "This method looks for a couple of key-strings and replaces them with some meaningful values. See copy-template for more generic approach."
+  (save-excursion
+    (goto-char (point-min))
+    (when (re-search-forward "%TITLE%" nil t)
+      (replace-match (replace-regexp-in-string (regexp-quote ".html") "" (buffer-name) 'fixedcase)))
+    (goto-char (point-min))
+    (when (re-search-forward "%CSSFILE%" nil t)
+      (replace-match (replace-regexp-in-string (regexp-quote ".html") ".css" (buffer-name) 'fixedcase) 'fixedcase))
+    (when (re-search-forward "%TESTEE%" nil t)
+      (replace-match (replace-regexp-in-string (regexp-quote "-test.html") ".js" (buffer-name) 'fixedcase) 'fixedcase))
+    (when (re-search-forward "%UNITTESTS%" nil t)
+      (replace-match (replace-regexp-in-string (regexp-quote "-test.html") "-test.js" (buffer-name) 'fixedcase) 'fixedcase))))
 
+(define-auto-insert '("\\.html\\'" . "HTML5 Skeleton")
+  [ '(nil
+      "<!DOCTYPE html>\n"
+      "<html>\n"
+      "<head>\n"
+      "<meta charset=\"UTF-8\" />\n"
+      "<title>%TITLE%</title>\n"
+      "<script src=\"https://code.jquery.com/jquery-3.4.1.js\" integrity=\"sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=\" crossorigin=\"anonymous\"></script>"
+      "<script src=\"https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js\" integrity=\"sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy\" crossorigin=\"anonymous\"></script>"
+      "<script src=\"subrx.js\"></script>\n"
+      "<link rel=\"stylesheet\" href=\"https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css\" integrity=\"sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO\" crossorigin=\"anonymous\">"
+      "<link rel=\"stylesheet\" href=\"%CSSFILE%\" />\n"
+      "</head>\n"
+      "<body>\n"
+      "</body>\n"
+      "</html>\n" )
+    indent-buffer 
+    html-post-processing ] )
+
+;; this auto-insert must be defined *after* the one for *.html files
+(define-auto-insert '("-test.html\\'" . "HTML5 Skeleton for QUnit test")
+  [ '(nil
+      "<!DOCTYPE html>\n"
+      "<html>\n"
+      "<head>\n"
+      "<meta charset=\"UTF-8\" />\n"
+      "<title>QUnit Testcase</title>\n"
+      "<link rel=\"stylesheet\" href=\"https://code.jquery.com/qunit/qunit-2.9.2.css\">"
+      "</head>\n"
+      "<body>\n"
+      "<div id=\"qunit\"></div>\n"
+      "<div id=\"qunit-fixture\"></div>\n"
+      "<script src=\"https://code.jquery.com/qunit/qunit-2.9.2.js\"></script>"
+      "<script src=\"%TESTEE%\"></script>\n"
+      "<script src=\"%UNITTESTS%\"></script>\n"
+      "</body>\n"
+      "</html>\n" )
+    indent-buffer 
+    html-post-processing ] )
+
+(provide 'promt)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; promt.el ends here
